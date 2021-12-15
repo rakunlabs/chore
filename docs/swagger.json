@@ -1,0 +1,286 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "storage and send API",
+        "contact": {}
+    },
+    "basePath": "/api/v1",
+    "paths": {
+        "/kv/{type}": {
+            "get": {
+                "description": "Get the value of the key",
+                "summary": "Get Specific key",
+                "parameters": [
+                    {
+                        "enum": [
+                            "templates",
+                            "auths",
+                            "binds"
+                        ],
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key of the file",
+                        "name": "key",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Set a key with value",
+                "consumes": [
+                    "text/plain"
+                ],
+                "summary": "New key or replace key",
+                "parameters": [
+                    {
+                        "enum": [
+                            "templates",
+                            "auths",
+                            "binds"
+                        ],
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key of the file",
+                        "name": "key",
+                        "in": "query"
+                    },
+                    {
+                        "description": "any value to store",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "primitive"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Set a key with value",
+                "consumes": [
+                    "text/plain"
+                ],
+                "summary": "New key",
+                "parameters": [
+                    {
+                        "enum": [
+                            "templates",
+                            "auths",
+                            "binds"
+                        ],
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key of the file",
+                        "name": "key",
+                        "in": "query"
+                    },
+                    {
+                        "description": "any value to store",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "primitive"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete key",
+                "summary": "Delete key",
+                "parameters": [
+                    {
+                        "enum": [
+                            "templates",
+                            "auths",
+                            "binds"
+                        ],
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key of the file",
+                        "name": "key",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/kv/{type}/": {
+            "get": {
+                "description": "Get list of keys",
+                "summary": "Get List",
+                "parameters": [
+                    {
+                        "enum": [
+                            "templates",
+                            "auths",
+                            "binds"
+                        ],
+                        "type": "string",
+                        "description": "type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key of the file",
+                        "name": "key",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "true",
+                        "description": "is it for listing",
+                        "name": "list",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "folder/ or file",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "418": {
+                        "description": "not a list",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/send": {
+            "get": {
+                "description": "Send request to api.",
+                "consumes": [
+                    "*/*"
+                ],
+                "summary": "Send request",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

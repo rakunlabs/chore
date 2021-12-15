@@ -1,0 +1,193 @@
+basePath: /api/v1
+info:
+  contact: {}
+  description: storage and send API
+paths:
+  /kv/{type}:
+    delete:
+      description: Delete key
+      parameters:
+      - description: type
+        enum:
+        - templates
+        - auths
+        - binds
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: key of the file
+        in: query
+        name: key
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete key
+    get:
+      description: Get the value of the key
+      parameters:
+      - description: type
+        enum:
+        - templates
+        - auths
+        - binds
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: key of the file
+        in: query
+        name: key
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get Specific key
+    post:
+      consumes:
+      - text/plain
+      description: Set a key with value
+      parameters:
+      - description: type
+        enum:
+        - templates
+        - auths
+        - binds
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: key of the file
+        in: query
+        name: key
+        type: string
+      - description: any value to store
+        in: body
+        name: payload
+        schema:
+          type: primitive
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "406":
+          description: Not Acceptable
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: New key
+    put:
+      consumes:
+      - text/plain
+      description: Set a key with value
+      parameters:
+      - description: type
+        enum:
+        - templates
+        - auths
+        - binds
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: key of the file
+        in: query
+        name: key
+        type: string
+      - description: any value to store
+        in: body
+        name: payload
+        schema:
+          type: primitive
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: New key or replace key
+  /kv/{type}/:
+    get:
+      description: Get list of keys
+      parameters:
+      - description: type
+        enum:
+        - templates
+        - auths
+        - binds
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: key of the file
+        in: query
+        name: key
+        type: string
+      - default: "true"
+        description: is it for listing
+        in: query
+        name: list
+        required: true
+        type: string
+      responses:
+        "200":
+          description: folder/ or file
+          schema:
+            items:
+              type: string
+            type: array
+        "418":
+          description: not a list
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get List
+  /send:
+    get:
+      consumes:
+      - '*/*'
+      description: Send request to api.
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Send request
+swagger: "2.0"

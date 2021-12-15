@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* stylelint-disable-next-line no-invalid-position-at-import-rule */
+@import 'codemirror/lib/codemirror.css';
+
+html,
+body {
+  @apply h-full w-full;
+
+  /* stylelint-disable-next-line max-line-length */
+  font-family: BlinkMacSystemFont, -apple-system, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
