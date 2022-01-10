@@ -26,9 +26,11 @@ PLATFORMS="${PLATFORMS:-linux:amd64}"
 
 # set docker
 DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME:-${APPNAME}}
-export GO_IMAGE=${GO_IMAGE:-golang:1.16.11}
+export GO_IMAGE=${GO_IMAGE:-golang:1.17.6}
 export BASE_IMAGE=${BASE_IMAGE:-alpine:3.15.0}
 export IMAGE_TAG=${VERSION}
+# use this for go build
+SSH_KEY=${HOME}/.ssh/id_rsa
 
 function usage() {
     cat - <<EOF
@@ -46,6 +48,10 @@ OPTIONS:
     Run for dev
   --swag
     Build swagger docs
+  --build-front
+    Build frontend
+  --build-all
+    Build frontend and backend
   --build
     Build application to various platforms
     --pack
@@ -133,6 +139,14 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
     --build)
         BUILD="Y"
         ;;
+    --build-front)
+        BUILD_FRONT="Y"
+        ;;
+    --build-all)
+        SWAG="Y"
+        BUILD="Y"
+        BUILD_FRONT="Y"
+        ;;
     --install)
         AUTO_INSTALL="Y"
         ;;
@@ -166,8 +180,6 @@ if [[ "${DOCKER_BUILD}" == "Y" ]]; then
 
     export SSH_KEY_CICD_64="$(cat ${SSH_KEY} | base64 | tr -d '\n')"
     # build command
-    # sed 's@DEV-BUILD-EDIT@&\nWORKDIR /\nRUN --mount=type=ssh git config --global url."https://".insteadOf git:// \&\& \\\n git config --global http.sslVerify false \&\& \\\n mkdir -p -m 0600 ~/.ssh \&\& \\\n ssh-keyscan -H gitlab.test.igdcs.com >> ~/.ssh/known_hosts \&\& \\\n git clone git\@gitlab.test.igdcs.com:finops/devops/infra-certificates.git@g' Dockerfile | \
-    # sed -e 's@COPY _infra-certificates/certs@COPY --from=builder /infra-certificates/certs@g' | \
     cat Dockerfile | \
     cat <(echo '# syntax=docker/dockerfile:experimental') - | \
     DOCKER_BUILDKIT=1 docker build \
@@ -202,12 +214,27 @@ if [[ "${TEST}" == "Y" ]]; then
     [[ "${SHOW_HTML}" == "Y" ]] && go tool cover -html=${OUTPUT_FOLDER}/cover.out
 fi
 
+# Swag documents
+if [[ "${SWAG}" == "Y" ]]; then
+    swag init -g router.go --dir internal/server --output docs/
+fi
+
+# Build frontend
+if [[ "${BUILD_FRONT}" == "Y" ]]; then
+    # under subshell
+    (
+        cd _web
+        pnpm install --prefer-offline
+        pnpm build
+        cp -a dist/* ../internal/server/dist/
+    )
+fi
+
 # Build packages
 if [[ "${BUILD}" == "Y" ]]; then
     set -e
     mkdir -p ${OUTPUT_FOLDER}
     pre_build
-    [[ $? != 0 ]]; exit 5
     IFS=',' read -ra PLATFORMS_ARR <<< $(echo ${PLATFORMS} | tr -d ' ')
     for PLATFORM_A in "${PLATFORMS_ARR[@]}"; do
         PLATFORM=$(echo ${PLATFORM_A} | cut -d ':' -f 1)
@@ -218,10 +245,6 @@ if [[ "${BUILD}" == "Y" ]]; then
         done
     done
     set +e
-fi
-
-if [[ "${SWAG}" == "Y" ]]; then
-    swag init -g router.go --dir internal/server --output docs/
 fi
 
 # run

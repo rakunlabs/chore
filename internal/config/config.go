@@ -10,6 +10,7 @@ var Application = struct {
 	Port       string
 	LogLevel   string
 	AppName    string
+	StoreName  string
 	AppVersion string
 }{
 	Host:       "0.0.0.0",

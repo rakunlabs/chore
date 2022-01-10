@@ -1,17 +1,10 @@
 package server
 
 import (
-	"embed"
-	"net/http"
-
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/handler"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
 )
-
-//go:embed dist/*
-var embedWeb embed.FS
 
 // @description storage and send API
 // @BasePath /api/v1
@@ -34,10 +27,4 @@ func setHandlers(app *fiber.App) {
 	handler.RouterKV(v1KVGroup, "/templates")
 	handler.RouterKV(v1KVGroup, "/auths")
 	handler.RouterKV(v1KVGroup, "/binds")
-}
-
-func setFileHandler(app *fiber.App) {
-	app.Use("/", filesystem.New(filesystem.Config{
-		Root: http.FS(embedWeb),
-	}))
 }

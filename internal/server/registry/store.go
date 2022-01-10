@@ -6,10 +6,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/store/inf"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"
 )
 
 type AppStore struct {
 	StoreHandler inf.CRUD
+	Template     *translate.Template
+	Client       *request.Client
 	App          *fiber.App
 }
 

@@ -29,17 +29,13 @@ RUN go mod download
 
 COPY . .
 ARG IMAGE_TAG
-RUN ./build.sh --build
+RUN ./build.sh --build-all
 
 ######################### IMAGE
 FROM $BASE_IMAGE
 
 COPY --from=builder /workspace/_out/linux/chore /chore
 COPY --from=builder /infra-certificates/certs /etc/ssl/certs
-
-# Add healthcheck
-# HEALTHCHECK --interval=30s --start-period=5s --timeout=2s \
-#     CMD /turna api --ping || exit 1
 
 # Run the binary
 ENTRYPOINT ["/chore"]

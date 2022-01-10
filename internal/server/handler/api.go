@@ -29,7 +29,7 @@ func RouterKV(f fiber.Router, v string) {
 // @Summary Get List
 // @Description Get list of keys
 // @Param type path string true "type" Enums(templates, auths, binds)
-// @Param key  query string false "key of the file"
+// @Param key  query string false "key of the entry"
 // @Param list query string true "is it for listing" default(true)
 // @Router /kv/{type}/ [get]
 // @Success 200 {array} string "folder/ or file"
@@ -46,9 +46,9 @@ func apiList(c *fiber.Ctx) error {
 		search = path.Join(search, key)
 	}
 
-	crud := c.Locals("storeHandler").(*inf.CRUD)
+	crud := c.Locals("storeHandler").(inf.CRUD)
 
-	list, errCrud := (*crud).List(search)
+	list, errCrud := crud.List(search)
 	if errCrud != nil {
 		return fiber.NewError(errCrud.GetCode(), errCrud.Error())
 	}
@@ -64,20 +64,20 @@ func apiList(c *fiber.Ctx) error {
 // @Summary Get Specific key
 // @Description Get the value of the key
 // @Param type path string true "type" Enums(templates, auths, binds)
-// @Param key query string false "key of the file"
+// @Param key query string false "key of the entry"
 // @Router /kv/{type} [get]
 // @Success 200 {string} string
 // @failure 404 {string} string
 // @failure 500 {string} string
 func apiGet(c *fiber.Ctx) error {
-	crud := c.Locals("storeHandler").(*inf.CRUD)
+	crud := c.Locals("storeHandler").(inf.CRUD)
 
 	search := c.Locals("type").(string)
 	if key := c.Query("key"); key != "" {
 		search = path.Join(search, key)
 	}
 
-	data, errCrud := (*crud).Get(search)
+	data, errCrud := crud.Get(search)
 	if errCrud != nil {
 		return fiber.NewError(errCrud.GetCode(), errCrud.Error())
 	}
@@ -93,21 +93,21 @@ func apiGet(c *fiber.Ctx) error {
 // @Summary New key or replace key
 // @Description Set a key with value
 // @Param type path string true "type" Enums(templates, auths, binds)
-// @Param key query string false "key of the file"
+// @Param key query string false "key of the entry"
 // @Accept text/plain
 // @Param payload body string false "any value to store"
 // @Router /kv/{type} [put]
 // @Success 200 {object} string
 // @failure 500 {string} string
 func apiPut(c *fiber.Ctx) error {
-	crud := c.Locals("storeHandler").(*inf.CRUD)
+	crud := c.Locals("storeHandler").(inf.CRUD)
 
 	search := c.Locals("type").(string)
 	if key := c.Query("key"); key != "" {
 		search = path.Join(search, key)
 	}
 
-	errCrud := (*crud).Put(search, c.Body())
+	errCrud := crud.Put(search, c.Body())
 	if errCrud != nil {
 		return fiber.NewError(errCrud.GetCode(), errCrud.Error())
 	}
@@ -118,7 +118,7 @@ func apiPut(c *fiber.Ctx) error {
 // @Summary New key
 // @Description Set a key with value
 // @Param type path string true "type" Enums(templates, auths, binds)
-// @Param key query string false "key of the file"
+// @Param key query string false "key of the entry"
 // @Accept text/plain
 // @Param payload body string false "any value to store"
 // @Router /kv/{type} [post]
@@ -127,14 +127,14 @@ func apiPut(c *fiber.Ctx) error {
 // @Success 409 {string} string
 // @failure 500 {string} string
 func apiPost(c *fiber.Ctx) error {
-	crud := c.Locals("storeHandler").(*inf.CRUD)
+	crud := c.Locals("storeHandler").(inf.CRUD)
 
 	search := c.Locals("type").(string)
 	if key := c.Query("key"); key != "" {
 		search = path.Join(search, key)
 	}
 
-	errCrud := (*crud).Post(search, c.Body())
+	errCrud := crud.Post(search, c.Body())
 	if errCrud != nil {
 		return fiber.NewError(errCrud.GetCode(), errCrud.Error())
 	}
@@ -145,20 +145,20 @@ func apiPost(c *fiber.Ctx) error {
 // @Summary Delete key
 // @Description Delete key
 // @Param type path string true "type" Enums(templates, auths, binds)
-// @Param key query string false "key of the file"
+// @Param key query string false "key of the entry"
 // @Router /kv/{type} [delete]
 // @Success 204 {object} map[string]interface{}
 // @failure 404 {string} string
 // @failure 500 {string} string
 func apiDelete(c *fiber.Ctx) error {
-	crud := c.Locals("storeHandler").(*inf.CRUD)
+	crud := c.Locals("storeHandler").(inf.CRUD)
 
 	search := c.Locals("type").(string)
 	if key := c.Query("key"); key != "" {
 		search = path.Join(search, key)
 	}
 
-	errCrud := (*crud).Delete(search)
+	errCrud := crud.Delete(search)
 	if errCrud != nil {
 		return fiber.NewError(errCrud.GetCode(), errCrud.Error())
 	}

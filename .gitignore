@@ -1,2 +1,4 @@
+/_out
+
 /internal/server/dist/*
 !/internal/server/dist/.gitkeep

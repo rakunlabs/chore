@@ -14,14 +14,12 @@ type TemplateExecuter interface {
 	Clone() (TemplateExecuter, error)
 }
 
-var GlobalTemplate *Template
-
 type Template struct {
-	TXT TemplateExecuter
+	x TemplateExecuter
 }
 
-func (t Template) Ext(v map[string]interface{}, file string, funcList []string) ([]byte, error) {
-	templateEngine, err := t.TXT.Clone()
+func (t Template) Ext(v map[string]interface{}, file string) ([]byte, error) {
+	templateEngine, err := t.x.Clone()
 	if err != nil {
 		return nil, fmt.Errorf("clone text template error: %w", err)
 	}
@@ -36,10 +34,6 @@ func (t Template) Ext(v map[string]interface{}, file string, funcList []string) 
 
 func NewTemplate() *Template {
 	return &Template{
-		TXT: &TextAdapter{textTemplate.New("txt").Funcs(sprig.TxtFuncMap())},
+		x: &TextAdapter{textTemplate.New("txt").Funcs(sprig.TxtFuncMap())},
 	}
-}
-
-func SetGlobalTemplate(t *Template) {
-	GlobalTemplate = t
 }

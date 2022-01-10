@@ -69,7 +69,7 @@ func runRoot(ctxParent context.Context) {
 	}()
 
 	// get store handler
-	storageHandler, err := kv.NewConsul(ctx, os.Getenv("APP_NAME"))
+	storageHandler, err := kv.NewConsul(ctx, config.GetStoreName())
 	if err == nil {
 		// server wait
 		server.Serve("main", storageHandler)

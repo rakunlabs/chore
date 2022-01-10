@@ -56,7 +56,7 @@ func (c *Consul) Post(key string, value []byte) inf.ErrCrud {
 		return c.Put(key, value)
 	}
 
-	checkPath := path.Join(c.basePath, key)
+	checkPath := key
 	if checkPath[0] == '/' {
 		checkPath = checkPath[1:]
 	}
@@ -67,17 +67,17 @@ func (c *Consul) Post(key string, value []byte) inf.ErrCrud {
 		}
 	}
 
-	return c.Put(key, value)
+	return c.Put(path.Join(c.basePath, key), value)
 }
 
 func (c *Consul) Get(key string) ([][]byte, inf.ErrCrud) {
-	pairs, _, err := c.kv.List(c.basePath+key, c.queryOptions)
+	pairs, _, err := c.kv.List(path.Join(c.basePath, key), c.queryOptions)
 	if err != nil {
 		return nil, inf.ErrOperation{Err: fmt.Errorf("consul get failed %w", err), Code: 500}
 	}
 
 	if pairs == nil {
-		return nil, inf.ErrOperation{Err: fmt.Errorf("consul cannot find"), Code: 404}
+		return nil, inf.ErrOperation{Err: fmt.Errorf("consul cannot find %s", key), Code: 404}
 	}
 
 	collectValues := make([][]byte, 0, len(pairs))
@@ -101,6 +101,10 @@ func (c *Consul) List(key string) ([]string, inf.ErrCrud) {
 		return nil, inf.ErrOperation{Err: fmt.Errorf("consul cannot find %s", searchPath), Code: 404}
 	}
 
+	for i := range pairs {
+		pairs[i] = strings.TrimLeft(pairs[i], c.basePath)
+	}
+
 	return pairs, nil
 }
 
@@ -121,7 +125,7 @@ func (c *Consul) Delete(key string) inf.ErrCrud {
 		return inf.ErrOperation{Err: fmt.Errorf("consul delete %q not found", key), Code: 404}
 	}
 
-	checkPath := path.Join(c.basePath, key)
+	checkPath := key
 	if checkPath[0] == '/' {
 		checkPath = checkPath[1:]
 	}
@@ -138,7 +142,7 @@ func (c *Consul) Delete(key string) inf.ErrCrud {
 		return inf.ErrOperation{Err: fmt.Errorf("consul delete %q not found", key), Code: 404}
 	}
 
-	_, err := c.kv.Delete(checkPath, c.writeOptions)
+	_, err := c.kv.Delete(path.Join(c.basePath, checkPath), c.writeOptions)
 	if err != nil {
 		return inf.ErrOperation{Err: fmt.Errorf("consul delete failed %w", err), Code: 500}
 	}

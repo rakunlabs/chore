@@ -1,17 +1,59 @@
-<script>
-  import Table from "../ui/Table.svelte";
+<script lang="ts">
+  import { getItem, setItem } from "@/helper/api";
+  import { b64ToUtf8 } from "@/helper/codec";
+  import YAML from "yaml";
+
+  import { onMount } from "svelte";
+
+  import Table from "@/components/ui/Table.svelte";
+  import TableAdd from "@/components/ui/TableAdd.svelte";
 
   const head = ["id", "authentication", "template"];
 
-  const data = [
-    {
-      id: "bind1",
-      authentication: "test1",
-      template: "temp",
-    },
-  ];
+  let data = [] as Array<object>;
+
+  const getData = async () => {
+    try {
+      const respData = await getItem("binds", "");
+      data = (respData.data as Array<string>).map((v) => {
+        return YAML.parse(b64ToUtf8(v));
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  onMount(() => {
+    getData();
+  });
+
+  let addToggle = false;
+  const addNewItem = () => {
+    addToggle = !addToggle;
+  };
+
+  const saveData = async (id: string, v: string) => {
+    try {
+      await setItem("binds", id, v);
+    } catch (error) {
+      console.log("error");
+    }
+  };
 </script>
 
-<span>Bind authentication and template</span>
+<div class="pb-1 flex justify-between items-center">
+  <span>Bind authentication and template</span>
+
+  <button
+    on:click|stopPropagation={addNewItem}
+    class="w-20 bg-transparent border-2 border-gray-500 text-gray-500 text-sm hover:bg-gray-500 hover:text-gray-100"
+  >
+    Add
+  </button>
+</div>
+
+{#if addToggle}
+  <TableAdd {head} call={saveData} />
+{/if}
 
 <Table {head} {data} />

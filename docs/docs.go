@@ -42,7 +42,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "key of the file",
+                        "description": "key of the entry",
                         "name": "key",
                         "in": "query"
                     }
@@ -89,7 +89,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "key of the file",
+                        "description": "key of the entry",
                         "name": "key",
                         "in": "query"
                     },
@@ -138,7 +138,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "key of the file",
+                        "description": "key of the entry",
                         "name": "key",
                         "in": "query"
                     },
@@ -196,7 +196,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "key of the file",
+                        "description": "key of the entry",
                         "name": "key",
                         "in": "query"
                     }
@@ -243,7 +243,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "key of the file",
+                        "description": "key of the entry",
                         "name": "key",
                         "in": "query"
                     },
@@ -282,12 +282,28 @@ var doc = `{
             }
         },
         "/send": {
-            "get": {
+            "post": {
                 "description": "Send request to api.",
                 "consumes": [
                     "*/*"
                 ],
                 "summary": "Send request",
+                "parameters": [
+                    {
+                        "description": "values",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "primitive"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "key of the binds entry",
+                        "name": "key",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",

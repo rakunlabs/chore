@@ -16,7 +16,7 @@ paths:
         name: type
         required: true
         type: string
-      - description: key of the file
+      - description: key of the entry
         in: query
         name: key
         type: string
@@ -47,7 +47,7 @@ paths:
         name: type
         required: true
         type: string
-      - description: key of the file
+      - description: key of the entry
         in: query
         name: key
         type: string
@@ -79,7 +79,7 @@ paths:
         name: type
         required: true
         type: string
-      - description: key of the file
+      - description: key of the entry
         in: query
         name: key
         type: string
@@ -120,7 +120,7 @@ paths:
         name: type
         required: true
         type: string
-      - description: key of the file
+      - description: key of the entry
         in: query
         name: key
         type: string
@@ -152,7 +152,7 @@ paths:
         name: type
         required: true
         type: string
-      - description: key of the file
+      - description: key of the entry
         in: query
         name: key
         type: string
@@ -179,10 +179,20 @@ paths:
             type: string
       summary: Get List
   /send:
-    get:
+    post:
       consumes:
       - '*/*'
       description: Send request to api.
+      parameters:
+      - description: values
+        in: body
+        name: payload
+        schema:
+          type: primitive
+      - description: key of the binds entry
+        in: query
+        name: key
+        type: string
       responses:
         "201":
           description: Created
