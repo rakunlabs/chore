@@ -9,3 +9,4 @@ variables:
   BASE_IMAGE_: "alpine:3.15.0"
   AUTO_DEPLOY: "N"
   MAIN_BRANCH_IMAGE: "N"
+  CI_DEFAULT_BRANCH: "main"
