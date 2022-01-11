@@ -66,7 +66,7 @@ func TestClient_Send(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := tt.server(t)
-			if err := c.Send(context.TODO(), srv.URL, tt.args.method, tt.args.payload); (err != nil) != tt.wantErr {
+			if _, err := c.Send(context.TODO(), srv.URL, tt.args.method, nil, tt.args.payload); (err != nil) != tt.wantErr {
 				t.Errorf("Client.Send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

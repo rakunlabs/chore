@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,8 +11,15 @@ import (
 func info(w http.ResponseWriter, req *http.Request) {
 	body, _ := io.ReadAll(req.Body)
 
-	log.Printf("body: [%s]", body)
-	log.Printf("method: [%s]", req.Method)
+	printIt := "\n"
+
+	printIt += fmt.Sprintf("body: [%s]\n", body)
+	printIt += fmt.Sprintf("method: [%s]\n", req.Method)
+	printIt += fmt.Sprintf("headers: [%v]", req.Header)
+
+	log.Print(printIt)
+
+	_, _ = w.Write([]byte(printIt))
 }
 
 func main() {

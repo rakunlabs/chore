@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/store/inf"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
@@ -15,6 +16,7 @@ type AppStore struct {
 	Template     *translate.Template
 	Client       *request.Client
 	App          *fiber.App
+	DB           *gorm.DB
 }
 
 type Registry struct {
@@ -29,12 +31,12 @@ func (r *Registry) Get(name string) *AppStore {
 	return r.apps[name]
 }
 
-func (r *Registry) Iter(fn func(*fiber.App)) {
+func (r *Registry) Iter(fn func(*AppStore)) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
 	for k := range r.apps {
-		fn(r.apps[k].App)
+		fn(r.apps[k])
 	}
 }
 

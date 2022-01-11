@@ -28,6 +28,7 @@ func Serve(name string, storeHandler inf.CRUD) {
 		Template:     translate.NewTemplate(),
 		Client:       request.NewClient(),
 		App:          app,
+		// DB:           db.OpenConnection(db.TypePostgres, &db.ConnConfig{}),
 	}
 
 	registry.GetRegistry().Set(name, appStore)
@@ -36,6 +37,7 @@ func Serve(name string, storeHandler inf.CRUD) {
 		c.Locals("storeHandler", appStore.StoreHandler)
 		c.Locals("templateEngine", appStore.Template)
 		c.Locals("client", appStore.Client)
+		c.Locals("database", appStore.DB)
 
 		return c.Next() //nolint:wrapcheck // not need
 	})
@@ -53,8 +55,8 @@ func Serve(name string, storeHandler inf.CRUD) {
 }
 
 func Shutdown() {
-	registry.GetRegistry().Iter(func(app *fiber.App) {
-		if err := app.Shutdown(); err != nil {
+	registry.GetRegistry().Iter(func(reg *registry.AppStore) {
+		if err := reg.App.Shutdown(); err != nil {
 			log.Logger.Error().Err(err).Msg("failed to shutdown app")
 		}
 	})

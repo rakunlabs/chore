@@ -1,0 +1,11 @@
+include:
+  - project: FinOps/devops/cicd/runner
+    ref: poc
+    file: finops_service_application_ci.yml
+
+variables:
+  DOCKER_IMAGE_NAME: "chore"
+  GO_IMAGE_: "golang:1.17.6"
+  BASE_IMAGE_: "alpine:3.15.0"
+  AUTO_DEPLOY: "N"
+  MAIN_BRANCH_IMAGE: "N"

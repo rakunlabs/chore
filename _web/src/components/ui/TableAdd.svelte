@@ -18,7 +18,7 @@
   <form bind:this={form}>
     <div class="form-group mb-6">
       {#each head as h}
-        <input type="text" name={h} placeholder={h} />
+        <input type="text" autocomplete="off" name={h} placeholder={h} />
       {/each}
     </div>
     <button type="button" on:click|preventDefault|stopPropagation={save}>

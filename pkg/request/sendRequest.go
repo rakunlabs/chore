@@ -28,21 +28,26 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) Send(ctx context.Context, URL, method string, payload []byte) error {
+func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]string, payload []byte) ([]byte, error) {
 	req, err := c.Request(ctx, URL, method, payload)
 	if err != nil {
-		return err //nolint:wraperr // not need here
+		return nil, err //nolint:wraperr // not need here
+	}
+
+	for k, v := range headers {
+		req.Header.Add(k, v)
 	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request [%s]: %w", URL, err)
+		return nil, fmt.Errorf("failed to send request [%s]: %w", URL, err)
 	}
 
-	_, _ = io.Copy(io.Discard, resp.Body)
+	// _, _ = io.Copy(io.Discard, resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
 
-	return nil
+	return body, err
 }
 
 func NewRequest(ctx context.Context, URL, method string, payload []byte) (*http.Request, error) {

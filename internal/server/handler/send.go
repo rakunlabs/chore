@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"path"
@@ -30,7 +31,10 @@ func Send(c *fiber.Ctx) error {
 	}
 
 	var values map[string]interface{}
-	yaml.Unmarshal(c.Body(), &values)
+
+	if err := yaml.Unmarshal(c.Body(), &values); err != nil {
+		return fiber.NewError(http.StatusInternalServerError, err.Error())
+	}
 
 	datas, errCrud := crud.Get(search)
 	if errCrud != nil {
@@ -74,13 +78,24 @@ func Send(c *fiber.Ctx) error {
 			}
 
 			for authIndex := range authentications {
-				if err := client.Send(
+				var headers map[string]string
+
+				headersString := authentications[authIndex]["headers"].(string)
+
+				if err := yaml.Unmarshal([]byte(headersString), &headers); err != nil {
+					return fiber.NewError(http.StatusInternalServerError, err.Error())
+				}
+
+				if data, err := client.Send(
 					c.Context(),
 					authentications[authIndex]["URL"].(string),
 					authentications[authIndex]["method"].(string),
+					headers,
 					payload,
 				); err != nil {
 					return fiber.NewError(http.StatusInternalServerError, err.Error())
+				} else {
+					_ = c.SendStream(bytes.NewReader(data))
 				}
 			}
 		}

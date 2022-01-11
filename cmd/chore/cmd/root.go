@@ -19,7 +19,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:     "chore",
 	Short:   "custom request sender",
-	Long:    "custom send request with templates",
+	Long:    config.Banner("custom send request with templates"),
 	Version: config.Application.AppVersion,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		config.SetLogLevel(config.Application.LogLevel)
