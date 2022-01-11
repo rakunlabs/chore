@@ -20,7 +20,7 @@ func setHandlers(app *fiber.App) {
 	handler.RouterSwagger(v1)
 
 	// send new request
-	v1.Post("/send", handler.Send)
+	v1.Post("/send/:key/*", handler.Send)
 
 	// KV API
 	v1KVGroup := v1.Group("/kv")

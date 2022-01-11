@@ -45,7 +45,7 @@ When request is getting by `/send` endpoint, server will check auth and template
 
 <details><summary>Test Server</summary>
 
-Open test server with `go run _example/testServer/main.go`.  
+Open test server with `go run _example/testServer/main.go`.
 
 Add an auth entry to show this server.
 

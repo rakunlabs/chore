@@ -10,12 +10,15 @@ import (
 
 func info(w http.ResponseWriter, req *http.Request) {
 	body, _ := io.ReadAll(req.Body)
+	_ = req.Body.Close()
 
 	printIt := "\n"
 
+	printIt += fmt.Sprintf("url: [%s]\n", req.URL)
 	printIt += fmt.Sprintf("body: [%s]\n", body)
 	printIt += fmt.Sprintf("method: [%s]\n", req.Method)
-	printIt += fmt.Sprintf("headers: [%v]", req.Header)
+	printIt += fmt.Sprintf("headers: [%v]\n", req.Header)
+	printIt += fmt.Sprintf("query: [%v]\n", req.URL.Query())
 
 	log.Print(printIt)
 

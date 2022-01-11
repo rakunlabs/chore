@@ -18,17 +18,29 @@ import (
 // @Summary Send request
 // @Description Send request to api.
 // @Accept */*
+// @Param type path string true "type" "key of the binds entry"
 // @Param payload body string false "values"
-// @Param key query string false "key of the binds entry"
-// @Router /send [post]
+// @Router /send/{key} [post]
 // @Success 201 {object} map[string]interface{}
 func Send(c *fiber.Ctx) error {
 	crud := c.Locals("storeHandler").(inf.CRUD)
 
 	search := "binds"
-	if key := c.Query("key"); key != "" {
-		search = path.Join(search, key)
+
+	key := c.Params("key")
+	params := c.Params("*")
+
+	// log.Debug().Msg("Key" + key)
+	// log.Debug().Msg("Params" + params)
+	// log.Debug().Msgf("%s", c.Request().URI().QueryString())
+
+	// return nil
+
+	if key == "" {
+		return fiber.NewError(fiber.ErrBadRequest.Code, "bind key not found")
 	}
+
+	search = path.Join(search, key)
 
 	var values map[string]interface{}
 
@@ -86,9 +98,14 @@ func Send(c *fiber.Ctx) error {
 					return fiber.NewError(http.StatusInternalServerError, err.Error())
 				}
 
+				queryString := string(c.Request().URI().QueryString())
+				if queryString != "" {
+					queryString = "?" + queryString
+				}
+
 				if data, err := client.Send(
 					c.Context(),
-					authentications[authIndex]["URL"].(string),
+					authentications[authIndex]["URL"].(string)+"/"+params+queryString,
 					authentications[authIndex]["method"].(string),
 					headers,
 					payload,
