@@ -6,4 +6,16 @@ const b64ToUtf8 = ( s: string ) => {
   return decodeURIComponent(escape(atob( s )));
 };
 
-export { utf8ToB64, b64ToUtf8 };
+const formToObject = (form: HTMLFormElement) => {
+  const formData = new FormData(form);
+  const data: Record<string, any> = {};
+  for (const field of formData) {
+    const [key, value] = field;
+    data[key] = value;
+  }
+
+  return data;
+  // return JSON.stringify(data);
+};
+
+export { utf8ToB64, b64ToUtf8, formToObject };

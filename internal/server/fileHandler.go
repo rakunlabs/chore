@@ -16,7 +16,7 @@ var embedWeb embed.FS
 func setFileHandler(app *fiber.App) {
 	embedWebFolder, err := fs.Sub(embedWeb, "dist")
 	if err != nil {
-		log.Logger.Error().Err(err).Msg("cannot go to sub folder [dist]")
+		log.Error().Err(err).Msg("cannot go to sub folder [dist]")
 	}
 
 	app.Use("/", filesystem.New(filesystem.Config{

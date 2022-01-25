@@ -11,6 +11,7 @@
   import Templates from "./pages/Templates.svelte";
   import Binds from "./pages/Binds.svelte";
   import Main from "./pages/Main.svelte";
+  import { logout } from "@/helper/login";
 
   const routes = new Map<string | RegExp, typeof SvelteComponent>();
   routes.set(new RegExp("/auths(/(.*))*"), Auths);
@@ -25,6 +26,12 @@
   const select = (event: Event) => {
     if (event.target instanceof HTMLButtonElement) {
       const side = event.target.dataset["side"];
+
+      if (side == "logout") {
+        logout();
+        push("/login");
+        return;
+      }
 
       // if same as before don't run it
       if (side != $storeData.sidebar) {

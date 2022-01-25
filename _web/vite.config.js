@@ -6,7 +6,12 @@ import preprocess from "svelte-preprocess";
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "./",
-  plugins: [svelte({ preprocess: preprocess({ name: "scss" }) })],
+  plugins: [svelte({
+    preprocess: preprocess({ name: "scss" }),
+    compilerOptions: {
+      dev: process.env.NODE_ENV == "production" ? false : true,
+    },
+  })],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
@@ -15,6 +20,7 @@ export default defineConfig({
   build: {
     sourcemap: process.env.NODE_ENV == "production" ? false : true,
   },
+  mode: process.env.NODE_ENV == "production" ? "" : "development",
   server: {
     proxy: {
       "/api": {

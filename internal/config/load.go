@@ -2,14 +2,14 @@ package config
 
 import "os"
 
-func GetStoreName() string {
+func GetLoadName() string {
 	envAppName := os.Getenv("APP_NAME")
 
 	if envAppName == "" {
-		Application.StoreName = Application.AppName
+		LoadName = AppName
 	} else {
-		Application.StoreName = envAppName
+		LoadName = envAppName
 	}
 
-	return Application.StoreName
+	return LoadName
 }

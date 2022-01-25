@@ -14,7 +14,7 @@ func main() {
 	config.InitializeLogger()
 
 	if err := cmd.Execute(context.Background()); err != nil {
-		log.Logger.Error().Err(err).Msg("failed to execute command")
+		log.Error().Err(err).Msg("failed to execute command")
 		os.Exit(1)
 	}
 }

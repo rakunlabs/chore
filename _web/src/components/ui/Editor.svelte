@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import CodeMirror from "codemirror";
-  import { setItem } from "@/helper/api";
+  import { requestSender } from "@/helper/api";
+  import { utf8ToB64 } from "@/helper/codec";
+  // import { setItem } from "@/helper/api";
 
   let code: HTMLElement;
   export let title = "title";
@@ -42,7 +44,16 @@
 
   const save = () => {
     try {
-      setItem(area, title, editor.getValue());
+      requestSender(
+        "template",
+        null,
+        "PATCH",
+        {
+          name: title,
+          content: utf8ToB64(editor.getValue()),
+        },
+        true
+      );
       toggleReadOnly(true);
     } catch (error) {
       console.log(error);

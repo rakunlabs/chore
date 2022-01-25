@@ -1,14 +1,15 @@
 <script lang="ts">
   import Bread from "@/components/ui/Bread.svelte";
   import List from "@/components/ui/List.svelte";
-  import { getItem, getList } from "@/helper/api";
   import Editor from "@/components/ui/Editor.svelte";
   import Loading from "@/components/ui/Loading.svelte";
   import { b64ToUtf8 } from "@/helper/codec";
+  import { requestSender } from "@/helper/api";
+  import type { itemType } from "@/models/template";
 
   export let params = {} as Record<string, string>;
 
-  let items: Array<string> = [];
+  let items: Array<itemType> = [];
   let view = "loading";
 
   // view
@@ -17,21 +18,28 @@
 
   let input = params.input;
 
-  const reg = /^\/templates/i;
+  const reg = /^\/templates[/]?/i;
 
   const getInfo = async (v: string) => {
     view = "loading";
 
     v = v.replace(reg, "");
-    if (!v) {
-      v = "/";
+    if (v == "/") {
+      v = "";
     }
 
-    if (v === undefined || v[v.length - 1] == "/") {
+    if (!v || v[v.length - 1] == "/") {
       input = params.input;
       try {
-        const l = await getList("templates", v);
-        items = l ? l.data : [];
+        const l = await requestSender(
+          "templates",
+          { folder: v },
+          "GET",
+          null,
+          true
+        );
+        // console.log(l);
+        items = l ? l.data.data : [];
       } catch (error) {
         items = [];
       }
@@ -39,7 +47,10 @@
     } else {
       try {
         title = v;
-        data = b64ToUtf8((await getItem("templates", v)).data[0]);
+        data = b64ToUtf8(
+          (await requestSender("template", { name: v }, "GET", null, true)).data
+            .data.content
+        );
       } catch (error) {
         data = null;
       }
@@ -69,7 +80,7 @@
 
   <div class="pt-1 h-full">
     {#if view == "list"}
-      <List {items} {input} />
+      <List {items} prefix="/templates" />
     {:else if view == "data"}
       <Editor {data} {title} area="templates" />
     {:else if view == "add"}

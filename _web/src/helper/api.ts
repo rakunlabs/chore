@@ -1,78 +1,91 @@
 import axios, { Method } from "axios";
-import { trimLeft } from "./misc";
+import path from "path-browserify";
+import { tokenGet } from "./token";
 
-const requestSender = async (area: string, key: string, params: object, method: Method, data: any = undefined) => {
+const requestSender = async (area: string, params: object, method: Method, data: any = undefined, useToken = false) => {
+  let headers:Record<string, any> = {};
+
+  if (useToken) {
+    try {
+      const [token] = tokenGet();
+      headers = { Authorization: `Bearer ${token}` };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   const response = await axios({
     method: method,
-    url: "./api/v1/kv/" + area,
+    url: path.join("./api/v1/", area),
     params: params,
     data: data,
+    headers: headers,
   });
 
   return response;
 };
 
-const fixString = (area: string, key: string) => {
-  if (area) {
-    area = trimLeft(area);
-  }
-  if (key) {
-    key = trimLeft(key);
-  }
+// const fixString = (area: string, key: string) => {
+//   if (area) {
+//     area = trimLeft(area);
+//   }
+//   if (key) {
+//     key = trimLeft(key);
+//   }
 
-  return [area, key];
-};
+//   return [area, key];
+// };
 
-const getList = async (area: string, key: string) => {
-  [area, key] = fixString(area, key);
+// const getList = async (area: string, key: string) => {
+//   [area, key] = fixString(area, key);
 
-  const params = {
-    list: true,
-    key: key,
-  };
+//   const params = {
+//     list: true,
+//     key: key,
+//   };
 
-  return requestSender(area, key, params, "GET");
-};
+//   return requestSender(area, key, params, "GET");
+// };
 
-const getItem = async (area: string, key: string) => {
-  [area, key] = fixString(area, key);
+// const getItem = async (area: string, key: string) => {
+//   [area, key] = fixString(area, key);
 
-  const params = {
-    key: key,
-  };
+//   const params = {
+//     key: key,
+//   };
 
-  return requestSender(area, key, params, "GET");
-};
+//   return requestSender(area, key, params, "GET");
+// };
 
-const setItem = async (area: string, key: string, value: any) => {
-  [area, key] = fixString(area, key);
+// const setItem = async (area: string, key: string, value: any) => {
+//   [area, key] = fixString(area, key);
 
-  const params = {
-    key: key,
-  };
+//   const params = {
+//     key: key,
+//   };
 
-  return requestSender(area, key, params, "PUT", value);
-};
+//   return requestSender(area, key, params, "PUT", value);
+// };
 
-const postItem = async (area: string, key: string, value: any) => {
-  [area, key] = fixString(area, key);
+// const postItem = async (area: string, key: string, value: any) => {
+//   [area, key] = fixString(area, key);
 
-  const params = {
-    key: key,
-  };
+//   const params = {
+//     key: key,
+//   };
 
-  return requestSender(area, key, params, "POST", value);
-};
+//   return requestSender(area, key, params, "POST", value);
+// };
 
 
-const deleteItem = async (area: string, key: string) => {
-  [area, key] = fixString(area, key);
+// const deleteItem = async (area: string, key: string) => {
+//   [area, key] = fixString(area, key);
 
-  const params = {
-    key: key,
-  };
+//   const params = {
+//     key: key,
+//   };
 
-  return requestSender(area, key, params, "DELETE");
-};
+//   return requestSender(area, key, params, "DELETE");
+// };
 
-export { getList, getItem, setItem, postItem, deleteItem };
+export { requestSender };

@@ -1,43 +1,58 @@
 package server
 
 import (
+	"context"
+	"net/http"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/registry"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/store/inf"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/registry"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"
 )
 
 var timeOut = 5 * time.Second
 
-func Serve(name string, storeHandler inf.CRUD) {
+func Serve(ctx context.Context, name string, DB *gorm.DB) {
 	app := fiber.New(fiber.Config{
-		AppName:               config.Application.AppName,
+		AppName:               config.AppName,
 		DisableStartupMessage: true,
 		ReadTimeout:           timeOut,
 		WriteTimeout:          timeOut,
 	})
 
 	appStore := &registry.AppStore{
-		StoreHandler: storeHandler,
-		Template:     translate.NewTemplate(),
-		Client:       request.NewClient(),
-		App:          app,
-		// DB:           db.OpenConnection(db.TypePostgres, &db.ConnConfig{}),
+		DB:       DB,
+		Template: translate.NewTemplate(),
+		Client:   request.NewClient(),
+		App:      app,
+		JWT: sec.NewJWT(
+			[]byte(config.Application.Secret),
+			func() int64 {
+				return time.Now().Add(time.Hour).Unix()
+			},
+		),
 	}
 
-	registry.GetRegistry().Set(name, appStore)
+	registry.Reg().Set(name, appStore)
+
+	// middlewares
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace: true,
+	}))
+	app.Use(compress.New())
 
 	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("storeHandler", appStore.StoreHandler)
-		c.Locals("templateEngine", appStore.Template)
-		c.Locals("client", appStore.Client)
-		c.Locals("database", appStore.DB)
+		c.Locals("registry", name)
+		c.SetUserContext(ctx)
 
 		return c.Next() //nolint:wrapcheck // not need
 	})
@@ -45,19 +60,27 @@ func Serve(name string, storeHandler inf.CRUD) {
 	setHandlers(app)
 	setFileHandler(app)
 
-	// Custom host
+	// 404
+	app.Use(func(c *fiber.Ctx) error {
+		//nolint: wrapcheck // middleware
+		return c.Status(http.StatusNotFound).JSON(apimodels.API{
+			Error: apimodels.Error{Error: "404 not found"},
+		})
+	})
+
+	// custom host
 	hostPort := config.Application.Host + ":" + config.Application.Port
-	log.Logger.Info().Msg("server starting [" + hostPort + "]")
+	log.Info().Msg("server starting [" + hostPort + "]")
 
 	if err := app.Listen(hostPort); err != nil {
-		log.Logger.Error().Err(err).Msg("server cannot start")
+		log.Error().Err(err).Msg("server cannot start")
 	}
 }
 
 func Shutdown() {
-	registry.GetRegistry().Iter(func(reg *registry.AppStore) {
+	registry.Reg().Iter(func(reg *registry.AppStore) {
 		if err := reg.App.Shutdown(); err != nil {
-			log.Logger.Error().Err(err).Msg("failed to shutdown app")
+			log.Error().Err(err).Msg("failed to shutdown app")
 		}
 	})
 }

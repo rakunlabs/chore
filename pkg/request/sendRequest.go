@@ -28,14 +28,14 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]string, payload []byte) ([]byte, error) {
+func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte) ([]byte, error) {
 	req, err := c.Request(ctx, URL, method, payload)
 	if err != nil {
 		return nil, err //nolint:wraperr // not need here
 	}
 
 	for k, v := range headers {
-		req.Header.Add(k, v)
+		req.Header.Add(k, fmt.Sprint(v))
 	}
 
 	resp, err := c.HTTPClient.Do(req)

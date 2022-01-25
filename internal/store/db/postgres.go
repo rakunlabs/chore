@@ -3,16 +3,28 @@ package db
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
+	gorm_zerolog "github.com/wei840222/gorm-zerolog"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
-func PostgresDB(cfg *ConnConfig) (*gorm.DB, error) {
+func PostgresDB(cfg map[string]interface{}) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port)
+		cfg["host"], cfg["user"], cfg["password"], cfg["dbName"], cfg["port"])
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	gLog := gorm_zerolog.NewWithLogger(log.With().Str("component", "postgres").Logger())
+	gLog.SkipErrRecordNotFound = true
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   fmt.Sprintf("%s.", cfg["schema"]),
+			SingularTable: false,
+		},
+		Logger: gLog,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("postgres connection; %w", err)
 	}

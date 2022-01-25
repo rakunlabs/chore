@@ -6,17 +6,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/store/inf"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"
 )
 
 type AppStore struct {
-	StoreHandler inf.CRUD
-	Template     *translate.Template
-	Client       *request.Client
-	App          *fiber.App
-	DB           *gorm.DB
+	Template *translate.Template
+	Client   *request.Client
+	App      *fiber.App
+	DB       *gorm.DB
+	JWT      *sec.JWT
 }
 
 type Registry struct {
@@ -52,7 +52,7 @@ var (
 	registry *Registry
 )
 
-func GetRegistry() *Registry {
+func Reg() *Registry {
 	regOnce.Do(func() {
 		registry = &Registry{
 			apps: make(map[string]*AppStore),

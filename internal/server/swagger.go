@@ -1,4 +1,4 @@
-package handler
+package server
 
 import (
 	"github.com/gofiber/fiber/v2"
@@ -9,10 +9,10 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
 )
 
-func RouterSwagger(f fiber.Router) {
+func routerSwagger(f fiber.Router) {
 	// information
-	docs.SwaggerInfo.Title = config.Application.AppName
-	docs.SwaggerInfo.Version = config.Application.AppVersion
+	docs.SwaggerInfo.Title = config.AppName
+	docs.SwaggerInfo.Version = config.AppVersion
 
 	// swagger documentation
 	f.Get("/swagger", func(c *fiber.Ctx) error {

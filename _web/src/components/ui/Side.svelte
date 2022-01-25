@@ -7,18 +7,27 @@
   export { className as class };
 </script>
 
-<navbar class={`${className} bg-gray-600 text-gray-100`}>
-  {#each links as link}
-    <button
-      data-side={link}
-      use:active={{
-        path: new RegExp(`/${link}(/(.*))*`),
-        className: "sidebar-active",
-        inactiveClassName: "sidebar-inactive",
-      }}
-      class="capitalize">{link}</button
+<navbar
+  class={`${className} bg-gray-600 text-gray-100 flex flex-col justify-between`}
+>
+  <div>
+    {#each links as link}
+      <button
+        data-side={link}
+        use:active={{
+          path: new RegExp(`/${link}(/(.*))*`),
+          className: "sidebar-active",
+          inactiveClassName: "sidebar-inactive",
+        }}
+        class="capitalize">{link}</button
+      >
+    {/each}
+  </div>
+  <div>
+    <button data-side="logout" class="capitalize hover:bg-red-400"
+      >Logout</button
     >
-  {/each}
+  </div>
 </navbar>
 
 <style lang="scss">

@@ -34,13 +34,11 @@
     <span>{show}</span>
   </div>
   <div>
-    {#if type == "file"}
-      <button
-        data-action="delete"
-        class="w-20 px-4 bg-transparent border-2 border-red-500 text-red-500 text-sm hover:bg-red-500 hover:text-gray-100"
-      >
-        Delete
-      </button>
-    {/if}
+    <button
+      data-action="delete"
+      class="w-20 px-4 bg-transparent border-2 border-red-500 text-red-500 text-sm hover:bg-red-500 hover:text-gray-100"
+    >
+      Delete
+    </button>
   </div>
 </div>

@@ -1,4 +1,4 @@
-# Chore
+<img src="_web/public/chore.svg" height="120" />
 
 Chore tool help to send request with templates.
 
@@ -67,8 +67,9 @@ Now send values with curl or in the swagger documentation.
 
 ```sh
 curl -X 'POST' \
-  'http://localhost:3000/api/v1/send?key=sendhi' \
+  'http://localhost:3000/api/v1/send?name=sendhi' \
   -H 'accept: application/json' \
+  -H 'Authorization: Bearer aaabbbccc...'
   -H 'Content-Type: */*' \
   -d 'name: test'
 ```
@@ -107,20 +108,23 @@ https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/
 
 Required services before to run.
 
-<details><summary>Consul Setup</summary>
-
 ```sh
-docker run -it --rm --name=dev-consul --net=host consul:1.10.4
+cd _example/chore
+docker-compose up
+# for close run
+# docker-compose down
 ```
 
-If `chore` runs in the container set also `CONSUL_HTTP_ADDR` env variable.
-
-</details>
-
-Backend
+Generate swagger (don't need if you didn't change related codes)
 
 ```sh
 ./build.sh --swag
+```
+
+Run command
+
+```sh
+export CONFIG_FILE=_example/chore/config.yml
 ./build.sh --run
 ```
 

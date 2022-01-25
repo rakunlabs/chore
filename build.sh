@@ -15,8 +15,8 @@ MAINGO="cmd/${APPNAME}/main.go"
 PKG=$(head -n 1 go.mod | cut -d " " -f2)
 
 FLAG=(
-"${PKG}/internal/configs.appName=${APPNAME}"
-"${PKG}/internal/configs.appVersion=${VERSION}"
+"${PKG}/internal/configs.AppName=${APPNAME}"
+"${PKG}/internal/configs.AppVersion=${VERSION}"
 )
 
 FLAGS=$(echo ${FLAG[@]} | xargs -n 1 echo -n " -X")
@@ -216,7 +216,7 @@ fi
 
 # Swag documents
 if [[ "${SWAG}" == "Y" ]]; then
-    swag init -g router.go --dir internal/server --output docs/
+    swag init --parseDependency --parseInternal --parseDepth 1 -g handlers.go --dir internal/server,internal/api --output docs/
 fi
 
 # Build frontend

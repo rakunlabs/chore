@@ -1,203 +1,1096 @@
 basePath: /api/v1
+definitions:
+  api.AuthPureID:
+    properties:
+      header:
+        additionalProperties:
+          type: string
+        example:
+          Content-Type: application/json
+        type: object
+      id:
+        type: string
+      method:
+        example: POST
+        type: string
+      name:
+        example: jira-deepcore
+        type: string
+      url:
+        example: https://localhost:9090
+        type: string
+    type: object
+  api.BindPureID:
+    properties:
+      auth_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      template_id:
+        type: string
+    type: object
+  api.ItemName:
+    properties:
+      item:
+        example: template1
+        type: string
+      name:
+        example: deepcore/template1
+        type: string
+    type: object
+  api.LoginModel:
+    properties:
+      name:
+        example: userX
+        type: string
+      password:
+        example: pass1234
+        type: string
+    type: object
+  api.LoginToken:
+    properties:
+      token:
+        example: tokenJWT
+        type: string
+    type: object
+  api.TemplatePureID:
+    properties:
+      content:
+        example: aGVsbG8ge3submFtZX19Cg==
+        format: base64
+        type: string
+      id:
+        type: string
+      name:
+        example: deepcore/template1
+        type: string
+    type: object
+  api.TokenRet:
+    properties:
+      token:
+        example: tokenJWT
+        type: string
+    type: object
+  api.UserData:
+    properties:
+      admin:
+        example: true
+        type: boolean
+      id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
+        type: string
+      name:
+        example: username
+        type: string
+    type: object
+  api.UserPureID:
+    properties:
+      admin:
+        example: true
+        type: boolean
+      id:
+        type: string
+      name:
+        example: userX
+        type: string
+      password:
+        example: pass1234
+        type: string
+    type: object
+  apimodels.Data:
+    properties:
+      data:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  apimodels.DataMeta:
+    properties:
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      meta: {}
+    type: object
+  apimodels.Error:
+    properties:
+      error:
+        example: some problem
+        type: string
+    type: object
+  apimodels.ID:
+    properties:
+      id:
+        type: string
+    type: object
+  apimodels.Meta:
+    properties:
+      limit:
+        example: 20
+        type: integer
+      offset:
+        example: 0
+        type: integer
+    type: object
+  models.AuthPure:
+    properties:
+      header:
+        additionalProperties:
+          type: string
+        example:
+          Content-Type: application/json
+        type: object
+      method:
+        example: POST
+        type: string
+      name:
+        example: jira-deepcore
+        type: string
+      url:
+        example: https://localhost:9090
+        type: string
+    type: object
+  models.BindPure:
+    properties:
+      auth_id:
+        type: string
+      name:
+        type: string
+      template_id:
+        type: string
+    type: object
+  models.TemplatePure:
+    properties:
+      content:
+        example: aGVsbG8ge3submFtZX19Cg==
+        format: base64
+        type: string
+      name:
+        example: deepcore/template1
+        type: string
+    type: object
+  models.UserPure:
+    properties:
+      admin:
+        example: true
+        type: boolean
+      name:
+        example: userX
+        type: string
+      password:
+        example: pass1234
+        type: string
+    type: object
 info:
   contact: {}
-  description: storage and send API
+  description: |-
+    Storage and Send API
+    First login with user and use authorization as "Bearer JWTTOKEN"
 paths:
-  /kv/{type}:
+  /auth:
     delete:
-      description: Delete key
+      description: Delete with id or name
       parameters:
-      - description: type
-        enum:
-        - templates
-        - auths
-        - binds
-        in: path
-        name: type
-        required: true
-        type: string
-      - description: key of the entry
+      - description: get by id
         in: query
-        name: key
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
         type: string
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apimodels.Error'
         "404":
           description: Not Found
           schema:
-            type: string
+            $ref: '#/definitions/apimodels.Error'
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: Delete key
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete auth
+      tags:
+      - auth
     get:
-      description: Get the value of the key
+      description: Get one auth with id or name
       parameters:
-      - description: type
-        enum:
-        - templates
-        - auths
-        - binds
-        in: path
-        name: type
-        required: true
-        type: string
-      - description: key of the entry
+      - description: get by id
         in: query
-        name: key
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
         type: string
       responses:
         "200":
           description: OK
           schema:
-            type: string
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.AuthPureID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
         "404":
           description: Not Found
           schema:
-            type: string
+            $ref: '#/definitions/apimodels.Error'
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: Get Specific key
-    post:
-      consumes:
-      - text/plain
-      description: Set a key with value
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get auth
+      tags:
+      - auth
+    patch:
+      description: Patch with a few data, id must exist in request
       parameters:
-      - description: type
-        enum:
-        - templates
-        - auths
-        - binds
-        in: path
-        name: type
-        required: true
-        type: string
-      - description: key of the entry
-        in: query
-        name: key
-        type: string
-      - description: any value to store
+      - description: send part of the user object
         in: body
         name: payload
         schema:
-          type: primitive
+          $ref: '#/definitions/api.AuthPureID'
       responses:
         "200":
           description: OK
           schema:
-            type: string
-        "406":
-          description: Not Acceptable
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Patch auth
+      tags:
+      - auth
+    post:
+      description: Send and record new auth
+      parameters:
+      - description: send auth object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.AuthPure'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
         "409":
           description: Conflict
           schema:
-            type: string
+            $ref: '#/definitions/apimodels.Error'
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: New key
-    put:
-      consumes:
-      - text/plain
-      description: Set a key with value
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New auth
+      tags:
+      - auth
+  /auths:
+    get:
+      description: Get list of the auths
       parameters:
-      - description: type
-        enum:
-        - templates
-        - auths
-        - binds
-        in: path
-        name: type
-        required: true
-        type: string
-      - description: key of the entry
+      - description: set the limit, default is 20
         in: query
-        name: key
-        type: string
-      - description: any value to store
-        in: body
-        name: payload
-        schema:
-          type: primitive
+        name: limit
+        type: integer
+      - description: set the offset, default is 0
+        in: query
+        name: offset
+        type: integer
       responses:
         "200":
           description: OK
           schema:
-            type: string
+            allOf:
+            - $ref: '#/definitions/apimodels.DataMeta'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.AuthPureID'
+                  type: array
+                meta:
+                  $ref: '#/definitions/apimodels.Meta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: New key or replace key
-  /kv/{type}/:
-    get:
-      description: Get list of keys
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: List auths
+      tags:
+      - auth
+  /bind:
+    delete:
+      description: Delete with id or name
       parameters:
-      - description: type
-        enum:
-        - templates
-        - auths
-        - binds
-        in: path
-        name: type
-        required: true
-        type: string
-      - description: key of the entry
+      - description: get by id
         in: query
-        name: key
+        name: id
         type: string
-      - default: "true"
-        description: is it for listing
+      - description: get by name
         in: query
-        name: list
-        required: true
+        name: name
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete bind
+      tags:
+      - bind
+    get:
+      description: Get one bind with id or name
+      parameters:
+      - description: get by id
+        in: query
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
         type: string
       responses:
         "200":
-          description: folder/ or file
+          description: OK
           schema:
-            items:
-              type: string
-            type: array
-        "418":
-          description: not a list
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.BindPureID'
+              type: object
+        "400":
+          description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: Get List
-  /send:
-    post:
-      consumes:
-      - '*/*'
-      description: Send request to api.
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get bind
+      tags:
+      - bind
+    patch:
+      description: Bind with a few data, id must exist in request
       parameters:
-      - description: values
+      - description: send part of the user object
         in: body
         name: payload
         schema:
-          type: primitive
-      - description: key of the binds entry
+          $ref: '#/definitions/api.BindPureID'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Bind auth
+      tags:
+      - bind
+    post:
+      description: Send and record new bind
+      parameters:
+      - description: send bind object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.BindPure'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New bind
+      tags:
+      - bind
+  /binds:
+    get:
+      description: Get list of the binds
+      parameters:
+      - description: set the limit, default is 20
         in: query
-        name: key
+        name: limit
+        type: integer
+      - description: set the offset, default is 0
+        in: query
+        name: offset
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.DataMeta'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.BindPureID'
+                  type: array
+                meta:
+                  $ref: '#/definitions/apimodels.Meta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: List binds
+      tags:
+      - bind
+  /login:
+    post:
+      description: Get JWT token for 1 hour
+      parameters:
+      - description: send login object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/api.LoginModel'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.LoginToken'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      summary: Login
+      tags:
+      - public
+  /send:
+    post:
+      description: Send request with bind id or name
+      parameters:
+      - description: get by id
+        in: query
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
+        type: string
+      - description: send key values
+        in: body
+        name: payload
+        schema:
+          additionalProperties: true
+          type: object
+      responses:
+        "200":
+          description: respond from related server
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Send request
+  /template:
+    delete:
+      description: Delete with id, name
+      parameters:
+      - description: get by id
+        in: query
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
         type: string
       responses:
-        "201":
-          description: Created
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
-      summary: Send request
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete template
+      tags:
+      - template
+    get:
+      description: Get one template with id
+      parameters:
+      - description: get by id
+        in: query
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TemplatePureID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get template
+      tags:
+      - template
+    patch:
+      description: Replace with new data, id or name must exist in request
+      parameters:
+      - description: send template object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/api.TemplatePureID'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Replace template
+      tags:
+      - template
+    post:
+      description: Send and record new template
+      parameters:
+      - description: send template object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.TemplatePure'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New template
+      tags:
+      - template
+  /templates:
+    get:
+      description: Get list of the templates, specify key query to get inner paths
+      parameters:
+      - description: set the limit, default is empty
+        in: query
+        name: folder
+        type: string
+      - description: set the limit, default is 20
+        in: query
+        name: limit
+        type: integer
+      - description: set the offset, default is 0
+        in: query
+        name: offset
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.DataMeta'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.ItemName'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: List templates
+      tags:
+      - template
+  /token:
+    delete:
+      description: Delete with token
+      parameters:
+      - description: get by token
+        in: query
+        name: token
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete token
+      tags:
+      - token
+    post:
+      description: Send and record PAT token
+      parameters:
+      - description: generate new token
+        in: query
+        name: new
+        type: boolean
+      - description: send valid token
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/api.TokenRet'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TokenRet'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New token
+      tags:
+      - token
+  /token/check:
+    post:
+      description: Send token to check validation, if not valid return 401
+      parameters:
+      - description: send a token
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/api.TokenRet'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.TokenRet'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      summary: Check token
+      tags:
+      - token
+  /user:
+    delete:
+      description: Delete with id or name
+      parameters:
+      - description: get by id
+        in: query
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete user
+      tags:
+      - user
+    get:
+      description: Get one user with id or name
+      parameters:
+      - description: get by id
+        in: query
+        name: id
+        type: string
+      - description: get by name
+        in: query
+        name: name
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.UserData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get user
+      tags:
+      - user
+    patch:
+      description: Replace with new data, id or name must exist in request
+      parameters:
+      - description: send part of the user object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/api.UserPureID'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Replace user
+      tags:
+      - user
+    post:
+      description: Send and record new user
+      parameters:
+      - description: send user object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.UserPure'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New user
+      tags:
+      - user
+  /users:
+    get:
+      description: Get list of the users
+      parameters:
+      - description: set admin rights
+        in: query
+        name: admin
+        type: boolean
+      - description: set the limit, default is 20
+        in: query
+        name: limit
+        type: integer
+      - description: set the offset, default is 0
+        in: query
+        name: offset
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.DataMeta'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.UserData'
+                  type: array
+                meta:
+                  $ref: '#/definitions/apimodels.Meta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: List users
+      tags:
+      - user
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

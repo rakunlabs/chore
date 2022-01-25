@@ -2,8 +2,10 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -18,7 +20,15 @@ var logW = zerolog.ConsoleWriter{
 }
 
 func InitializeLogger() {
-	log.Logger = zerolog.New(logW).With().Timestamp().Caller().Logger()
+	isPretty := isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
+
+	if v, ok := os.LookupEnv("LOG_PRETTY"); ok {
+		isPretty, _ = strconv.ParseBool(v)
+	}
+
+	if isPretty {
+		log.Logger = zerolog.New(logW).With().Timestamp().Logger()
+	}
 }
 
 func SetLogLevel(level string) {

@@ -1,0 +1,2 @@
+// Replace all sql.NullTime with string
+replace models/sql.NullTime string

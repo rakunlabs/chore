@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 0l-6 22-8.129-7.239 7.802-8.234-10.458 7.227-7.215-1.754 24-12zm-15 16.668v7.332l3.258-4.431-3.258-2.901z"/></svg>
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="30.806 17.476 127.517 140.995" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <linearGradient id="color-1" bx:pinned="true">
+      <stop style="stop-color: rgb(0, 0, 0)"/>
+    </linearGradient>
+    <style bx:fonts="Bayon" bx:pinned="true">@import url(https://fonts.googleapis.com/css2?family=Bayon%3Aital%2Cwght%400%2C400&amp;display=swap);</style>
+  </defs>
+  <text style="fill: url(#color-1); font-family: Bayon; font-size: 20.7px; paint-order: fill; stroke-dasharray: 4px; stroke-width: 0px; white-space: pre;" transform="matrix(1, 0, 0, 1, -38.210881, -86.789102)" y="109.74500274658203"><title>CHORE</title><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>░█████╗░</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>██╔══██╗</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>██║░░╚═╝</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>██║░░██╗</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>╚█████╔╝</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>░╚════╝░</tspan></text>
+</svg>
