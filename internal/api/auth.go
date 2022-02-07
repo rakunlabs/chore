@@ -44,7 +44,7 @@ func listAuths(c *fiber.Ctx) error {
 	}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
-	result := reg.DB.WithContext(c.UserContext()).Limit(meta.Limit).Offset(meta.Offset).Find(&auths)
+	result := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Limit(meta.Limit).Offset(meta.Offset).Find(&auths)
 
 	// check write error
 	if result.Error != nil {

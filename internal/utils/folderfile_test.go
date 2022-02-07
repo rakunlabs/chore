@@ -47,8 +47,14 @@ func TestFolderFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FolderFile(tt.args.fileName); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FolderFile() = %v, want %v", got, tt.want)
+			got := FolderFile(tt.args.fileName)
+			result := make(map[string]interface{}, len(got))
+			for i := range got {
+				result[got[i].Folder] = got[i].Item
+			}
+
+			if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("FolderFile() = %v, want %v", result, tt.want)
 			}
 		})
 	}

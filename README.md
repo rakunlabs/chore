@@ -28,7 +28,7 @@ Link: DeepCore
 
 In here `name` is a key of a map or struct and it print value.
 
-For testing in a playground try [repeatit.io](repeatit.io).
+For testing in a playground try [repeatit.io](https://repeatit.io).
 
 ### Auth
 

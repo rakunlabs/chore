@@ -37,10 +37,12 @@ func AutoMigrate(ctx context.Context, dbConn *gorm.DB) error {
 
 	addAdmin.Name = config.Application.Name
 
-	addAdmin.Password, err = sec.HashPassword(config.Application.Password)
+	hashPass, err := sec.HashPassword([]byte(config.Application.Password))
 	if err != nil {
 		return err
 	}
+
+	addAdmin.Password = string(hashPass)
 
 	result = dbConn.WithContext(ctx).Create(&addAdmin)
 

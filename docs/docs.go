@@ -1052,6 +1052,63 @@ var doc = `{
                 }
             }
         },
+        "/test": {
+            "post": {
+                "description": "Send and record new user",
+                "tags": [
+                    "test"
+                ],
+                "summary": "New Test",
+                "parameters": [
+                    {
+                        "description": "send test object",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.TestPure"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.Data"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/apimodels.ID"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/token": {
             "post": {
                 "security": [
@@ -1554,7 +1611,7 @@ var doc = `{
                 },
                 "url": {
                     "type": "string",
-                    "example": "https://localhost:9090"
+                    "example": "http://localhost:9090"
                 }
             }
         },
@@ -1748,7 +1805,7 @@ var doc = `{
                 },
                 "url": {
                     "type": "string",
-                    "example": "https://localhost:9090"
+                    "example": "http://localhost:9090"
                 }
             }
         },
@@ -1777,6 +1834,15 @@ var doc = `{
                 "name": {
                     "type": "string",
                     "example": "deepcore/template1"
+                }
+            }
+        },
+        "models.TestPure": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "userX"
                 }
             }
         },

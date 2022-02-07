@@ -6,8 +6,8 @@ import (
 
 func TestCheckPasswordHash(t *testing.T) {
 	type args struct {
-		password string
-		hash     string
+		password []byte
+		hash     []byte
 	}
 	tests := []struct {
 		name string
@@ -17,29 +17,29 @@ func TestCheckPasswordHash(t *testing.T) {
 		{
 			name: "generate and check",
 			args: args{
-				password: "mypassword",
+				password: []byte("mypassword"),
 			},
 			want: true,
 		},
 		{
 			name: "generate and check empty",
 			args: args{
-				password: "",
+				password: []byte(""),
 			},
 			want: true,
 		},
 		{
 			name: "generate and check wrongly",
 			args: args{
-				password: "mypassword",
-				hash:     "dummyhash",
+				password: []byte("mypassword"),
+				hash:     []byte("dummyhash"),
 			},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.args.hash == "" {
+			if tt.args.hash == nil {
 				var err error
 				tt.args.hash, err = HashPassword(tt.args.password)
 				if err != nil {

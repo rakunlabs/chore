@@ -236,14 +236,14 @@ func postUser(c *fiber.Ctx) error {
 	}
 
 	// hash password
-	if hashedPassword, err := sec.HashPassword(body.Password); err != nil {
+	if hashedPassword, err := sec.HashPassword([]byte(body.Password)); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(
 			apimodels.Error{
 				Error: err.Error(),
 			},
 		)
 	} else { //nolint:golint // required for value scope
-		body.Password = hashedPassword
+		body.Password = string(hashedPassword)
 	}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
@@ -335,7 +335,7 @@ func patchUser(c *fiber.Ctx) error {
 
 	// hash password
 	if v, ok := body["password"].(string); ok {
-		if hashedPassword, err := sec.HashPassword(v); err != nil {
+		if hashedPassword, err := sec.HashPassword([]byte(v)); err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(
 				apimodels.Error{
 					Error: err.Error(),

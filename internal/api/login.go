@@ -59,7 +59,7 @@ func postLogin(c *fiber.Ctx) error {
 		"name = ?", body.Name,
 	).First(&user)
 
-	if !sec.CheckHashPassword(user.Password, body.Password) {
+	if !sec.CheckHashPassword([]byte(user.Password), []byte(body.Password)) {
 		return c.Status(http.StatusUnauthorized).JSON(
 			apimodels.Error{
 				Error: "name or password wrong",

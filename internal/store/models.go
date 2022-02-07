@@ -9,4 +9,5 @@ var Models = []interface{}{
 	&models.Folder{},
 	&models.User{},
 	&models.Token{},
+	// &models.Test{},
 }

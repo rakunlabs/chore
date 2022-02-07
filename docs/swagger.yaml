@@ -17,7 +17,7 @@ definitions:
         example: jira-deepcore
         type: string
       url:
-        example: https://localhost:9090
+        example: http://localhost:9090
         type: string
     type: object
   api.BindPureID:
@@ -149,7 +149,7 @@ definitions:
         example: jira-deepcore
         type: string
       url:
-        example: https://localhost:9090
+        example: http://localhost:9090
         type: string
     type: object
   models.BindPure:
@@ -169,6 +169,12 @@ definitions:
         type: string
       name:
         example: deepcore/template1
+        type: string
+    type: object
+  models.TestPure:
+    properties:
+      name:
+        example: userX
         type: string
     type: object
   models.UserPure:
@@ -804,6 +810,40 @@ paths:
       summary: List templates
       tags:
       - template
+  /test:
+    post:
+      description: Send and record new user
+      parameters:
+      - description: send test object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.TestPure'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      summary: New Test
+      tags:
+      - test
   /token:
     delete:
       description: Delete with token
