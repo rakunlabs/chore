@@ -143,7 +143,6 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
         BUILD_FRONT="Y"
         ;;
     --build-all)
-        SWAG="Y"
         BUILD="Y"
         BUILD_FRONT="Y"
         ;;

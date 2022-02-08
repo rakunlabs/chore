@@ -14,8 +14,8 @@ import (
 )
 
 type LoginModel struct {
-	Name     string `json:"name" example:"userX"`
-	Password string `json:"password" example:"pass1234"`
+	Name     string `json:"name" example:"admin"`
+	Password string `json:"password" example:"admin"`
 }
 
 type LoginToken struct {

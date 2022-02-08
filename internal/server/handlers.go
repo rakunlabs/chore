@@ -32,7 +32,7 @@ func setHandlers(app *fiber.App) {
 	api.Bind(v1Router)
 
 	// testing
-	// api.Test(v1Router)
+	// apitest.Test(v1Router)
 
 	// set send api
 	api.Send(v1Router)

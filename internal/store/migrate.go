@@ -20,7 +20,7 @@ func AutoMigrate(ctx context.Context, dbConn *gorm.DB) error {
 	userOne := models.User{}
 	result := dbConn.WithContext(ctx).Limit(1).Find(&userOne)
 
-	if result.Error == nil || userOne.ID.ID != uuid.Nil {
+	if result.RowsAffected != 0 {
 		return nil
 	}
 

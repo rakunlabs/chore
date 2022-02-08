@@ -820,17 +820,27 @@ var doc = `{
                     }
                 ],
                 "description": "Send and record new template",
+                "consumes": [
+                    "text/plain"
+                ],
                 "tags": [
                     "template"
                 ],
                 "summary": "New template",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "name of file 'deepcore/template1'",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "send template object",
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.TemplatePure"
+                            "type": "string"
                         }
                     }
                 ],
@@ -929,17 +939,26 @@ var doc = `{
                     }
                 ],
                 "description": "Replace with new data, id or name must exist in request",
+                "consumes": [
+                    "text/plain"
+                ],
                 "tags": [
                     "template"
                 ],
                 "summary": "Replace template",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "get by name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
                         "description": "send template object",
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/api.TemplatePureID"
+                            "type": "string"
                         }
                     }
                 ],
@@ -1039,63 +1058,6 @@ var doc = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/apimodels.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/apimodels.Error"
-                        }
-                    }
-                }
-            }
-        },
-        "/test": {
-            "post": {
-                "description": "Send and record new user",
-                "tags": [
-                    "test"
-                ],
-                "summary": "New Test",
-                "parameters": [
-                    {
-                        "description": "send test object",
-                        "name": "payload",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/models.TestPure"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/apimodels.Data"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/apimodels.ID"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/apimodels.Error"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/apimodels.Error"
                         }
@@ -1650,11 +1612,11 @@ var doc = `{
             "properties": {
                 "name": {
                     "type": "string",
-                    "example": "userX"
+                    "example": "admin"
                 },
                 "password": {
                     "type": "string",
-                    "example": "pass1234"
+                    "example": "admin"
                 }
             }
         },
@@ -1820,29 +1782,6 @@ var doc = `{
                 },
                 "template_id": {
                     "type": "string"
-                }
-            }
-        },
-        "models.TemplatePure": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "format": "base64",
-                    "example": "aGVsbG8ge3submFtZX19Cg=="
-                },
-                "name": {
-                    "type": "string",
-                    "example": "deepcore/template1"
-                }
-            }
-        },
-        "models.TestPure": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "example": "userX"
                 }
             }
         },

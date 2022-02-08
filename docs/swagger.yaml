@@ -43,10 +43,10 @@ definitions:
   api.LoginModel:
     properties:
       name:
-        example: userX
+        example: admin
         type: string
       password:
-        example: pass1234
+        example: admin
         type: string
     type: object
   api.LoginToken:
@@ -159,22 +159,6 @@ definitions:
       name:
         type: string
       template_id:
-        type: string
-    type: object
-  models.TemplatePure:
-    properties:
-      content:
-        example: aGVsbG8ge3submFtZX19Cg==
-        format: base64
-        type: string
-      name:
-        example: deepcore/template1
-        type: string
-    type: object
-  models.TestPure:
-    properties:
-      name:
-        example: userX
         type: string
     type: object
   models.UserPure:
@@ -700,13 +684,19 @@ paths:
       tags:
       - template
     patch:
+      consumes:
+      - text/plain
       description: Replace with new data, id or name must exist in request
       parameters:
+      - description: get by name
+        in: query
+        name: name
+        type: string
       - description: send template object
         in: body
         name: payload
         schema:
-          $ref: '#/definitions/api.TemplatePureID'
+          type: string
       responses:
         "200":
           description: OK
@@ -735,13 +725,20 @@ paths:
       tags:
       - template
     post:
+      consumes:
+      - text/plain
       description: Send and record new template
       parameters:
+      - description: name of file 'deepcore/template1'
+        in: query
+        name: name
+        required: true
+        type: string
       - description: send template object
         in: body
         name: payload
         schema:
-          $ref: '#/definitions/models.TemplatePure'
+          type: string
       responses:
         "200":
           description: OK
@@ -810,40 +807,6 @@ paths:
       summary: List templates
       tags:
       - template
-  /test:
-    post:
-      description: Send and record new user
-      parameters:
-      - description: send test object
-        in: body
-        name: payload
-        schema:
-          $ref: '#/definitions/models.TestPure'
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/apimodels.Data'
-            - properties:
-                data:
-                  $ref: '#/definitions/apimodels.ID'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/apimodels.Error'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/apimodels.Error'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/apimodels.Error'
-      summary: New Test
-      tags:
-      - test
   /token:
     delete:
       description: Delete with token

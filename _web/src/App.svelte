@@ -20,7 +20,6 @@
   };
 
   const conditionsFailed = (event: ConditionsFailedEvent) => {
-    console.log(event);
     if (event.detail.location == "/login") {
       push("/");
       return;

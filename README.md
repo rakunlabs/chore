@@ -125,7 +125,7 @@ Run command
 
 ```sh
 export CONFIG_FILE=_example/chore/config.yml
-./build.sh --run
+go run cmd/chore/main.go
 ```
 
 Frontend

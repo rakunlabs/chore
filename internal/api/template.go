@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"strings"
@@ -148,37 +149,36 @@ func getTemplate(c *fiber.Ctx) error {
 // @Description Send and record new template
 // @Security ApiKeyAuth
 // @Router /template [post]
-// @Param payload body models.TemplatePure{} false "send template object"
+// @Param name query string true "name of file 'deepcore/template1'"
+// @Param payload body string false "send template object"
+// @Accept plain
 // @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func postTemplate(c *fiber.Ctx) error {
-	body := new(models.Template)
-	if err := c.BodyParser(body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
-	}
+	template := new(models.Template)
 
-	if body.Name == "" {
+	body := c.Body()
+	template.Content = base64.StdEncoding.EncodeToString(body)
+
+	name := c.Query("name")
+	if name == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: "key is required",
+				Error: "name is required",
 			},
 		)
 	}
 
 	// trim slash
-	body.Name = strings.Trim(body.Name, "/")
+	template.Name = strings.Trim(name, "/")
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	var err error
 
-	body.ID.ID, err = uuid.NewUUID()
+	template.ID.ID, err = uuid.NewUUID()
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(
 			apimodels.Error{
@@ -187,7 +187,7 @@ func postTemplate(c *fiber.Ctx) error {
 		)
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Create(body)
+	result := reg.DB.WithContext(c.UserContext()).Create(template)
 
 	// check write error
 	var pErr *pgconn.PgError
@@ -211,7 +211,7 @@ func postTemplate(c *fiber.Ctx) error {
 	}
 
 	// create folder
-	folderMap := utils.FolderFile(body.Name)
+	folderMap := utils.FolderFile(template.Name)
 
 	// on conflict do nothing
 	reg.DB.WithContext(c.UserContext()).Model(models.Folder{}).Clauses(
@@ -221,78 +221,52 @@ func postTemplate(c *fiber.Ctx) error {
 	// return recorded data's id
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
-			Data: apimodels.ID{ID: body.ID.ID},
+			Data: apimodels.ID{ID: template.ID.ID},
 		},
 	)
 }
 
-// TODO: this patch has problem rewrite again!
+// TODO: currently just changeable inside of the data.
 
 // @Summary Replace template
 // @Tags template
 // @Description Replace with new data, id or name must exist in request
 // @Security ApiKeyAuth
 // @Router /template [patch]
-// @Param payload body TemplatePureID{} false "send template object"
+// @Param name query string false "get by name"
+// @Param payload body string false "send template object"
+// @Accept plain
 // @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func patchTemplate(c *fiber.Ctx) error {
-	var body map[string]interface{}
-	if err := c.BodyParser(&body); err != nil {
+	name := c.Query("name")
+
+	if name == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: err.Error(),
+				Error: "name is required and cannot be empty",
 			},
 		)
 	}
 
-	isSetBodyID := false
-	if v, ok := body["id"].(string); ok && v != "" {
-		isSetBodyID = true
-	}
-
-	isSetBodyName := false
-	if v, ok := body["name"].(string); ok && v != "" {
-		isSetBodyName = true
-	}
-
-	if !isSetBodyName && !isSetBodyID {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: "id or name is required and cannot be empty",
-			},
-		)
-	}
+	body := c.Body()
 
 	// fix parameter
-	// TODO improve here
-	if isSetBodyID && isSetBodyName {
-		body["name"] = strings.Trim(body["name"].(string), "/")
-	}
+	name = strings.Trim(name, "/")
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	// get previous name
-	prevValues := struct {
-		Name string `json:"name"`
-	}{}
-
-	reg.DB.WithContext(c.UserContext()).Model(&models.Template{}).Select("name").First(&prevValues, body["id"])
-
-	// save new values
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Template{})
-
-	if isSetBodyID {
-		query = query.Where("id = ?", body["id"])
+	data := models.Template{
+		TemplatePure: models.TemplatePure{
+			Name:    name,
+			Content: base64.StdEncoding.EncodeToString(body),
+		},
 	}
 
-	if isSetBodyName {
-		query = query.Where("name = ?", body["name"])
-	}
-
-	result := query.Updates(body)
+	// save new value
+	result := reg.DB.WithContext(c.UserContext()).Where("name = ?", name).Updates(&data)
 
 	// check write error
 	var pErr *pgconn.PgError
@@ -315,22 +289,22 @@ func patchTemplate(c *fiber.Ctx) error {
 		)
 	}
 
-	// update from folder table
-	if prevValues.Name != body["name"].(string) {
-		reg.DB.WithContext(c.UserContext()).Where("name = ?", prevValues.Name).Delete(&models.Folder{})
+	// // update from folder table
+	// if prevValues.Name != body["name"].(string) {
+	// 	reg.DB.WithContext(c.UserContext()).Where("name = ?", prevValues.Name).Delete(&models.Folder{})
 
-		// create folder
-		folderMap := utils.FolderFile(body["name"].(string))
+	// 	// create folder
+	// 	folderMap := utils.FolderFile(body["name"].(string))
 
-		// on conflict do nothing
-		reg.DB.WithContext(c.UserContext()).Model(models.Folder{}).Clauses(
-			clause.OnConflict{DoNothing: true},
-		).Create(folderMap)
-	}
+	// 	// on conflict do nothing
+	// 	reg.DB.WithContext(c.UserContext()).Model(models.Folder{}).Clauses(
+	// 		clause.OnConflict{DoNothing: true},
+	// 	).Create(folderMap)
+	// }
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
-			Data: fiber.Map{"id": body["id"]},
+			Data: fiber.Map{"id": data.ID},
 		},
 	)
 }
