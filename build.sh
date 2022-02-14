@@ -27,8 +27,11 @@ PLATFORMS="${PLATFORMS:-linux:amd64}"
 # set docker
 DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME:-${APPNAME}}
 export GO_IMAGE=${GO_IMAGE:-golang:1.17.6}
+export FRONTEND_IMAGE=${FRONTEND_IMAGE:-rytsh/frontend-pnpm:v0.0.3}
 export BASE_IMAGE=${BASE_IMAGE:-alpine:3.15.0}
 export IMAGE_TAG=${VERSION}
+export SKIP_CERTS=${SKIP_CERTS:-N}
+export NPM_PROXY=${NPM_PROXY:-http://localhost:4873}
 # use this for go build
 SSH_KEY=${HOME}/.ssh/id_rsa
 
@@ -46,6 +49,8 @@ OPTIONS:
     Return docker image name
   --run
     Run for dev
+  --copy
+    Copy frontend output to destination
   --swag
     Build swagger docs
   --build-front
@@ -91,16 +96,16 @@ function build() {
     fi
 }
 
-function pre_build() {
-    echo "> Checking swag command"
-    if [[ ! $(command -v swag) ]]; then
-        echo "> Command swag not found!"
-        [[ ! ${AUTO_INSTALL} == "Y" ]] && return 1
+function copy_frontend() {
+    echo "> Copying frontend outputs"
+    rm -rf ./internal/server/dist/* 2> /dev/null
+    cp -a _web/dist ./internal/server/.
 
-        echo "> Installing swag"
-        go install github.com/swaggo/swag/cmd/swag@latest
-        return $?
-    fi
+    return 0
+}
+
+function pre_build() {
+    copy_frontend
 
     return 0
 }
@@ -132,6 +137,9 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
         ;;
     --run)
         RUN="Y"
+        ;;
+    --copy)
+        COPY="Y"
         ;;
     --swag)
         SWAG="Y"
@@ -168,6 +176,10 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
         usage
         exit 0
         ;;
+    *)
+        echo Not found $1
+        exit 0
+        ;;
     esac
     shift 1
 done
@@ -184,12 +196,14 @@ if [[ "${DOCKER_BUILD}" == "Y" ]]; then
     DOCKER_BUILDKIT=1 docker build \
         --add-host host.docker.internal:$(docker network inspect bridge | grep Gateway | tr -d '" ' | cut -d ":" -f2) \
         --build-arg GO_IMAGE \
+        --build-arg FRONTEND_IMAGE \
         --build-arg BASE_IMAGE \
+        --build-arg NPM_PROXY=$(echo ${NPM_PROXY} | sed -e 's@localhost@host.docker.internal@g') \
         --build-arg GOPROXY=$(go env GOPROXY | sed -e 's@localhost@host.docker.internal@g') \
         --build-arg GOPRIVATE=$(go env GOPRIVATE) \
         --build-arg IMAGE_TAG \
         --build-arg SSH_KEY_CICD_64 \
-        --build-arg TRAEFIK_VERSION \
+        --build-arg SKIP_CERTS \
         -t ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} -f - .
     echo "> image name => ${DOCKER_IMAGE_NAME}:${IMAGE_TAG}"
     set +e
@@ -215,6 +229,16 @@ fi
 
 # Swag documents
 if [[ "${SWAG}" == "Y" ]]; then
+    echo "> Checking swag command"
+    if [[ ! $(command -v swag) ]]; then
+        echo "> Command swag not found!"
+        [[ ! ${AUTO_INSTALL} == "Y" ]] && return 1
+
+        echo "> Installing swag"
+        go install github.com/swaggo/swag/cmd/swag@latest
+        return $?
+    fi
+
     swag init --parseDependency --parseInternal --parseDepth 1 -g handlers.go --dir internal/server,internal/api --output docs/
 fi
 
@@ -223,9 +247,8 @@ if [[ "${BUILD_FRONT}" == "Y" ]]; then
     # under subshell
     (
         cd _web
-        pnpm install --prefer-offline
+        pnpm run depend
         pnpm build
-        cp -a dist/* ../internal/server/dist/
     )
 fi
 
@@ -246,9 +269,15 @@ if [[ "${BUILD}" == "Y" ]]; then
     set +e
 fi
 
+# copy
+if [[ "${COPY}" == "Y" ]]; then
+    copy_frontend
+fi
+
 # run
 if [[ "${RUN}" == "Y" ]]; then
     set -x
+    export CONFIG_FILE=${CONFIG_FILE:-./_example/config/config.yml}
     go run ${MAINGO} ${*}
     set +x
 fi

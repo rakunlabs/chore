@@ -116,27 +116,42 @@ docker-compose up
 ```
 
 Generate swagger (don't need if you didn't change related codes)
-
 ```sh
 ./build.sh --swag
 ```
 
 Run command
-
 ```sh
-export CONFIG_FILE=_example/chore/config.yml
+export CONFIG_FILE=_example/config/config.yml
 go run cmd/chore/main.go
 ```
 
 Frontend
-
 ```sh
 cd _web
 pnpm run dev -- --host
 ```
 
 Build project
-
 ```sh
 ./build.sh --build-all
+```
+
+Build docker
+
+```sh
+# if you cannot reach to certs repo skip it:
+# export SKIP_CERTS=Y
+./build.sh --docker-build
+```
+
+Run image
+```sh
+# run postgres before to start
+# to get latest build image name
+IMAGE_NAME=$(./build.sh --docker-name)
+docker run -it --rm --name="chore" -p 8080:8080 \
+  --add-host=postgres:$(docker network inspect bridge | grep Gateway | tr -d '" ' | cut -d ":" -f2) \
+  -v ${PWD}/_example/config/docker.yml:/etc/chore.yml \
+  ${IMAGE_NAME}
 ```

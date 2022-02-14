@@ -14,7 +14,7 @@ import (
 )
 
 type LoginModel struct {
-	Name     string `json:"name" example:"admin"`
+	Login    string `json:"login" example:"admin"`
 	Password string `json:"password" example:"admin"`
 }
 
@@ -42,10 +42,10 @@ func postLogin(c *fiber.Ctx) error {
 		)
 	}
 
-	if body.Name == "" {
+	if body.Login == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: "name is required",
+				Error: "required username or email address",
 			},
 		)
 	}
@@ -56,7 +56,7 @@ func postLogin(c *fiber.Ctx) error {
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	result := reg.DB.WithContext(c.UserContext()).Model(&models.User{}).Where(
-		"name = ?", body.Name,
+		"name = ?", body.Login,
 	).First(&user)
 
 	if !sec.CheckHashPassword([]byte(user.Password), []byte(body.Password)) {

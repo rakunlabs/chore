@@ -1,0 +1,10 @@
+secret: thisisfordevelopmenttestsecret
+name: admin
+password: admin
+store:
+  type: postgres
+  schema: chore
+  host: "postgres"
+  port: "5432"
+  user: postgres
+  dbName: postgres

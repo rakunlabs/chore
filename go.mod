@@ -19,7 +19,6 @@ require (
 	github.com/wei840222/gorm-zerolog v0.0.0-20210303025759-235c42bb33fa
 	gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 v2.5.5
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
-	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	gorm.io/datatypes v1.0.5
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/driver/sqlite v1.2.6 // indirect

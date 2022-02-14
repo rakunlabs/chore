@@ -6,11 +6,12 @@
   import axios from "axios";
   import { push } from "svelte-spa-router";
 
-  let form: HTMLFormElement;
   let error = "";
 
-  const signin = async () => {
-    const data = formToObject(form);
+  const signin = async (
+    e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
+  ) => {
+    const data = formToObject(e.currentTarget);
     try {
       const response = await login(data);
       tokenSet(response.data.data.token, null);
@@ -18,11 +19,7 @@
       push("/");
     } catch (reason: unknown) {
       if (axios.isAxiosError(reason)) {
-        if (reason.response.status == 401) {
-          error = reason.response.data.error;
-        } else {
-          error = reason.message;
-        }
+        error = reason.response.data.error ?? reason.message;
       }
     }
   };
@@ -35,13 +32,13 @@
     <h2 class="mb-12 text-center text-sm font-extrabold [line-height:1.2]">
       {banner}
     </h2>
-    <form bind:this={form} on:submit|preventDefault|stopPropagation={signin}>
+    <form on:submit|preventDefault|stopPropagation={(e) => signin(e).catch()}>
       <div class="mb-4">
-        <label class="block mb-1" for="name">Username</label>
+        <label class="block mb-1" for="login">Username or email address</label>
         <input
-          id="name"
+          id="login"
           type="text"
-          name="name"
+          name="login"
           class="py-2 px-3 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 rounded-md shadow-sm disabled:bg-gray-100 mt-1 block w-full"
         />
       </div>

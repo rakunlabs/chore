@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: process.env.NODE_ENV == "production" ? false : true,
+    sourcemap: process.env.NODE_ENV == "production" ? (process.env.SOURCEMAP == "true" ? true : false) : true,
   },
   mode: process.env.NODE_ENV == "production" ? "" : "development",
   server: {

@@ -8,7 +8,6 @@
   let code: HTMLElement;
   export let title = "title";
   export let editableTitle = false;
-  export let area = "";
   export let data = "";
   let className = "";
 
