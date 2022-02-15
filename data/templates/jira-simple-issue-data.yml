@@ -1,0 +1,6 @@
+project:
+  key: XAV
+summary: this is summary
+description: this is description
+issuetype:
+  name: "Bug"

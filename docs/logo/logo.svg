@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="30.806 17.476 127.517 140.995" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <linearGradient id="color-1" bx:pinned="true">
+      <stop style="stop-color: rgb(0, 0, 0)"/>
+    </linearGradient>
+    <style bx:fonts="Bayon" bx:pinned="true">@import url(https://fonts.googleapis.com/css2?family=Bayon%3Aital%2Cwght%400%2C400&amp;display=swap);</style>
+  </defs>
+  <text style="fill: url(#color-1); font-family: Bayon; font-size: 20.7px; paint-order: fill; stroke-dasharray: 4px; stroke-width: 0px; white-space: pre;" transform="matrix(1, 0, 0, 1, -38.210881, -86.789102)" y="109.74500274658203"><title>CHORE</title><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>░█████╗░</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>██╔══██╗</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>██║░░╚═╝</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>██║░░██╗</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>╚█████╔╝</tspan><tspan x="74.6449966430664" dy="1em">​</tspan><tspan>░╚════╝░</tspan></text>
+</svg>

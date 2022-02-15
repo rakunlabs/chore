@@ -11,19 +11,26 @@ var Application = struct {
 	Port     string `cfg:"port" secret:"port,loggable"`
 	LogLevel string `cfg:"logLevel" secret:"logLevel,loggable"`
 	Secret   string `cfg:"secret" secret:"secret"`
-	Name     string `cfg:"name" secret:"name,loggable"`
-	Password string `cfg:"password" secret:"password"`
+	User     User   `cfg:"user" secret:"user,loggable"`
 	Store    Store  `cfg:"store" secret:"store,loggable"`
 }{
 	Host:     "0.0.0.0",
 	LogLevel: "debug",
 	Port:     "8080",
-	Name:     "admin",
-	Password: "admin",
+	User: User{
+		Name:     "admin",
+		Password: "admin",
+	},
 	Store: Store{
 		Schema: AppName,
 		Type:   "postgres",
 	},
+}
+
+// User settings will use if doesn't have any user on database.
+type User struct {
+	Name     string `cfg:"name" secret:"name,loggable"`
+	Password string `cfg:"password" secret:"password"`
 }
 
 type Store struct {

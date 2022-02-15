@@ -1,6 +1,7 @@
 secret: thisisfordevelopmenttestsecret
-name: admin
-password: admin
+user:
+  name: admin
+  password: admin
 store:
   type: postgres
   schema: chore

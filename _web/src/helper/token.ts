@@ -1,4 +1,5 @@
 import { requestSender } from "@/helper/api";
+import jwtDecode from "jwt-decode";
 
 const tokenCheck = async (token: string) => {
   return requestSender(
@@ -30,7 +31,8 @@ const tokenGet = () => {
   return [data["token"], data["claims"]];
 };
 
-const tokenSet = (token: string, claims: object) => {
+const tokenSet = (token: string) => {
+  const claims = jwtDecode(token);
   const data = JSON.stringify({
     token,
     claims,

@@ -13,6 +13,12 @@ const (
 	timeout = 5
 )
 
+type ClientResponse struct {
+	Body       []byte
+	StatusCode int
+	Header     http.Header
+}
+
 type Client struct {
 	HTTPClient *http.Client
 	Request    func(context.Context, string, string, []byte) (*http.Request, error)
@@ -28,7 +34,7 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte) ([]byte, error) {
+func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte) (*ClientResponse, error) {
 	req, err := c.Request(ctx, URL, method, payload)
 	if err != nil {
 		return nil, err //nolint:wraperr // not need here
@@ -45,9 +51,13 @@ func (c *Client) Send(ctx context.Context, URL, method string, headers map[strin
 
 	// _, _ = io.Copy(io.Discard, resp.Body)
 	body, err := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
+	defer resp.Body.Close()
 
-	return body, err
+	return &ClientResponse{
+		Body:       body,
+		StatusCode: resp.StatusCode,
+		Header:     resp.Header,
+	}, err
 }
 
 func NewRequest(ctx context.Context, URL, method string, payload []byte) (*http.Request, error) {

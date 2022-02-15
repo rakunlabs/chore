@@ -4,4 +4,7 @@ const ui = {
   "sidebar": "",
 };
 
+const head = "";
+
 export const storeData = writable(ui);
+export const storeHead = writable(head);

@@ -2,6 +2,7 @@
   import Router, { push, ConditionsFailedEvent } from "svelte-spa-router";
   import wrap from "svelte-spa-router/wrap";
   import { tokenCondition } from "@/helper/token";
+  import Toast from "@/components/ui/Toast.svelte";
 
   const routes = {
     "/login": wrap({
@@ -28,5 +29,7 @@
     push("/login");
   };
 </script>
+
+<Toast />
 
 <Router {routes} on:conditionsFailed={conditionsFailed} />

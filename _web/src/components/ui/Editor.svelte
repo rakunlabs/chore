@@ -2,13 +2,12 @@
   import { onMount } from "svelte";
   import CodeMirror from "codemirror";
   import { requestSender } from "@/helper/api";
-  import { utf8ToB64 } from "@/helper/codec";
-  // import { setItem } from "@/helper/api";
 
   let code: HTMLElement;
   export let title = "title";
   export let editableTitle = false;
   export let data = "";
+  export let closed = () => void {};
   let className = "";
 
   let editor: CodeMirror.Editor;
@@ -24,9 +23,12 @@
       tabSize: 2,
       scrollbarStyle: "native",
       readOnly: readOnly,
+      lineWrapping: true,
     });
     editor.setSize("100%", "100%");
-    editor.getWrapperElement().classList.add("bg-gray-50");
+    if (readOnly) {
+      editor.getWrapperElement().classList.add("bg-yellow-50");
+    }
     editor.setValue(data);
   });
 
@@ -35,9 +37,9 @@
     readOnly = v ?? !readOnly;
 
     if (readOnly) {
-      editor.getWrapperElement().classList.add("bg-gray-50");
+      editor.getWrapperElement().classList.add("bg-yellow-50");
     } else {
-      editor.getWrapperElement().classList.remove("bg-gray-50");
+      editor.getWrapperElement().classList.remove("bg-yellow-50");
     }
   };
 
@@ -45,12 +47,11 @@
     try {
       requestSender(
         "template",
-        null,
-        "PATCH",
         {
           name: title,
-          content: utf8ToB64(editor.getValue()),
         },
+        editableTitle ? "POST" : "PATCH",
+        editor.getValue(),
         true
       );
       toggleReadOnly(true);
@@ -70,6 +71,14 @@
       <span>{title}</span>
     {/if}
     <div>
+      {#if editableTitle}
+        <button
+          on:click={closed}
+          class="px-4 bg-transparent border-2 text-sm border-gray-500 hover:bg-gray-500 hover:text-gray-100"
+        >
+          Close
+        </button>
+      {/if}
       <button
         on:click|stopPropagation={() => toggleReadOnly()}
         class={`px-4 bg-transparent border-2 text-sm ${
@@ -88,5 +97,5 @@
       </button>
     </div>
   </div>
-  <code class="bg-gray-400" bind:this={code} />
+  <code class="bg-gray-400 overflow-x-auto" bind:this={code} />
 </div>

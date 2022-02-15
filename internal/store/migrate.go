@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
@@ -16,7 +17,36 @@ func AutoMigrate(ctx context.Context, dbConn *gorm.DB) error {
 		return err
 	}
 
-	// first user initialize if not exist
+	if err := initializeAdminGroup(ctx, dbConn); err != nil {
+		return err
+	}
+
+	if err := initializeAdminUser(ctx, dbConn); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func initializeAdminGroup(ctx context.Context, dbConn *gorm.DB) error {
+	// initialize admin group
+	groupAdmin := models.Group{}
+	result := dbConn.WithContext(ctx).Where("name = ?", "admin").Find(&groupAdmin)
+
+	if result.RowsAffected != 0 {
+		return nil
+	}
+
+	groupAdmin.Name = "admin"
+	groupAdmin.ID.ID = uuid.New()
+
+	result = dbConn.WithContext(ctx).Create(&groupAdmin)
+
+	return result.Error
+}
+
+func initializeAdminUser(ctx context.Context, dbConn *gorm.DB) error {
+	// first admin initialize if not exist
 	userOne := models.User{}
 	result := dbConn.WithContext(ctx).Limit(1).Find(&userOne)
 
@@ -24,20 +54,15 @@ func AutoMigrate(ctx context.Context, dbConn *gorm.DB) error {
 		return nil
 	}
 
-	var err error
-
 	addAdmin := models.User{}
 
-	addAdmin.Admin = true
+	addAdmin.Groups.Groups = datatypes.JSON(`["admin"]`)
 
-	addAdmin.ID.ID, err = uuid.NewUUID()
-	if err != nil {
-		return err
-	}
+	addAdmin.ID.ID = uuid.New()
 
-	addAdmin.Name = config.Application.Name
+	addAdmin.Name = config.Application.User.Name
 
-	hashPass, err := sec.HashPassword([]byte(config.Application.Password))
+	hashPass, err := sec.HashPassword([]byte(config.Application.User.Password))
 	if err != nil {
 		return err
 	}

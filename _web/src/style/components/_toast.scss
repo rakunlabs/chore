@@ -1,0 +1,11 @@
+.info {
+  @apply bg-green-200;
+}
+
+.warn {
+  @apply bg-yellow-200;
+}
+
+.alert {
+  @apply bg-red-400 text-white;
+}

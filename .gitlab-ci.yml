@@ -5,8 +5,9 @@ include:
 
 variables:
   DOCKER_IMAGE_NAME: "chore"
-  GO_IMAGE_: "golang:1.17.6"
-  BASE_IMAGE_: "alpine:3.15.0"
+  GO_IMAGE_: "golang:1.17.8-alpine"
+  BASE_IMAGE_: "scratch"
   AUTO_DEPLOY: "N"
   MAIN_BRANCH_IMAGE: "N"
   FRONTEND_IMAGE: "rytsh/frontend-pnpm:v0.0.3"
+  COPY_CERTS: "Y"

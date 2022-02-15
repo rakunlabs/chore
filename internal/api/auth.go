@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -9,10 +10,10 @@ import (
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 )
 
 type AuthPureID struct {
@@ -27,7 +28,7 @@ type AuthPureID struct {
 // @Router /auths [get]
 // @Param limit query int false "set the limit, default is 20"
 // @Param offset query int false "set the offset, default is 0"
-// @Success 200 {object} apimodels.DataMeta{data=[]AuthPureID{},meta=apimodels.Meta}
+// @Success 200 {object} apimodels.DataMeta{data=[]AuthPureID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func listAuths(c *fiber.Ctx) error {
@@ -54,6 +55,9 @@ func listAuths(c *fiber.Ctx) error {
 			},
 		)
 	}
+
+	// get counts
+	reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Count(&meta.Count)
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{
@@ -135,11 +139,19 @@ func getAuth(c *fiber.Ctx) error {
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func postAuth(c *fiber.Ctx) error {
-	body := new(models.AuthPure)
-	if err := c.BodyParser(body); err != nil {
+	var body models.AuthPure
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
 				Error: err.Error(),
+			},
+		)
+	}
+
+	if body.Name == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: apimodels.ErrRequiredName,
 			},
 		)
 	}
@@ -155,10 +167,10 @@ func postAuth(c *fiber.Ctx) error {
 		)
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Create(
+	result := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Create(
 		&models.Auth{
-			AuthPure: *body,
-			ModelS: apimodels.ModelS{
+			AuthPure: body,
+			ModelCU: apimodels.ModelCU{
 				ID: apimodels.ID{ID: id},
 			},
 		},
@@ -213,35 +225,30 @@ func patchAuth(c *fiber.Ctx) error {
 		)
 	}
 
-	isSetBodyID := false
-	if v, ok := body["id"].(string); ok && v != "" {
-		isSetBodyID = true
-	}
-
-	isSetBodyName := false
-	if v, ok := body["name"].(string); ok && v != "" {
-		isSetBodyName = true
-	}
-
-	if !isSetBodyName && !isSetBodyID {
+	if v, ok := body["id"].(string); !ok || v == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: "id or name is required and cannot be empty",
+				Error: "id is required and cannot be empty",
 			},
 		)
 	}
 
+	if body["groups"] != nil {
+		var err error
+
+		body["groups"], err = json.Marshal(body["groups"])
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(
+				apimodels.Error{
+					Error: err.Error(),
+				},
+			)
+		}
+	}
+
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{})
-
-	if isSetBodyID {
-		query = query.Where("id = ?", body["id"])
-	}
-
-	if isSetBodyName {
-		query = query.Where("name = ?", body["name"])
-	}
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Where("id = ?", body["id"])
 
 	result := query.Updates(body)
 
@@ -267,13 +274,7 @@ func patchAuth(c *fiber.Ctx) error {
 	}
 
 	resultData := make(map[string]interface{})
-	if isSetBodyID {
-		resultData["id"] = body["id"]
-	}
-
-	if isSetBodyName {
-		resultData["name"] = body["name"]
-	}
+	resultData["id"] = body["id"]
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
@@ -295,26 +296,18 @@ func patchAuth(c *fiber.Ctx) error {
 // @failure 500 {object} apimodels.Error{}
 func deleteAuth(c *fiber.Ctx) error {
 	id := c.Query("id")
-	name := c.Query("name")
 
-	if id == "" && name == "" {
+	if id == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName,
+				Error: apimodels.ErrRequiredID,
 			},
 		)
 	}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	query := reg.DB.WithContext(c.UserContext())
-	if id != "" {
-		query = query.Where("id = ?", id)
-	}
-
-	if name != "" {
-		query = query.Where("name = ?", name)
-	}
+	query := reg.DB.WithContext(c.UserContext()).Where("id = ?", id)
 
 	// delete directly in DB
 	result := query.Unscoped().Delete(&models.Auth{})
@@ -340,9 +333,9 @@ func deleteAuth(c *fiber.Ctx) error {
 }
 
 func Auth(router fiber.Router) {
-	router.Get("/auths", middleware.JWTCheck(""), listAuths)
-	router.Get("/auth", middleware.JWTCheck(""), getAuth)
-	router.Post("/auth", middleware.JWTCheck(""), postAuth)
-	router.Patch("/auth", middleware.JWTCheck(""), patchAuth)
-	router.Delete("/auth", middleware.JWTCheck(""), deleteAuth)
+	router.Get("/auths", middleware.JWTCheck(nil, nil), listAuths)
+	router.Get("/auth", middleware.JWTCheck(nil, nil), getAuth)
+	router.Post("/auth", middleware.JWTCheck(nil, nil), postAuth)
+	router.Patch("/auth", middleware.JWTCheck(nil, nil), patchAuth)
+	router.Delete("/auth", middleware.JWTCheck(nil, nil), deleteAuth)
 }

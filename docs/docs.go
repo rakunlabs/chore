@@ -324,18 +324,18 @@ var doc = `{
                 }
             }
         },
-        "/bind": {
+        "/control": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get one bind with id or name",
+                "description": "Get one control with id",
                 "tags": [
-                    "bind"
+                    "control"
                 ],
-                "summary": "Get bind",
+                "summary": "Get control",
                 "parameters": [
                     {
                         "type": "string",
@@ -347,6 +347,12 @@ var doc = `{
                         "type": "string",
                         "description": "get by name",
                         "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "get content",
+                        "name": "nodata",
                         "in": "query"
                     }
                 ],
@@ -362,7 +368,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.BindPureID"
+                                            "$ref": "#/definitions/api.ControlPureContentID"
                                         }
                                     }
                                 }
@@ -395,18 +401,18 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Send and record new bind",
+                "description": "Send and record new control",
                 "tags": [
-                    "bind"
+                    "control"
                 ],
-                "summary": "New bind",
+                "summary": "New control",
                 "parameters": [
                     {
-                        "description": "send bind object",
+                        "description": "send control object",
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.BindPure"
+                            "$ref": "#/definitions/models.ControlPureContent"
                         }
                     }
                 ],
@@ -457,9 +463,9 @@ var doc = `{
                 ],
                 "description": "Delete with id or name",
                 "tags": [
-                    "bind"
+                    "control"
                 ],
-                "summary": "Delete bind",
+                "summary": "Delete control",
                 "parameters": [
                     {
                         "type": "string",
@@ -504,18 +510,18 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Bind with a few data, id must exist in request",
+                "description": "Replace with new data, id or name must exist in request",
                 "tags": [
-                    "bind"
+                    "control"
                 ],
-                "summary": "Bind auth",
+                "summary": "Replace control",
                 "parameters": [
                     {
-                        "description": "send part of the user object",
+                        "description": "send part of the control object",
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/api.BindPureID"
+                            "$ref": "#/definitions/api.ControlPureID"
                         }
                     }
                 ],
@@ -544,8 +550,8 @@ var doc = `{
                             "$ref": "#/definitions/apimodels.Error"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/apimodels.Error"
                         }
@@ -559,18 +565,18 @@ var doc = `{
                 }
             }
         },
-        "/binds": {
+        "/controls": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get list of the binds",
+                "description": "Get list of the controls",
                 "tags": [
-                    "bind"
+                    "control"
                 ],
-                "summary": "List binds",
+                "summary": "List controls",
                 "parameters": [
                     {
                         "type": "integer",
@@ -599,7 +605,7 @@ var doc = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/api.BindPureID"
+                                                "$ref": "#/definitions/api.ControlPureID"
                                             }
                                         },
                                         "meta": {
@@ -696,27 +702,31 @@ var doc = `{
                     }
                 ],
                 "description": "Send request with bind id or name",
+                "consumes": [
+                    "text/plain"
+                ],
                 "summary": "Send request",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "get by id",
-                        "name": "id",
-                        "in": "query"
+                        "description": "set endpoint",
+                        "name": "endpoint",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
-                        "description": "get by name",
-                        "name": "name",
-                        "in": "query"
+                        "description": "set control",
+                        "name": "control",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "description": "send key values",
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "string"
                         }
                     }
                 ],
@@ -1072,6 +1082,58 @@ var doc = `{
             }
         },
         "/token": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get token with token id",
+                "tags": [
+                    "token"
+                ],
+                "summary": "Get token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "get by token id",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.Data"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Token"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1085,17 +1147,11 @@ var doc = `{
                 "summary": "New token",
                 "parameters": [
                     {
-                        "type": "boolean",
-                        "description": "generate new token",
-                        "name": "new",
-                        "in": "query"
-                    },
-                    {
-                        "description": "send valid token",
+                        "description": "token parameters",
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/api.TokenRet"
+                            "$ref": "#/definitions/models.TokenData"
                         }
                     }
                 ],
@@ -1111,7 +1167,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.TokenRet"
+                                            "$ref": "#/definitions/models.Token"
                                         }
                                     }
                                 }
@@ -1152,8 +1208,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "get by token",
-                        "name": "token",
+                        "description": "get by token id",
+                        "name": "id",
                         "in": "query"
                     }
                 ],
@@ -1195,7 +1251,7 @@ var doc = `{
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/api.TokenRet"
+                            "$ref": "#/definitions/models.TokenPrivate"
                         }
                     }
                 ],
@@ -1211,7 +1267,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.TokenRet"
+                                            "$ref": "#/definitions/models.TokenPrivate"
                                         }
                                     }
                                 }
@@ -1226,6 +1282,119 @@ var doc = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/token/renew": {
+            "get": {
+                "description": "Get new token based on old token",
+                "tags": [
+                    "token"
+                ],
+                "summary": "Renew token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.Data"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.TokenPrivate"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/tokens": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get list of the tokens",
+                "tags": [
+                    "token"
+                ],
+                "summary": "List tokens",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "set the limit, default is 20",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "set the offset, default is 0",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.DataMeta"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/api.TokenDataByID"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/apimodels.Meta"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/apimodels.Error"
                         }
@@ -1257,12 +1426,6 @@ var doc = `{
                         "description": "get by id",
                         "name": "id",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "get by name",
-                        "name": "name",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1277,7 +1440,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.UserData"
+                                            "$ref": "#/definitions/api.UserDataID"
                                         }
                                     }
                                 }
@@ -1381,12 +1544,6 @@ var doc = `{
                         "description": "get by id",
                         "name": "id",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "get by name",
-                        "name": "name",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1488,12 +1645,6 @@ var doc = `{
                 "summary": "List users",
                 "parameters": [
                     {
-                        "type": "boolean",
-                        "description": "set admin rights",
-                        "name": "admin",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "description": "set the limit, default is 20",
                         "name": "limit",
@@ -1520,7 +1671,7 @@ var doc = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/api.UserData"
+                                                "$ref": "#/definitions/api.UserDataID"
                                             }
                                         },
                                         "meta": {
@@ -1551,7 +1702,17 @@ var doc = `{
         "api.AuthPureID": {
             "type": "object",
             "properties": {
-                "header": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
+                },
+                "headers": {
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -1561,35 +1722,60 @@ var doc = `{
                     }
                 },
                 "id": {
-                    "type": "string"
-                },
-                "method": {
                     "type": "string",
-                    "example": "POST"
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
                 },
                 "name": {
                     "type": "string",
                     "example": "jira-deepcore"
-                },
-                "url": {
-                    "type": "string",
-                    "example": "http://localhost:9090"
                 }
             }
         },
-        "api.BindPureID": {
+        "api.ControlPureContentID": {
             "type": "object",
             "properties": {
-                "auth_id": {
-                    "type": "string"
+                "content": {
+                    "type": "string",
+                    "format": "base64",
+                    "example": "aGVsbG8ge3submFtZX19Cg=="
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "api.ControlPureID": {
+            "type": "object",
+            "properties": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
                 },
-                "template_id": {
+                "id": {
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -1610,7 +1796,7 @@ var doc = `{
         "api.LoginModel": {
             "type": "object",
             "properties": {
-                "name": {
+                "login": {
                     "type": "string",
                     "example": "admin"
                 },
@@ -1637,30 +1823,15 @@ var doc = `{
                     "format": "base64",
                     "example": "aGVsbG8ge3submFtZX19Cg=="
                 },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "deepcore/template1"
-                }
-            }
-        },
-        "api.TokenRet": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string",
-                    "example": "tokenJWT"
-                }
-            }
-        },
-        "api.UserData": {
-            "type": "object",
-            "properties": {
-                "admin": {
-                    "type": "boolean",
-                    "example": true
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
                 },
                 "id": {
                     "type": "string",
@@ -1668,19 +1839,88 @@ var doc = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "username"
+                    "example": "deepcore/template1"
+                }
+            }
+        },
+        "api.TokenDataByID": {
+            "type": "object",
+            "properties": {
+                "createdby": {
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2021-02-18T21:54:42.123Z"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
+                },
+                "id": {
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "mytoken"
+                }
+            }
+        },
+        "api.UserDataID": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "userx@worldline.com"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
+                },
+                "id": {
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "userX"
                 }
             }
         },
         "api.UserPureID": {
             "type": "object",
             "properties": {
-                "admin": {
-                    "type": "boolean",
-                    "example": true
+                "email": {
+                    "type": "string",
+                    "example": "userx@worldline.com"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
                 },
                 "name": {
                     "type": "string",
@@ -1728,13 +1968,18 @@ var doc = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
                 }
             }
         },
         "apimodels.Meta": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer",
+                    "example": 35
+                },
                 "limit": {
                     "type": "integer",
                     "example": 20
@@ -1748,7 +1993,17 @@ var doc = `{
         "models.AuthPure": {
             "type": "object",
             "properties": {
-                "header": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
+                },
+                "headers": {
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -1757,40 +2012,121 @@ var doc = `{
                         "Content-Type": "application/json"
                     }
                 },
-                "method": {
-                    "type": "string",
-                    "example": "POST"
-                },
                 "name": {
                     "type": "string",
                     "example": "jira-deepcore"
-                },
-                "url": {
-                    "type": "string",
-                    "example": "http://localhost:9090"
                 }
             }
         },
-        "models.BindPure": {
+        "models.ControlPureContent": {
             "type": "object",
             "properties": {
-                "auth_id": {
-                    "type": "string"
+                "content": {
+                    "type": "string",
+                    "format": "base64",
+                    "example": "aGVsbG8ge3submFtZX19Cg=="
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
                 },
                 "name": {
                     "type": "string"
-                },
-                "template_id": {
+                }
+            }
+        },
+        "models.Token": {
+            "type": "object",
+            "properties": {
+                "created_at": {
                     "type": "string"
+                },
+                "createdby": {
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2021-02-18T21:54:42.123Z"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
+                },
+                "id": {
+                    "type": "string",
+                    "example": "cf8a07d4-077e-402e-a46b-ac0ed50989ec"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "mytoken"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "tokenJWT"
+                }
+            }
+        },
+        "models.TokenData": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2021-02-18T21:54:42.123Z"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "example": "mytoken"
+                }
+            }
+        },
+        "models.TokenPrivate": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "tokenJWT"
                 }
             }
         },
         "models.UserPure": {
             "type": "object",
             "properties": {
-                "admin": {
-                    "type": "boolean",
-                    "example": true
+                "email": {
+                    "type": "string",
+                    "example": "userx@worldline.com"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "admin",
+                        "group1"
+                    ]
                 },
                 "name": {
                     "type": "string",

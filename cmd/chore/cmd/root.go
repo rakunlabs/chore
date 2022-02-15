@@ -14,6 +14,9 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2"
 	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
 
+	// Add flow nodes to register in control flow algorithm.
+	_ "gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow/nodes"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

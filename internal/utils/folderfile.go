@@ -30,6 +30,7 @@ func FolderFile(fileName string) []models.Folder {
 				Folder: key,
 				Item:   keyArray[i],
 				Name:   key + keyArray[i],
+				Dtype:  keyArray[i][len(keyArray[i])-1] == '/',
 			},
 			ID: apimodels.ID{ID: uuid.New()},
 		})

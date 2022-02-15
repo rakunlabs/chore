@@ -1,42 +1,47 @@
 package api
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 )
 
-type BindPureID struct {
-	models.BindPure
+type ControlPureContentID struct {
+	models.ControlPureContent
 	apimodels.ID
 }
 
-// @Summary List binds
-// @Tags bind
-// @Description Get list of the binds
+type ControlPureID struct {
+	models.ControlPure
+	apimodels.ID
+}
+
+// @Summary List controls
+// @Tags control
+// @Description Get list of the controls
 // @Security ApiKeyAuth
-// @Router /binds [get]
+// @Router /controls [get]
 // @Param limit query int false "set the limit, default is 20"
 // @Param offset query int false "set the offset, default is 0"
-// @Success 200 {object} apimodels.DataMeta{data=[]BindPureID{},meta=apimodels.Meta}
+// @Success 200 {object} apimodels.DataMeta{data=[]ControlPureID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func listBinds(c *fiber.Ctx) error {
-	binds := []BindPureID{}
+func listControls(c *fiber.Ctx) error {
+	controlsPureID := []ControlPureID{}
 
-	meta := &UserMetaAdmin{
-		Meta:  apimodels.Meta{Limit: apimodels.Limit},
-		Admin: false,
-	}
+	meta := &apimodels.Meta{Limit: apimodels.Limit}
 
 	if err := c.QueryParser(meta); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
@@ -48,8 +53,9 @@ func listBinds(c *fiber.Ctx) error {
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Bind{}).Limit(meta.Limit).Offset(meta.Offset)
-	result := query.Find(&binds)
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Limit(meta.Limit).Offset(meta.Offset)
+
+	result := query.Find(&controlsPureID)
 
 	// check write error
 	if result.Error != nil {
@@ -60,26 +66,46 @@ func listBinds(c *fiber.Ctx) error {
 		)
 	}
 
+	// get counts
+	reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Count(&meta.Count)
+
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{
-			Meta: meta.Meta,
-			Data: apimodels.Data{Data: binds},
+			Meta: meta,
+			Data: apimodels.Data{Data: controlsPureID},
 		},
 	)
 }
 
-// @Summary Get bind
-// @Tags bind
-// @Description Get one bind with id or name
+// @Summary Get control
+// @Tags control
+// @Description Get one control with id
 // @Security ApiKeyAuth
-// @Router /bind [get]
+// @Router /control [get]
 // @Param id query string false "get by id"
 // @Param name query string false "get by name"
-// @Success 200 {object} apimodels.Data{data=BindPureID{}}
+// @Param nodata query bool false "get content"
+// @Success 200 {object} apimodels.Data{data=ControlPureContentID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func getBind(c *fiber.Ctx) error {
+func getControl(c *fiber.Ctx) error {
+	nodata := false
+	nodataRaw := c.Query("nodata")
+
+	if nodataRaw != "" {
+		var err error
+
+		nodata, err = strconv.ParseBool(c.Query("nodata"))
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(
+				apimodels.Error{
+					Error: err.Error(),
+				},
+			)
+		}
+	}
+
 	id := c.Query("id")
 	name := c.Query("name")
 
@@ -91,11 +117,13 @@ func getBind(c *fiber.Ctx) error {
 		)
 	}
 
-	getData := new(BindPureID)
+	controlContent := new(ControlPureContentID)
+	control := new(ControlPureID)
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{})
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{})
+
 	if id != "" {
 		query = query.Where("id = ?", id)
 	}
@@ -104,7 +132,12 @@ func getBind(c *fiber.Ctx) error {
 		query = query.Where("name = ?", name)
 	}
 
-	result := query.First(&getData)
+	var result *gorm.DB
+	if nodata {
+		result = query.First(&control)
+	} else {
+		result = query.First(&controlContent)
+	}
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return c.Status(http.StatusNotFound).JSON(
@@ -122,26 +155,33 @@ func getBind(c *fiber.Ctx) error {
 		)
 	}
 
+	var ret interface{}
+	if nodata {
+		ret = control
+	} else {
+		ret = controlContent
+	}
+
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
-			Data: getData,
+			Data: ret,
 		},
 	)
 }
 
-// @Summary New bind
-// @Tags bind
-// @Description Send and record new bind
+// @Summary New control
+// @Tags control
+// @Description Send and record new control
 // @Security ApiKeyAuth
-// @Router /bind [post]
-// @Param payload body models.BindPure{} false "send bind object"
+// @Router /control [post]
+// @Param payload body models.ControlPureContent{} false "send control object"
 // @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postBind(c *fiber.Ctx) error {
-	body := new(models.BindPure)
-	if err := c.BodyParser(body); err != nil {
+func postControl(c *fiber.Ctx) error {
+	var body models.ControlPureContent
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
 				Error: err.Error(),
@@ -152,10 +192,12 @@ func postBind(c *fiber.Ctx) error {
 	if body.Name == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: "name is required",
+				Error: apimodels.ErrRequiredName.Error(),
 			},
 		)
 	}
+
+	body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
@@ -168,10 +210,10 @@ func postBind(c *fiber.Ctx) error {
 		)
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Create(
-		&models.Bind{
-			BindPure: *body,
-			ModelS: apimodels.ModelS{
+	result := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Create(
+		&models.Control{
+			ControlPureContent: body,
+			ModelCU: apimodels.ModelCU{
 				ID: apimodels.ID{ID: id},
 			},
 		},
@@ -206,17 +248,17 @@ func postBind(c *fiber.Ctx) error {
 	)
 }
 
-// @Summary Bind auth
-// @Tags bind
-// @Description Bind with a few data, id must exist in request
+// @Summary Replace control
+// @Tags control
+// @Description Replace with new data, id or name must exist in request
 // @Security ApiKeyAuth
-// @Router /bind [patch]
-// @Param payload body BindPureID{} false "send part of the user object"
+// @Router /control [patch]
+// @Param payload body ControlPureID{} false "send part of the control object"
 // @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
 // @failure 400 {object} apimodels.Error{}
-// @failure 404 {object} apimodels.Error{}
+// @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func patchBind(c *fiber.Ctx) error {
+func patchControl(c *fiber.Ctx) error {
 	var body map[string]interface{}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
@@ -226,35 +268,33 @@ func patchBind(c *fiber.Ctx) error {
 		)
 	}
 
-	isSetBodyID := false
-	if v, ok := body["id"].(string); ok && v != "" {
-		isSetBodyID = true
-	}
-
-	isSetBodyName := false
-	if v, ok := body["name"].(string); ok && v != "" {
-		isSetBodyName = true
-	}
-
-	if !isSetBodyName && !isSetBodyID {
+	if v, ok := body["id"].(string); !ok || v == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: "id or name is required and cannot be empty",
+				Error: "id is required and cannot be empty",
 			},
 		)
 	}
 
+	content, _ := body["content"].(string)
+	body["content"] = base64.StdEncoding.EncodeToString([]byte(content))
+
+	if body["groups"] != nil {
+		var err error
+
+		body["groups"], err = json.Marshal(body["groups"])
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(
+				apimodels.Error{
+					Error: err.Error(),
+				},
+			)
+		}
+	}
+
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Bind{})
-
-	if isSetBodyID {
-		query = query.Where("id = ?", body["id"])
-	}
-
-	if isSetBodyName {
-		query = query.Where("name = ?", body["name"])
-	}
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Where("id = ?", body["id"])
 
 	result := query.Updates(body)
 
@@ -280,13 +320,7 @@ func patchBind(c *fiber.Ctx) error {
 	}
 
 	resultData := make(map[string]interface{})
-	if isSetBodyID {
-		resultData["id"] = body["id"]
-	}
-
-	if isSetBodyName {
-		resultData["name"] = body["name"]
-	}
+	resultData["id"] = body["id"]
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
@@ -295,18 +329,18 @@ func patchBind(c *fiber.Ctx) error {
 	)
 }
 
-// @Summary Delete bind
-// @Tags bind
+// @Summary Delete control
+// @Tags control
 // @Description Delete with id or name
 // @Security ApiKeyAuth
-// @Router /bind [delete]
+// @Router /control [delete]
 // @Param id query string false "get by id"
 // @Param name query string false "get by name"
 // @Success 204 "No Content"
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func deleteBind(c *fiber.Ctx) error {
+func deleteControl(c *fiber.Ctx) error {
 	id := c.Query("id")
 	name := c.Query("name")
 
@@ -321,6 +355,7 @@ func deleteBind(c *fiber.Ctx) error {
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	query := reg.DB.WithContext(c.UserContext())
+
 	if id != "" {
 		query = query.Where("id = ?", id)
 	}
@@ -330,12 +365,12 @@ func deleteBind(c *fiber.Ctx) error {
 	}
 
 	// delete directly in DB
-	result := query.Unscoped().Delete(&models.Auth{})
+	result := query.Unscoped().Delete(&models.Control{})
 
 	if result.RowsAffected == 0 {
 		return c.Status(http.StatusNotFound).JSON(
 			apimodels.Error{
-				Error: "not found any releated data",
+				Error: apimodels.ErrNotFound.Error(),
 			},
 		)
 	}
@@ -352,10 +387,10 @@ func deleteBind(c *fiber.Ctx) error {
 	return c.SendStatus(http.StatusNoContent)
 }
 
-func Bind(router fiber.Router) {
-	router.Get("/binds", middleware.JWTCheck(""), listBinds)
-	router.Get("/bind", middleware.JWTCheck(""), getBind)
-	router.Post("/bind", middleware.JWTCheck(""), postBind)
-	router.Patch("/bind", middleware.JWTCheck(""), patchBind)
-	router.Delete("/bind", middleware.JWTCheck(""), deleteBind)
+func Control(router fiber.Router) {
+	router.Get("/controls", middleware.JWTCheck(nil, nil), listControls)
+	router.Get("/control", middleware.JWTCheck(nil, nil), getControl)
+	router.Post("/control", middleware.JWTCheck(nil, nil), postControl)
+	router.Patch("/control", middleware.JWTCheck(nil, nil), patchControl)
+	router.Delete("/control", middleware.JWTCheck(nil, nil), deleteControl)
 }

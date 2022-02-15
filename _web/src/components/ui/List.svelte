@@ -4,13 +4,24 @@
   import { onDestroy, onMount } from "svelte";
   import { push } from "svelte-spa-router";
   import path from "path-browserify";
+  import { requestSender } from "@/helper/api";
 
   export let items = [] as Array<itemType>;
   export let prefix = "/";
 
   let listDiv: HTMLElement;
 
-  const deleteIt = (name: string) => {};
+  const deleteIt = async (name: string) => {
+    if (confirm(`Are you sure to delete ${name}?`)) {
+      try {
+        await requestSender("template", { name }, "DELETE", null, true);
+        // console.log(l);
+        items = items.filter((i) => i.name != name);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
 
   const catchItem = (e: CustomEvent) => {
     const name = e.detail.name as string;
@@ -35,7 +46,7 @@
 </script>
 
 <div bind:this={listDiv} class="bg-white">
-  {#each items as item}
+  {#each items as item (item.name)}
     <Item
       name={item.name}
       show={item.item}

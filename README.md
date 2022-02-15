@@ -1,16 +1,48 @@
-<img src="_web/public/chore.svg" height="120" />
+<img src="docs/logo/chore.svg" height="120" />
 
-Chore tool help to send request with templates.
+Chore tool help to send request with templates and customizable flow diagram.
 
-_Project in the baby steps everything can changable_
+[intro page of ui](docs/info/intro.md)
 
 ## Usages
 
-Connect to the chore UI with browser and add template, authentication and binding.
+Connect to the chore UI with browser and add template, authentication and design own control flow.
+
+Chore uses PostgreSQL database.
+
+_First initialization user and password is **admin:admin**, changable with configuration_
+
+### Configuration
+
+```yaml
+secret: thisisfordevelopmenttestsecret
+user:
+  name: admin
+  password: admin
+store:
+  type: postgres
+  schema: chore
+  host: "127.0.0.1"
+  port: "5432"
+  user: postgres
+  dbName: postgres
+```
+
+Secret is important for tokens, to generate own token, use one of this commands:
+
+With openssl
+```sh
+openssl rand -base64 32 | tr -- '+/' '-_'
+```
+
+With linux shell
+```sh
+dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d -- '\n' | tr -- '+/' '-_'; echo
+```
 
 ### Template
 
-Template is a text file format. Go template and sprig functions inside of it.
+Template is a text file format. Go template and sprig functions supported.
 
 For example using some functions and flow inside of template.
 
@@ -28,85 +60,32 @@ Link: DeepCore
 
 In here `name` is a key of a map or struct and it print value.
 
-For testing in a playground try [repeatit.io](https://repeatit.io).
+For testing in a playground try [repeatit.io](https://repeatit.io), this webapp developed by us.
 
 ### Auth
 
-This give us information about server URL and REST API specifications of target API.
+This give us information about secret headers after that use with request flow node.
 
-id, headers, URL and method keywords exists.
+With basic-auth(username and password) use this header `Authorization: Basic <base64 username:password>` but in 2FA status this cannot work so use Bearer Token(personal access token PAT) most of cases.
 
-### Bind
+With Personal access token, generate token in the profile page and use with `Authorization: Bearer <TOKEN>`.
 
-Combining Auth and Template with this table.  
-When request is getting by `/send` endpoint, server will check auth and template with this entry.
+### Control
 
-## Examples
+Flow diagram to create your algorithm in UI.
 
-<details><summary>Test Server</summary>
+To start flow send request `/send` endpoint.  
+Server will check __endpoint__ and __control__ values with your JSON/YAML payload.
 
-Open test server with `go run _example/testServer/main.go`.
+## Informations
 
-Add an auth entry to show this server.
-
-```json
-{"id":"secret","headers":"{\"Authorization\": \"Bearer <token>\"}","URL":"http://localhost:9090","method":"POST"}
-```
-
-Add an template and bind it.
-
-```
-hello {{.name}}
-```
-
-```json
-{"id":"sendhi","authentication":"secret","template":"test"}
-```
-
-Now send values with curl or in the swagger documentation.
-
-```sh
-curl -X 'POST' \
-  'http://localhost:3000/api/v1/send?name=sendhi' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer aaabbbccc...'
-  -H 'Content-Type: */*' \
-  -d 'name: test'
-```
-
-</details>
-
-<details><summary>Create a ticket in JIRA</summary>
-
-For testing added own jira server. (using 8282 as port number)
-
-```sh
-docker run -v jiraVolume:/var/atlassian/application-data/jira --name="jira" -d -p 8282:8080 atlassian/jira-software
-```
-
-After that you need to enter a license key to use it.
-
-When installation complete, check jira version and look at the REST-API documentation.
-
-https://docs.atlassian.com/software/jira/docs/api/REST/8.20.1/
-
-In the profile page, add a personal access token.
-
-Use your token with bearer header
-
-```sh
-curl -H "Authorization: Bearer MjQ5Nzc3NTg3MjM4OosJndoCMilW9HAnAl4T2CfMEnbG" http://localhost:8282/rest/api/2/issue/SCRM-10
-```
-
-Now add auth to chore with giving this header and `POST` method.
-
-https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/
-
-</details>
+[JIRA template](docs/template/jira.md)
 
 ## Development
 
-Required services before to run.
+<details><summary>Build and run</summary>
+
+Required services (PostgreSQL) before to run.
 
 ```sh
 cd _example/chore
@@ -122,6 +101,7 @@ Generate swagger (don't need if you didn't change related codes)
 
 Run command
 ```sh
+# ./build.sh --run
 export CONFIG_FILE=_example/config/config.yml
 go run cmd/chore/main.go
 ```
@@ -140,8 +120,6 @@ Build project
 Build docker
 
 ```sh
-# if you cannot reach to certs repo skip it:
-# export SKIP_CERTS=Y
 ./build.sh --docker-build
 ```
 
@@ -155,3 +133,24 @@ docker run -it --rm --name="chore" -p 8080:8080 \
   -v ${PWD}/_example/config/docker.yml:/etc/chore.yml \
   ${IMAGE_NAME}
 ```
+
+</details>
+
+<details><summary>Dummy-Whoami Server for Test</summary>
+
+```sh
+docker run --rm -it --name="whoami" -p 9090:80 traefik/whoami
+```
+
+</details>
+
+<details><summary>Fill tables</summary>
+
+Get a token and set to `JWT_KEY` value.
+
+```sh
+export JWT_KEY=""
+./data/post-template.sh
+```
+
+</details>

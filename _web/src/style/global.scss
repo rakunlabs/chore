@@ -1,9 +1,12 @@
+/* stylelint-disable no-invalid-position-at-import-rule */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* stylelint-disable-next-line no-invalid-position-at-import-rule */
 @import 'codemirror/lib/codemirror.css';
+@import 'drawflow/dist/drawflow.min.css';
+@import 'tool/drawflow';
+@import 'components';
 
 html,
 body {
@@ -11,4 +14,9 @@ body {
 
   /* stylelint-disable-next-line max-line-length */
   font-family: BlinkMacSystemFont, -apple-system, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+::selection {
+  @apply bg-red-500;
+  @apply text-white;
 }

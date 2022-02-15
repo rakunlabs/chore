@@ -7,13 +7,12 @@ import (
 )
 
 type AuthPure struct {
-	Name    string            `json:"name" gorm:"uniqueIndex;not null" example:"jira-deepcore"`
-	Headers datatypes.JSONMap `json:"header" swaggertype:"object,string" example:"Content-Type:application/json"`
-	URL     string            `json:"url" example:"http://localhost:9090"`
-	Method  string            `json:"method" example:"POST"`
+	Name    string            `json:"name" gorm:"unique;uniqueIndex;not null" example:"jira-deepcore"`
+	Headers datatypes.JSONMap `json:"headers" swaggertype:"object,string" example:"Content-Type:application/json"`
+	apimodels.Groups
 }
 
 type Auth struct {
 	AuthPure
-	apimodels.ModelS
+	apimodels.ModelCU
 }

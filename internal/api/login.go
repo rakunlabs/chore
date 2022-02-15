@@ -7,9 +7,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgconn"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
 )
 
@@ -45,7 +45,7 @@ func postLogin(c *fiber.Ctx) error {
 	if body.Login == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: "required username or email address",
+				Error: "required username, email address or user id",
 			},
 		)
 	}
@@ -55,9 +55,10 @@ func postLogin(c *fiber.Ctx) error {
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	result := reg.DB.WithContext(c.UserContext()).Model(&models.User{}).Where(
-		"name = ?", body.Login,
-	).First(&user)
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.User{})
+	query = query.Where("name = ?", body.Login).Or("email = ?", body.Login).Or("id = ?", body.Login)
+
+	result := query.First(&user)
 
 	if !sec.CheckHashPassword([]byte(user.Password), []byte(body.Password)) {
 		return c.Status(http.StatusUnauthorized).JSON(
@@ -91,9 +92,9 @@ func postLogin(c *fiber.Ctx) error {
 	// generate JWT token
 	token, err := reg.JWT.Generate(
 		map[string]interface{}{
-			"id":    user.ID.ID.String(),
-			"admin": user.Admin,
-			"type":  models.TypeAccessToken,
+			"user":   user.ID.ID,
+			"groups": user.Groups.Groups,
+			"type":   models.TypeAccessToken,
 		}, reg.JWT.DefExpFunc())
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(

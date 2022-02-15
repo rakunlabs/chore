@@ -26,14 +26,11 @@ PLATFORMS="${PLATFORMS:-linux:amd64}"
 
 # set docker
 DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME:-${APPNAME}}
-export GO_IMAGE=${GO_IMAGE:-golang:1.17.6}
+export GO_IMAGE=${GO_IMAGE:-golang:1.17.8-alpine}
 export FRONTEND_IMAGE=${FRONTEND_IMAGE:-rytsh/frontend-pnpm:v0.0.3}
-export BASE_IMAGE=${BASE_IMAGE:-alpine:3.15.0}
+export BASE_IMAGE=${BASE_IMAGE:-scratch}
 export IMAGE_TAG=${VERSION}
-export SKIP_CERTS=${SKIP_CERTS:-N}
 export NPM_PROXY=${NPM_PROXY:-http://localhost:4873}
-# use this for go build
-SSH_KEY=${HOME}/.ssh/id_rsa
 
 function usage() {
     cat - <<EOF
@@ -189,7 +186,9 @@ if [[ "$1" == '--' ]]; then shift; fi
 if [[ "${DOCKER_BUILD}" == "Y" ]]; then
     set -e
 
-    export SSH_KEY_CICD_64="$(cat ${SSH_KEY} | base64 | tr -d '\n')"
+    # create dummy folder
+    mkdir -p infra-certificates/certs
+
     # build command
     cat Dockerfile | \
     cat <(echo '# syntax=docker/dockerfile:experimental') - | \
@@ -202,8 +201,6 @@ if [[ "${DOCKER_BUILD}" == "Y" ]]; then
         --build-arg GOPROXY=$(go env GOPROXY | sed -e 's@localhost@host.docker.internal@g') \
         --build-arg GOPRIVATE=$(go env GOPRIVATE) \
         --build-arg IMAGE_TAG \
-        --build-arg SSH_KEY_CICD_64 \
-        --build-arg SKIP_CERTS \
         -t ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} -f - .
     echo "> image name => ${DOCKER_IMAGE_NAME}:${IMAGE_TAG}"
     set +e

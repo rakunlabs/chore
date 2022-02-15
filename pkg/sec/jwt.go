@@ -59,3 +59,13 @@ func (t *JWT) Validate(tokenStr string) (map[string]interface{}, error) {
 
 	return nil, fmt.Errorf("invalid token: %w", err)
 }
+
+// Renew token with not changing claims.
+func (t *JWT) Renew(tokenStr string, expDate int64) (string, error) {
+	claims, err := t.Validate(tokenStr)
+	if err != nil {
+		return "", fmt.Errorf("renew: %w", err)
+	}
+
+	return t.Generate(claims, expDate)
+}

@@ -7,6 +7,23 @@ const login = async (data:object) => {
     null,
     "POST",
     data,
+    false,
+    {
+      timeout: 2000,
+    }
+  );
+};
+
+const renew = async () => {
+  return requestSender(
+    "/token/renew",
+    null,
+    "GET",
+    null,
+    true,
+    {
+      timeout: 2000,
+    }
   );
 };
 
@@ -14,4 +31,4 @@ const logout = () => {
   tokenClear();
 };
 
-export { login, logout };
+export { login, renew, logout };

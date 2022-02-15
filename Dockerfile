@@ -1,12 +1,14 @@
 ARG GO_IMAGE
 ARG BASE_IMAGE
-ARG FRONTEND_IMAGE
+ARG FRONTEND_IMAGE=rytsh/frontend-pnpm:v0.0.3
 
 ######################### BUILDER FRONTEND
 FROM $FRONTEND_IMAGE AS builder-frontend
 WORKDIR /workspace
 
 COPY _web _web
+COPY docs docs
+
 ARG NPM_PROXY
 
 RUN cd _web && \
@@ -19,20 +21,18 @@ FROM $GO_IMAGE AS builder-backend
 # DEV-BUILD-EDIT
 WORKDIR /
 
-ARG SSH_KEY_CICD_64
 ARG GOPRIVATE=gitlab.test.igdcs.com
 ARG GOPROXY=https://proxy.golang.org,direct
-ARG SKIP_CERTS=N
 
-RUN if [ "${SKIP_CERTS}" != "Y" ]; then \
-    git config --global url."https://".insteadOf git:// && \
+## Add ca-certificates
+RUN apk add --no-cache \
+    ca-certificates git bash openssh-client-common
+
+# git configurations
+RUN git config --global url."https://".insteadOf git:// && \
     git config --global http.sslVerify false && \
     mkdir -p -m 0600 ~/.ssh && \
-    ssh-keyscan -H gitlab.test.igdcs.com >> ~/.ssh/known_hosts && \
-    echo ${SSH_KEY_CICD_64} | base64 -d > ~/.ssh/id_rsa && \
-    chmod 600 ~/.ssh/id_rsa && \
-    git clone git\@gitlab.test.igdcs.com:finops/devops/infra-certificates.git \
-    ; else mkdir -p /infra-certificates/certs; fi
+    ssh-keyscan -H gitlab.test.igdcs.com >> ~/.ssh/known_hosts
 #####
 
 WORKDIR /workspace
@@ -52,7 +52,8 @@ RUN ./build.sh --build
 FROM $BASE_IMAGE
 
 COPY --from=builder-backend /workspace/_out/linux/chore /chore
-COPY --from=builder-backend /infra-certificates/certs /etc/ssl/certs
+COPY --from=builder-backend /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY infra-certificates/certs /etc/ssl/certs
 
 # Run the binary
 ENTRYPOINT ["/chore"]

@@ -12,11 +12,11 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/utils"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 )
 
 type TemplatePureID struct {
@@ -62,9 +62,15 @@ func listTemplates(c *fiber.Ctx) error {
 
 	// Table(reg.DB.Config.NamingStrategy.JoinTableName("folders"))
 
-	result := reg.DB.WithContext(c.UserContext()).Model(&models.Folder{}).Select("item", "name").Limit(meta.Limit).Offset(meta.Offset).Where(
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Folder{}).Select("item", "name")
+
+	if meta.Limit >= 0 {
+		query = query.Limit(meta.Limit)
+	}
+
+	result := query.Offset(meta.Offset).Where(
 		"folder = ?", meta.Folder,
-	).Find(&items)
+	).Order("dtype DESC").Find(&items)
 
 	// check write error
 	if result.Error != nil {
@@ -74,6 +80,9 @@ func listTemplates(c *fiber.Ctx) error {
 			},
 		)
 	}
+
+	// get counts
+	reg.DB.WithContext(c.UserContext()).Model(&models.Folder{}).Count(&meta.Count)
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{
@@ -111,6 +120,7 @@ func getTemplate(c *fiber.Ctx) error {
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	query := reg.DB.WithContext(c.UserContext()).Model(&models.Template{})
+
 	if id != "" {
 		query = query.Where("id = ?", id)
 	}
@@ -381,9 +391,9 @@ func deleteTemplate(c *fiber.Ctx) error {
 }
 
 func Template(router fiber.Router) {
-	router.Get("/templates", middleware.JWTCheck(""), listTemplates)
-	router.Get("/template", middleware.JWTCheck(""), getTemplate)
-	router.Post("/template", middleware.JWTCheck(""), postTemplate)
-	router.Patch("/template", middleware.JWTCheck(""), patchTemplate)
-	router.Delete("/template", middleware.JWTCheck(""), deleteTemplate)
+	router.Get("/templates", middleware.JWTCheck(nil, nil), listTemplates)
+	router.Get("/template", middleware.JWTCheck(nil, nil), getTemplate)
+	router.Post("/template", middleware.JWTCheck(nil, nil), postTemplate)
+	router.Patch("/template", middleware.JWTCheck(nil, nil), patchTemplate)
+	router.Delete("/template", middleware.JWTCheck(nil, nil), deleteTemplate)
 }

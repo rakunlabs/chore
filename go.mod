@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/arsmn/fiber-swagger/v2 v2.20.0
+	github.com/dop251/goja v0.0.0-20220214123719-b09a6bfa842f
 	github.com/gofiber/fiber/v2 v2.22.0
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.1.2
@@ -19,6 +20,7 @@ require (
 	github.com/wei840222/gorm-zerolog v0.0.0-20210303025759-235c42bb33fa
 	gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 v2.5.5
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gorm.io/datatypes v1.0.5
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/driver/sqlite v1.2.6 // indirect

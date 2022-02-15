@@ -2,33 +2,58 @@ basePath: /api/v1
 definitions:
   api.AuthPureID:
     properties:
-      header:
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
+      headers:
         additionalProperties:
           type: string
         example:
           Content-Type: application/json
         type: object
       id:
-        type: string
-      method:
-        example: POST
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
       name:
         example: jira-deepcore
         type: string
-      url:
-        example: http://localhost:9090
-        type: string
     type: object
-  api.BindPureID:
+  api.ControlPureContentID:
     properties:
-      auth_id:
+      content:
+        example: aGVsbG8ge3submFtZX19Cg==
+        format: base64
         type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
       id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
       name:
         type: string
-      template_id:
+    type: object
+  api.ControlPureID:
+    properties:
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
+      id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
+        type: string
+      name:
         type: string
     type: object
   api.ItemName:
@@ -42,7 +67,7 @@ definitions:
     type: object
   api.LoginModel:
     properties:
-      name:
+      login:
         example: admin
         type: string
       password:
@@ -61,36 +86,75 @@ definitions:
         example: aGVsbG8ge3submFtZX19Cg==
         format: base64
         type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
       id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
       name:
         example: deepcore/template1
         type: string
     type: object
-  api.TokenRet:
+  api.TokenDataByID:
     properties:
-      token:
-        example: tokenJWT
+      createdby:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
-    type: object
-  api.UserData:
-    properties:
-      admin:
-        example: true
-        type: boolean
+      date:
+        example: "2021-02-18T21:54:42.123Z"
+        type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
       id:
         example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
       name:
-        example: username
+        example: mytoken
+        type: string
+    type: object
+  api.UserDataID:
+    properties:
+      email:
+        example: userx@worldline.com
+        type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
+      id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
+        type: string
+      name:
+        example: userX
         type: string
     type: object
   api.UserPureID:
     properties:
-      admin:
-        example: true
-        type: boolean
+      email:
+        example: userx@worldline.com
+        type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
       id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
       name:
         example: userX
@@ -123,10 +187,14 @@ definitions:
   apimodels.ID:
     properties:
       id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
         type: string
     type: object
   apimodels.Meta:
     properties:
+      count:
+        example: 35
+        type: integer
       limit:
         example: 20
         type: integer
@@ -136,36 +204,100 @@ definitions:
     type: object
   models.AuthPure:
     properties:
-      header:
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
+      headers:
         additionalProperties:
           type: string
         example:
           Content-Type: application/json
         type: object
-      method:
-        example: POST
-        type: string
       name:
         example: jira-deepcore
         type: string
-      url:
-        example: http://localhost:9090
-        type: string
     type: object
-  models.BindPure:
+  models.ControlPureContent:
     properties:
-      auth_id:
+      content:
+        example: aGVsbG8ge3submFtZX19Cg==
+        format: base64
         type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
       name:
         type: string
-      template_id:
+    type: object
+  models.Token:
+    properties:
+      created_at:
+        type: string
+      createdby:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
+        type: string
+      date:
+        example: "2021-02-18T21:54:42.123Z"
+        type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
+      id:
+        example: cf8a07d4-077e-402e-a46b-ac0ed50989ec
+        type: string
+      name:
+        example: mytoken
+        type: string
+      token:
+        example: tokenJWT
+        type: string
+    type: object
+  models.TokenData:
+    properties:
+      date:
+        example: "2021-02-18T21:54:42.123Z"
+        type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
+      name:
+        example: mytoken
+        type: string
+    type: object
+  models.TokenPrivate:
+    properties:
+      token:
+        example: tokenJWT
         type: string
     type: object
   models.UserPure:
     properties:
-      admin:
-        example: true
-        type: boolean
+      email:
+        example: userx@worldline.com
+        type: string
+      groups:
+        example:
+        - admin
+        - group1
+        items:
+          type: string
+        type: array
       name:
         example: userX
         type: string
@@ -358,7 +490,7 @@ paths:
       summary: List auths
       tags:
       - auth
-  /bind:
+  /control:
     delete:
       description: Delete with id or name
       parameters:
@@ -387,11 +519,11 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - ApiKeyAuth: []
-      summary: Delete bind
+      summary: Delete control
       tags:
-      - bind
+      - control
     get:
-      description: Get one bind with id or name
+      description: Get one control with id
       parameters:
       - description: get by id
         in: query
@@ -401,6 +533,10 @@ paths:
         in: query
         name: name
         type: string
+      - description: get content
+        in: query
+        name: nodata
+        type: boolean
       responses:
         "200":
           description: OK
@@ -409,7 +545,7 @@ paths:
             - $ref: '#/definitions/apimodels.Data'
             - properties:
                 data:
-                  $ref: '#/definitions/api.BindPureID'
+                  $ref: '#/definitions/api.ControlPureContentID'
               type: object
         "400":
           description: Bad Request
@@ -425,52 +561,17 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - ApiKeyAuth: []
-      summary: Get bind
+      summary: Get control
       tags:
-      - bind
+      - control
     patch:
-      description: Bind with a few data, id must exist in request
+      description: Replace with new data, id or name must exist in request
       parameters:
-      - description: send part of the user object
+      - description: send part of the control object
         in: body
         name: payload
         schema:
-          $ref: '#/definitions/api.BindPureID'
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/apimodels.Data'
-            - properties:
-                data:
-                  $ref: '#/definitions/apimodels.ID'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/apimodels.Error'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/apimodels.Error'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/apimodels.Error'
-      security:
-      - ApiKeyAuth: []
-      summary: Bind auth
-      tags:
-      - bind
-    post:
-      description: Send and record new bind
-      parameters:
-      - description: send bind object
-        in: body
-        name: payload
-        schema:
-          $ref: '#/definitions/models.BindPure'
+          $ref: '#/definitions/api.ControlPureID'
       responses:
         "200":
           description: OK
@@ -495,12 +596,47 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - ApiKeyAuth: []
-      summary: New bind
+      summary: Replace control
       tags:
-      - bind
-  /binds:
+      - control
+    post:
+      description: Send and record new control
+      parameters:
+      - description: send control object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.ControlPureContent'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New control
+      tags:
+      - control
+  /controls:
     get:
-      description: Get list of the binds
+      description: Get list of the controls
       parameters:
       - description: set the limit, default is 20
         in: query
@@ -519,7 +655,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/api.BindPureID'
+                    $ref: '#/definitions/api.ControlPureID'
                   type: array
                 meta:
                   $ref: '#/definitions/apimodels.Meta'
@@ -534,9 +670,9 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - ApiKeyAuth: []
-      summary: List binds
+      summary: List controls
       tags:
-      - bind
+      - control
   /login:
     post:
       description: Get JWT token for 1 hour
@@ -577,22 +713,25 @@ paths:
       - public
   /send:
     post:
+      consumes:
+      - text/plain
       description: Send request with bind id or name
       parameters:
-      - description: get by id
+      - description: set endpoint
         in: query
-        name: id
+        name: endpoint
+        required: true
         type: string
-      - description: get by name
+      - description: set control
         in: query
-        name: name
+        name: control
+        required: true
         type: string
       - description: send key values
         in: body
         name: payload
         schema:
-          additionalProperties: true
-          type: object
+          type: string
       responses:
         "200":
           description: respond from related server
@@ -811,9 +950,9 @@ paths:
     delete:
       description: Delete with token
       parameters:
-      - description: get by token
+      - description: get by token id
         in: query
-        name: token
+        name: id
         type: string
       responses:
         "204":
@@ -835,18 +974,13 @@ paths:
       summary: Delete token
       tags:
       - token
-    post:
-      description: Send and record PAT token
+    get:
+      description: Get token with token id
       parameters:
-      - description: generate new token
+      - description: get by token id
         in: query
-        name: new
-        type: boolean
-      - description: send valid token
-        in: body
-        name: payload
-        schema:
-          $ref: '#/definitions/api.TokenRet'
+        name: id
+        type: string
       responses:
         "200":
           description: OK
@@ -855,7 +989,38 @@ paths:
             - $ref: '#/definitions/apimodels.Data'
             - properties:
                 data:
-                  $ref: '#/definitions/api.TokenRet'
+                  $ref: '#/definitions/models.Token'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get token
+      tags:
+      - token
+    post:
+      description: Send and record PAT token
+      parameters:
+      - description: token parameters
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.TokenData'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Token'
               type: object
         "400":
           description: Bad Request
@@ -882,7 +1047,7 @@ paths:
         in: body
         name: payload
         schema:
-          $ref: '#/definitions/api.TokenRet'
+          $ref: '#/definitions/models.TokenPrivate'
       responses:
         "200":
           description: OK
@@ -891,7 +1056,7 @@ paths:
             - $ref: '#/definitions/apimodels.Data'
             - properties:
                 data:
-                  $ref: '#/definitions/api.TokenRet'
+                  $ref: '#/definitions/models.TokenPrivate'
               type: object
         "400":
           description: Bad Request
@@ -908,6 +1073,73 @@ paths:
       summary: Check token
       tags:
       - token
+  /token/renew:
+    get:
+      description: Get new token based on old token
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.TokenPrivate'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      summary: Renew token
+      tags:
+      - token
+  /tokens:
+    get:
+      description: Get list of the tokens
+      parameters:
+      - description: set the limit, default is 20
+        in: query
+        name: limit
+        type: integer
+      - description: set the offset, default is 0
+        in: query
+        name: offset
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.DataMeta'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/api.TokenDataByID'
+                  type: array
+                meta:
+                  $ref: '#/definitions/apimodels.Meta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: List tokens
+      tags:
+      - token
   /user:
     delete:
       description: Delete with id or name
@@ -915,10 +1147,6 @@ paths:
       - description: get by id
         in: query
         name: id
-        type: string
-      - description: get by name
-        in: query
-        name: name
         type: string
       responses:
         "204":
@@ -947,10 +1175,6 @@ paths:
         in: query
         name: id
         type: string
-      - description: get by name
-        in: query
-        name: name
-        type: string
       responses:
         "200":
           description: OK
@@ -959,7 +1183,7 @@ paths:
             - $ref: '#/definitions/apimodels.Data'
             - properties:
                 data:
-                  $ref: '#/definitions/api.UserData'
+                  $ref: '#/definitions/api.UserDataID'
               type: object
         "400":
           description: Bad Request
@@ -1052,10 +1276,6 @@ paths:
     get:
       description: Get list of the users
       parameters:
-      - description: set admin rights
-        in: query
-        name: admin
-        type: boolean
       - description: set the limit, default is 20
         in: query
         name: limit
@@ -1073,7 +1293,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/api.UserData'
+                    $ref: '#/definitions/api.UserDataID'
                   type: array
                 meta:
                   $ref: '#/definitions/apimodels.Meta'

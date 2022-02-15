@@ -7,21 +7,37 @@
   import { push } from "svelte-spa-router";
 
   let error = "";
+  let working = false;
+
+  // let selected = "chore";
+
+  // const setSelected = (v: string) => {
+  //   selected = v;
+  // };
 
   const signin = async (
     e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
   ) => {
+    if (working) {
+      return;
+    }
+
+    working = true;
     const data = formToObject(e.currentTarget);
     try {
       const response = await login(data);
-      tokenSet(response.data.data.token, null);
+      tokenSet(response.data.data.token);
       // TODO: use pop for history
       push("/");
     } catch (reason: unknown) {
       if (axios.isAxiosError(reason)) {
-        error = reason.response.data.error ?? reason.message;
+        error = reason?.response?.data?.error ?? reason.message;
+      } else {
+        error = reason as any;
       }
     }
+
+    working = false;
   };
 </script>
 
@@ -32,38 +48,53 @@
     <h2 class="mb-12 text-center text-sm font-extrabold [line-height:1.2]">
       {banner}
     </h2>
-    <form on:submit|preventDefault|stopPropagation={(e) => signin(e).catch()}>
-      <div class="mb-4">
-        <label class="block mb-1" for="login">Username or email address</label>
-        <input
-          id="login"
-          type="text"
-          name="login"
-          class="py-2 px-3 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 rounded-md shadow-sm disabled:bg-gray-100 mt-1 block w-full"
-        />
-      </div>
-      <div class="mb-4">
-        <label class="block mb-1" for="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          name="password"
-          class="py-2 px-3 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 rounded-md shadow-sm disabled:bg-gray-100 mt-1 block w-full"
-        />
-      </div>
-      <div class="mt-6">
-        <button
-          type="submit"
-          class="w-full inline-flex items-center justify-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold capitalize text-white hover:bg-red-700 active:bg-red-700 focus:outline-none focus:border-red-700 focus:ring focus:ring-red-200 disabled:opacity-25 transition"
-        >
-          Sign In
-        </button>
-      </div>
-      {#if error != ""}
-        <div class="mt-4 bg-red-200">
-          <span class="break-all">{error}</span>
+    <!-- <div>
+      <button
+        class={`border border-b-0 py-1 px-3 ${
+          selected == "chore" ? "bg-yellow-50" : "bg-gray-200"
+        }`}
+        on:click={() => setSelected("chore")}>chore</button
+      >
+    </div> -->
+    <div class="border p-4 bg-yellow-50">
+      <form on:submit|preventDefault|stopPropagation={signin}>
+        <div class="mb-4">
+          <label class="block mb-1" for="login">
+            <!-- {#if selected == "chore"} -->
+            Username or email address
+            <!-- {/if} -->
+          </label>
+          <input
+            id="login"
+            type="text"
+            name="login"
+            class="py-2 px-3 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100 mt-1 block w-full"
+          />
         </div>
-      {/if}
-    </form>
+        <div class="mb-4">
+          <label class="block mb-1" for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            class="py-2 px-3 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100 mt-1 block w-full"
+          />
+        </div>
+        <div class="mt-6">
+          <button
+            type="submit"
+            class="w-full inline-flex items-center justify-center px-4 py-2 bg-red-400 border border-transparent font-semibold capitalize text-white hover:bg-red-500 active:bg-red-500 focus:outline-none focus:border-red-500 focus:ring focus:ring-red-200 disabled:bg-gray-400 transition"
+            disabled={working}
+          >
+            Sign In
+          </button>
+        </div>
+        {#if error != ""}
+          <div class="mt-4 bg-red-200">
+            <span class="break-all">{error}</span>
+          </div>
+        {/if}
+      </form>
+    </div>
   </div>
 </div>

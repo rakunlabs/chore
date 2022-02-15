@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"

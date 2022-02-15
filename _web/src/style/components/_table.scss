@@ -1,0 +1,23 @@
+/* stylelint-disable selector-max-compound-selectors */
+.table-custom {
+  td,
+  th {
+    @apply border border-solid border-gray-300;
+  }
+
+  thead {
+    @apply bg-gray-100;
+  }
+
+  tbody tr:nth-child(even) {
+    @apply bg-slate-100;
+  }
+
+  tbody tr:hover {
+    @apply bg-slate-200;
+  }
+
+  tbody tr th {
+    @apply font-normal;
+  }
+}

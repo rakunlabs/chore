@@ -40,6 +40,6 @@ module.exports = {
     "require-jsdoc": "off",
     "max-len": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
-    "operator-linebreak": ["error", "before"],
+    "operator-linebreak": "off",
   },
 };

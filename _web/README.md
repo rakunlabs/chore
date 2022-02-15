@@ -4,12 +4,10 @@ Frontend communicate to backend with REST-API.
 
 ## Development
 
-Set `NPM_PROXY`.
-
 Run project
 
 ```sh
-pnpm run dev
+pnpm run dev -- --host
 ```
 
 Build

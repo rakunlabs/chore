@@ -6,8 +6,11 @@
   import { b64ToUtf8 } from "@/helper/codec";
   import { requestSender } from "@/helper/api";
   import type { itemType } from "@/models/template";
+  import { storeHead } from "@/store/store";
 
   export let params = {} as Record<string, string>;
+
+  storeHead.set("Templates");
 
   let items: Array<itemType> = [];
   let view = "loading";
@@ -20,6 +23,26 @@
 
   const reg = /^\/templates[/]?/i;
 
+  const fetchList = async (v: string) => {
+    try {
+      const l = await requestSender(
+        "templates",
+        {
+          folder: v,
+          limit: -1,
+        },
+        "GET",
+        null,
+        true
+      );
+      // console.log(l);
+      items = l ? l.data.data : [];
+    } catch (error) {
+      items = [];
+    }
+    view = "list";
+  };
+
   const getInfo = async (v: string) => {
     view = "loading";
 
@@ -30,20 +53,7 @@
 
     if (!v || v[v.length - 1] == "/") {
       input = params.input;
-      try {
-        const l = await requestSender(
-          "templates",
-          { folder: v },
-          "GET",
-          null,
-          true
-        );
-        // console.log(l);
-        items = l ? l.data.data : [];
-      } catch (error) {
-        items = [];
-      }
-      view = "list";
+      fetchList(v);
     } else {
       try {
         title = v;
@@ -63,32 +73,42 @@
   const addNewItem = () => {
     view = "add";
   };
+
+  const closed = () => {
+    getInfo(params.input);
+  };
+
+  const reload = () => {
+    getInfo(params.input);
+  };
 </script>
 
 <div class="grid [grid-template-rows:auto_1fr] h-full">
-  <div
-    class="pr-2 py-1 border-b border-gray-400 hover:bg-gray-300 flex justify-between items-center"
-  >
+  <div class="border-b border-black flex justify-between items-center">
     <Bread url={params.input} />
-    <button
-      on:click|stopPropagation={addNewItem}
-      class="w-20 bg-transparent border-2 border-gray-500 text-gray-500 text-sm hover:bg-gray-500 hover:text-gray-100"
-    >
-      Add
-    </button>
+    <div>
+      <button
+        on:click|stopPropagation={reload}
+        class="bg-gray-200 p-1 font-bold inline-block hover:bg-yellow-200 w-40"
+      >
+        Reload
+      </button>
+      <button
+        on:click|stopPropagation={addNewItem}
+        class="bg-gray-200 p-1 font-bold inline-block hover:bg-yellow-200 w-40"
+      >
+        Add
+      </button>
+    </div>
   </div>
 
   <div class="pt-1 h-full">
     {#if view == "list"}
       <List {items} prefix="/templates" />
     {:else if view == "data"}
-      <Editor {data} {title} area="templates" />
+      <Editor {data} {title} />
     {:else if view == "add"}
-      <Editor
-        title={input.replace(reg, "")}
-        area="templates"
-        editableTitle={true}
-      />
+      <Editor title={input.replace(reg, "")} editableTitle={true} {closed} />
     {:else}
       <Loading />
     {/if}
