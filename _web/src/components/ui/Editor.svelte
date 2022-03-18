@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import CodeMirror from "codemirror";
   import { requestSender } from "@/helper/api";
+  import { addToast } from "@/store/toast";
+  import axios from "axios";
 
   let code: HTMLElement;
   export let title = "title";
@@ -43,9 +45,9 @@
     }
   };
 
-  const save = () => {
+  const save = async () => {
     try {
-      requestSender(
+      await requestSender(
         "template",
         {
           name: title,
@@ -55,8 +57,13 @@
         true
       );
       toggleReadOnly(true);
-    } catch (error) {
-      console.log(error);
+      addToast("saved template", "info");
+    } catch (reason: unknown) {
+      let msg = reason;
+      if (axios.isAxiosError(reason)) {
+        msg = reason.response.data.error ?? reason.message;
+      }
+      addToast(msg as string, "warn");
     }
   };
 </script>

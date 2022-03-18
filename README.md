@@ -40,6 +40,8 @@ With linux shell
 dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d -- '\n' | tr -- '+/' '-_'; echo
 ```
 
+__WARN__ when secret changed, all previous tokens not usable after that.
+
 ### Template
 
 Template is a text file format. Go template and sprig functions supported.

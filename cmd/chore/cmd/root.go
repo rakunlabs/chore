@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -32,19 +33,30 @@ var rootCmd = &cobra.Command{
 	Short:   "custom request sender",
 	Long:    config.Banner("request with templates"),
 	Version: config.AppVersion,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		config.SetLogLevel(config.Application.LogLevel)
-	},
-	Run: func(cmd *cobra.Command, args []string) {
-		// load configuration
-		loadConfig(cmd.Context(), cmd.Flags().Visit)
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := config.SetLogLevel(config.Application.LogLevel); err != nil {
+			return err //nolint:wrapcheck // no need
+		}
 
-		runRoot(cmd.Context())
+		return nil
+	},
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// load configuration
+		if err := loadConfig(cmd.Context(), cmd.Flags().Visit); err != nil {
+			return err
+		}
+
+		if err := runRoot(cmd.Context()); err != nil {
+			return err
+		}
+
+		return nil
 	},
 }
 
 func Execute(ctx context.Context) error {
-	return rootCmd.ExecuteContext(ctx) //nolint:wrapcheck
+	return rootCmd.ExecuteContext(ctx) //nolint:wrapcheck // no need
 }
 
 //nolint:gochecknoinits
@@ -62,7 +74,7 @@ func override(ow map[string]overrideHold) {
 	ow["log-level"] = overrideHold{&config.Application.LogLevel, config.Application.LogLevel}
 }
 
-func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) {
+func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 	overrideValues := make(map[string]overrideHold)
 	override(overrideValues)
 
@@ -77,9 +89,7 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) {
 	}
 
 	if err := igconfig.LoadWithLoadersWithContext(ctxConfig, config.GetLoadName(), &config.Application, loaders...); err != nil {
-		log.Error().Err(err).Msg("unable to load configuration settings")
-
-		return
+		return fmt.Errorf("unable to load configuration settings: %v", err)
 	}
 
 	// override used cmd values
@@ -90,13 +100,17 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) {
 	})
 
 	// set log again to get changes
-	config.SetLogLevel(config.Application.LogLevel)
+	if err := config.SetLogLevel(config.Application.LogLevel); err != nil {
+		return err //nolint:wrapcheck // no need
+	}
 
 	// print loaded object
-	log.Info().EmbedObject(igconfig.Printer{Value: config.Application}).Msg("loaded config")
+	log.Info().Object("config", igconfig.Printer{Value: config.Application}).Msg("loaded config")
+
+	return nil
 }
 
-func runRoot(ctxParent context.Context) {
+func runRoot(ctxParent context.Context) (err error) {
 	// appname and version
 	// config.Banner("custom send request with templates"),
 	log.Info().Msgf("%s [%s]", strings.ToTitle(config.AppName), config.AppVersion)
@@ -120,7 +134,10 @@ func runRoot(ctxParent context.Context) {
 			log.Info().Msg("Gracefully shutting down...")
 		}
 
-		server.Shutdown()
+		if errShutdown := server.Shutdown(); errShutdown != nil {
+			// set error
+			err = errShutdown
+		}
 
 		wg.Done()
 	}()
@@ -140,28 +157,26 @@ func runRoot(ctxParent context.Context) {
 		"schema":   config.Application.Store.Schema,
 	})
 	if err != nil {
-		log.Error().Err(err).Msg("cannot open db")
-
-		return
+		return fmt.Errorf("cannot open db: %v", err)
 	}
 
 	// get generic interface and close in defer
 	dbGeneric, err := dbConn.DB()
 	if err != nil {
-		log.Error().Err(err).Msg("cannot get generic interface of gorm")
-
-		return
+		return fmt.Errorf("cannot get generic interface of gorm: %v", err)
 	}
 
 	defer dbGeneric.Close()
 
 	// migrate database
 	if err := store.AutoMigrate(ctx, dbConn); err != nil {
-		log.Error().Err(err).Msg("auto migration")
-
-		return
+		return fmt.Errorf("auto migration: %v", err)
 	}
 
 	// server wait
-	server.Serve(ctx, "main", dbConn)
+	if err := server.Serve(ctx, "main", dbConn); err != nil {
+		return err //nolint:wrapcheck // no need
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -31,13 +32,13 @@ func InitializeLogger() {
 	}
 }
 
-func SetLogLevel(level string) {
+func SetLogLevel(level string) error {
 	zLevel, err := zerolog.ParseLevel(level)
 	if err != nil {
-		log.Warn().Err(err).Str("component", "log").Msgf("zerolog unknown level %s", level)
-
-		return
+		return fmt.Errorf("zerolog unknown level %s; %v", level, err)
 	}
 
 	zerolog.SetGlobalLevel(zLevel)
+
+	return nil
 }

@@ -25,7 +25,8 @@ type Connections = struct {
 }
 
 type Connection = struct {
-	Node string `json:"node"`
+	Node   string `json:"node"`
+	Output string `json:"output"`
 }
 
 // NodesData is content's represent.
@@ -39,11 +40,11 @@ type Inputs struct {
 // Noder for nodes like script, endpoint.
 type Noder interface {
 	GetType() string
-	Run(context.Context, *registry.AppStore, []byte) ([]byte, error)
+	Run(context.Context, *registry.AppStore, []byte, string) ([]byte, error)
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
 	Validate() error
 	ActiveInput(string)
-	Next() []string
+	Next() []Connection
 	CheckData() string
 }

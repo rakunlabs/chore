@@ -23,13 +23,13 @@ type Request struct {
 	addHeadersRaw string
 	typeName      string
 	inputs        []flow.Inputs
-	outputs       []string
+	outputs       []flow.Connection
 	wait          int
 	fetched       bool
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte) ([]byte, error) {
+func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte, _ string) ([]byte, error) {
 	var addHeaders map[string]interface{}
 	if err := yaml.Unmarshal([]byte(n.addHeadersRaw), &addHeaders); err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (n *Request) Validate() error {
 	return nil
 }
 
-func (n *Request) Next() []string {
+func (n *Request) Next() []flow.Connection {
 	return n.outputs
 }
 
@@ -126,10 +126,7 @@ func NewRequest(data flow.NodeData) flow.Noder {
 		}
 	}
 
-	outputs := make([]string, 0, len(data.Outputs["output_1"].Connections))
-	for _, connection := range data.Outputs["output_1"].Connections {
-		outputs = append(outputs, connection.Node)
-	}
+	outputs := data.Outputs["output_1"].Connections
 
 	auth, _ := data.Data["auth"].(string)
 	method, _ := data.Data["method"].(string)

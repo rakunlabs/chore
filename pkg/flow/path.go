@@ -16,7 +16,7 @@ func VisitAndFetch(reg *NodesReg) error {
 	return validateFetch("", starts, reg)
 }
 
-func validateFetch(current string, outputs []string, reg *NodesReg) error {
+func validateFetch(current string, outputs []Connection, reg *NodesReg) error {
 	for _, output := range outputs {
 		// before to run check context
 		select {
@@ -25,7 +25,7 @@ func validateFetch(current string, outputs []string, reg *NodesReg) error {
 		default:
 		}
 
-		node := reg.Get(output)
+		node := reg.Get(output.Node)
 		if err := node.Validate(); err != nil {
 			return fmt.Errorf("ID %s, %s validate failed: %v", output, node.GetType(), err)
 		}
@@ -42,7 +42,7 @@ func validateFetch(current string, outputs []string, reg *NodesReg) error {
 			reg.respondChanActive = true
 		}
 
-		if err := validateFetch(output, node.Next(), reg); err != nil {
+		if err := validateFetch(output.Node, node.Next(), reg); err != nil {
 			return err
 		}
 	}
@@ -61,7 +61,7 @@ func GoAndRun(reg *NodesReg, firstValue []byte) {
 	close(reg.respondChan)
 }
 
-func branch(nexts []string, reg *NodesReg, value []byte) {
+func branch(nexts []Connection, reg *NodesReg, value []byte) {
 	for _, next := range nexts {
 		// going goroutine to prevent too much recursive call
 		reg.wgx.Add(1)
@@ -70,7 +70,7 @@ func branch(nexts []string, reg *NodesReg, value []byte) {
 	}
 }
 
-func branchRun(start string, reg *NodesReg, value []byte) {
+func branchRun(start Connection, reg *NodesReg, value []byte) {
 	defer reg.wgx.Done()
 
 	// before to run check context
@@ -80,15 +80,15 @@ func branchRun(start string, reg *NodesReg, value []byte) {
 	default:
 	}
 
-	node := reg.Get(start)
+	node := reg.Get(start.Node)
 
-	outputData, err := node.Run(reg.ctx, reg.appStore, value)
+	outputData, err := node.Run(reg.ctx, reg.appStore, value, start.Output)
 	if err != nil {
 		if errors.Is(err, ErrStopGoroutine) {
 			return
 		}
 
-		log.Error().Str("control", reg.controlName).Str("endpoint", reg.startName).Err(err).Msgf("%v cannot run", node.GetType())
+		log.Error().Err(err).Msgf("%v cannot run", node.GetType())
 
 		return
 	}

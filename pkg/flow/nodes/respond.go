@@ -17,7 +17,7 @@ type Respond struct {
 }
 
 // Run get values from active input nodes.
-func (n *Respond) Run(_ context.Context, _ *registry.AppStore, value []byte) ([]byte, error) {
+func (n *Respond) Run(_ context.Context, _ *registry.AppStore, value []byte, _ string) ([]byte, error) {
 	return value, nil
 }
 
@@ -37,7 +37,7 @@ func (n *Respond) Validate() error {
 	return nil
 }
 
-func (n *Respond) Next() []string {
+func (n *Respond) Next() []flow.Connection {
 	return nil
 }
 

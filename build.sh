@@ -15,8 +15,8 @@ MAINGO="cmd/${APPNAME}/main.go"
 PKG=$(head -n 1 go.mod | cut -d " " -f2)
 
 FLAG=(
-"${PKG}/internal/configs.AppName=${APPNAME}"
-"${PKG}/internal/configs.AppVersion=${VERSION}"
+"${PKG}/internal/config.AppName=${APPNAME}"
+"${PKG}/internal/config.AppVersion=${VERSION}"
 )
 
 FLAGS=$(echo ${FLAG[@]} | xargs -n 1 echo -n " -X")

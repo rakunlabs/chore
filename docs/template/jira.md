@@ -54,9 +54,7 @@ Create myitsm ticket
     "priority": {
       "name": "Minor"
     },
-    "customfield_10006": {
-      "value": "LBO-59087"
-    },
+    "customfield_10006": "LBO-59087",
     "customfield_11601": {
       "value": "FinOps - DeepCore"
     }
@@ -88,9 +86,9 @@ Create myitsm ticket
 }
 ```
 
-Template
+Template for create
 
-```
+```json
 {
   "fields": {
     "project":
@@ -112,7 +110,14 @@ Template
     "customfield_11601": {
       "value": "FinOps - DeepCore"
     }
-  },
+  }
+}
+```
+
+Template for update links
+
+```json
+{
   "update":{
     "issuelinks":[
       {{range $i, $value := .issuelinks }}
@@ -120,7 +125,7 @@ Template
       {
         "add":{
           "type":{
-            "name":"Relates",
+            "name":"Relates"
           },
           "outwardIssue": {
             "key": "{{$value}}"

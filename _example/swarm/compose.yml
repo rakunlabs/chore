@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:12.8-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      # POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role==manager"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    configs:
+      - source: postgres_init
+        target: /docker-entrypoint-initdb.d/init-migration-schema.sh
+    # ports:
+    #   - "5432:5432"
+
+  chore:
+    image: am2vm2258.test.igdcs.com:8083/finops/chore:v0.0.1
+    environment:
+      LOGLEVEL: info
+      SECRET: thisissupersecretjustforthisapp
+      STORE_HOST: postgres
+      STORE_PORT: "5432"
+      STORE_USER: postgres
+      STORE_DBNAME: postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        window: 20s
+      placement:
+        constraints:
+          - "node.role==manager"
+    ports:
+      - "9090:8080"
+
+volumes:
+  db-data:
+
+configs:
+  postgres_init:
+    file: ./configs/init-migration-schema.sh

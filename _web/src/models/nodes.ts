@@ -109,7 +109,7 @@ const script = {
 // };
 
 const respond = {
-  name: "request",
+  name: "respond",
   html: `
   <div>
     <div class="title-box">Respond</div>
@@ -120,4 +120,36 @@ const respond = {
   output: 0,
 };
 
-export const nodes = { endpoint, template, request, script, respond } as Record<string, node>;
+const log = {
+  name: "log",
+  html: `
+  <div>
+    <div class="title-box">Log</div>
+    <div class="box">
+      <p>Message</p>
+      <input type="text" placeholder="awesome log message" name="url" df-message>
+      <p>Log Level</p>
+      <select df-level>
+        <option value="debug">Debug</option>
+        <option value="info">Info</option>
+        <option value="warn">Warn</option>
+        <option value="error">Error</option>
+      </select>
+      <hr>
+      <label>
+        <span>Print data</span>
+        <input type="checkbox" name="data" data-action="checkbox" df-data>
+      </label>
+    </div
+  </div>
+  `,
+  data: {
+    message: "",
+    level: "debug",
+    data: "false",
+  },
+  input: 1,
+  output: 1,
+};
+
+export const nodes = { endpoint, template, request, script, respond, log } as Record<string, node>;

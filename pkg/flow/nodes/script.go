@@ -3,30 +3,37 @@ package nodes
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 
 	"github.com/dop251/goja"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
 var scriptType = "script"
 
+type inputHolderS struct {
+	input string
+	value []byte
+}
+
 // Script node has many input and one output.
 type Script struct {
 	script      string
 	typeName    string
 	inputs      []flow.Inputs
-	inputHolder [][]byte
-	outputs     []string
+	inputHolder []inputHolderS
+	outputs     []flow.Connection
 	wait        int
 	lock        sync.Mutex
 }
 
-func Unmarshal(v []byte) map[string]interface{} {
+func tomap(v []byte) map[string]interface{} {
 	var m map[string]interface{}
 
 	_ = yaml.Unmarshal(v, &m)
@@ -34,7 +41,11 @@ func Unmarshal(v []byte) map[string]interface{} {
 	return m
 }
 
-func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte) ([]byte, error) {
+func tostring(v []byte) string {
+	return string(v)
+}
+
+func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, input string) ([]byte, error) {
 	n.lock.Lock()
 	n.wait--
 
@@ -46,7 +57,7 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte) ([
 
 	// this block should be stay here in locking area
 	// save value if wait is zero and more
-	n.inputHolder = append(n.inputHolder, value)
+	n.inputHolder = append(n.inputHolder, inputHolderS{value: value, input: input})
 
 	if n.wait != 0 {
 		n.lock.Unlock()
@@ -58,9 +69,16 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte) ([
 
 	scriptRunner := goja.New()
 
-	if err := scriptRunner.Set("unmarshal", Unmarshal); err != nil {
-		return nil, fmt.Errorf("unmarshal command cannot set: %v", err)
+	// custom functions set
+	if err := scriptRunner.Set("tomap", tomap); err != nil {
+		return nil, fmt.Errorf("tomap command cannot set: %v", err)
 	}
+
+	if err := scriptRunner.Set("tostring", tostring); err != nil {
+		return nil, fmt.Errorf("tostring command cannot set: %v", err)
+	}
+
+	// end custom functions set
 
 	if _, err := scriptRunner.RunString(n.script); err != nil {
 		return nil, fmt.Errorf("script cannot read: %v", err)
@@ -68,17 +86,24 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte) ([
 
 	mainScript, ok := goja.AssertFunction(scriptRunner.Get("main"))
 	if !ok {
-		return nil, fmt.Errorf("parse function not found")
+		return nil, fmt.Errorf("main function not found")
 	}
+
+	// sort inputholder by input name, it effects to function arguments order
+	sort.Slice(n.inputHolder, func(i, j int) bool {
+		return n.inputHolder[i].input < n.inputHolder[j].input
+	})
+
+	log.Debug().Msgf("%#v", n.inputHolder)
 
 	passValues := []goja.Value{}
 	for i := range n.inputHolder {
-		passValues = append(passValues, scriptRunner.ToValue(n.inputHolder[i]))
+		passValues = append(passValues, scriptRunner.ToValue(n.inputHolder[i].value))
 	}
 
 	res, err := mainScript(goja.Undefined(), passValues...)
 	if err != nil {
-		return nil, fmt.Errorf("parse function run: %v", err)
+		return nil, fmt.Errorf("main function run: %v", err)
 	}
 
 	var returnRes []byte
@@ -108,7 +133,7 @@ func (n *Script) Validate() error {
 	return nil
 }
 
-func (n *Script) Next() []string {
+func (n *Script) Next() []flow.Connection {
 	return n.outputs
 }
 
@@ -136,10 +161,7 @@ func NewScript(data flow.NodeData) flow.Noder {
 		}
 	}
 
-	outputs := make([]string, 0, len(data.Outputs["output_1"].Connections))
-	for _, connection := range data.Outputs["output_1"].Connections {
-		outputs = append(outputs, connection.Node)
-	}
+	outputs := data.Outputs["output_1"].Connections
 
 	script, _ := data.Data["script"].(string)
 

@@ -22,7 +22,7 @@ type Template struct {
 	typeName     string
 	inputs       []flow.Inputs
 	inputHolder  map[string]interface{}
-	outputs      []string
+	outputs      []flow.Connection
 	content      []byte
 	wait         int
 	fetched      bool
@@ -30,7 +30,7 @@ type Template struct {
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte) ([]byte, error) {
+func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, _ string) ([]byte, error) {
 	n.lock.Lock()
 	n.wait--
 
@@ -102,7 +102,7 @@ func (n *Template) Validate() error {
 	return nil
 }
 
-func (n *Template) Next() []string {
+func (n *Template) Next() []flow.Connection {
 	return n.outputs
 }
 
@@ -130,10 +130,7 @@ func NewTemplate(data flow.NodeData) flow.Noder {
 		}
 	}
 
-	outputs := make([]string, 0, len(data.Outputs["output_1"].Connections))
-	for _, connection := range data.Outputs["output_1"].Connections {
-		outputs = append(outputs, connection.Node)
-	}
+	outputs := data.Outputs["output_1"].Connections
 
 	templateName, _ := data.Data["template"].(string)
 

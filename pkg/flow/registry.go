@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/rs/zerolog/log"
+
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 )
 
@@ -21,7 +23,7 @@ type NodesReg struct {
 	respondChan       chan Respond
 	controlName       string
 	startName         string
-	starts            []string
+	starts            []Connection
 	mutex             sync.RWMutex
 	wg                sync.WaitGroup
 	wgx               sync.WaitGroup
@@ -29,12 +31,15 @@ type NodesReg struct {
 }
 
 func NewNodesReg(ctx context.Context, controlName, startName string, appStore *registry.AppStore) *NodesReg {
+	// set new logger for reg and set it in ctx
+	logReg := log.With().Str("control", controlName).Str("endpoint", startName).Logger()
+
 	return &NodesReg{
 		controlName: controlName,
 		startName:   startName,
 		reg:         make(map[string]Noder),
 		appStore:    appStore,
-		ctx:         ctx,
+		ctx:         logReg.WithContext(ctx),
 		respondChan: make(chan Respond, 1),
 	}
 }
@@ -58,7 +63,7 @@ func (r *NodesReg) Get(number string) Noder {
 	return r.reg[number]
 }
 
-func (r *NodesReg) GetStarts() []string {
+func (r *NodesReg) GetStarts() []Connection {
 	return r.starts
 }
 
@@ -67,7 +72,10 @@ func (r *NodesReg) GetStarts() []string {
 func (r *NodesReg) Set(number string, node Noder) {
 	// checkdata usable for starter nodes like endpoint
 	if node.CheckData() == r.startName {
-		r.starts = append(r.starts, number)
+		// starts doesn't have inputs so keep it empty
+		r.starts = append(r.starts, Connection{
+			Node: number,
+		})
 	}
 
 	r.mutex.Lock()

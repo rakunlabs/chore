@@ -51,6 +51,12 @@
     editor.editor_mode = "edit";
     editor.zoom_reset();
 
+    editor.canvas_x = 0;
+    editor.canvas_y = 0;
+
+    // style.transform unset
+    (drawDiv.firstChild as HTMLDivElement).style.transform = "";
+
     editor.import({
       drawflow: {
         Home: {
@@ -192,6 +198,20 @@
 
       codeChanged = false;
       showEditor = true;
+    }
+
+    if (action == "checkbox") {
+      const modifyElement = e.target as HTMLInputElement;
+
+      const nodeName = (e.target as HTMLElement).parentElement.parentElement
+        .parentElement.parentElement.parentElement.id;
+
+      const nodeId = nodeName.slice(nodeName.indexOf("-") + 1);
+
+      editor.updateNodeDataFromId(nodeId, {
+        ...editor.getNodeFromId(nodeId).data,
+        [modifyElement.name]: modifyElement.checked,
+      });
     }
   };
 

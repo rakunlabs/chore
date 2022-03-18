@@ -80,7 +80,8 @@ func TestParseData(t *testing.T) {
 						"output_1": Connections{
 							Connections: []Connection{
 								{
-									Node: "6",
+									Node:   "6",
+									Output: "input_1",
 								},
 							},
 						},

@@ -33,10 +33,22 @@
 }
 
 .drawflow .drawflow-node.selected {
-  background: white;
+  background: #fff;
   border: 1px solid #4ea9ff;
   box-shadow: 0 2px 20px 2px #4ea9ff;
-  box-shadow: 0 2px 20px 2px #4ea9ff;
+}
+
+.drawflow-node .title-box {
+  background: var(--background-box-title);
+  border-bottom: 1px solid #e9e9e9;
+  border-radius: 4px 4px 0 0;
+  height: 50px;
+  line-height: 50px;
+  padding-left: 10px;
+}
+
+.drawflow-node.slack .title-box {
+  border-radius: 4px;
 }
 
 .drawflow .drawflow-node.selected .title-box {
@@ -58,31 +70,24 @@
   width: 15px;
 }
 
-.drawflow .drawflow-node .input:hover,
-.drawflow .drawflow-node .output:hover {
-  background: #4ea9ff;
-}
-
 .drawflow .drawflow-node .output {
   border-radius: unset;
   right: 8px;
 }
 
 .drawflow .drawflow-node .input {
-  background: white;
+  background: #fff;
   border-radius: unset;
   left: -8px;
 }
 
-.drawflow > .drawflow-delete {
-  background: white;
-  border: 2px solid #43b993;
-  box-shadow: 0 2px 20px 2px #43b993;
-  color: #43b993;
+.drawflow .drawflow-node .input:hover,
+.drawflow .drawflow-node .output:hover {
+  background: #4ea9ff;
 }
 
 .drawflow-delete {
-  background: white;
+  background: #fff;
   border: 2px solid #4ea9ff;
   border-radius: unset;
   box-shadow: 0 2px 20px 2px #4ea9ff;
@@ -90,13 +95,11 @@
   height: auto;
 }
 
-.drawflow-node .title-box {
-  background: var(--background-box-title);
-  border-bottom: 1px solid #e9e9e9;
-  border-radius: 4px 4px 0 0;
-  height: 50px;
-  line-height: 50px;
-  padding-left: 10px;
+.drawflow > .drawflow-delete {
+  background: #fff;
+  border: 2px solid #43b993;
+  box-shadow: 0 2px 20px 2px #43b993;
+  color: #43b993;
 }
 
 .drawflow .title-box svg {
@@ -106,16 +109,12 @@
 .drawflow-node .box {
   color: #555;
   font-size: 14px;
-  padding: 10px 20px 20px;
+  padding: 10px;
 }
 
 .drawflow-node .box p {
   margin-bottom: 5px;
   margin-top: 5px;
-}
-
-.drawflow-node.slack .title-box {
-  border-radius: 4px;
 }
 
 .drawflow-node input,
@@ -127,7 +126,9 @@
   font-size: 16px;
   height: 30px;
   line-height: 30px;
-  width: 158px;
+  padding-left: 4px;
+  padding-right: 4px;
+  width: 100%;
 }
 
 .drawflow-node textarea {
@@ -135,7 +136,7 @@
 }
 
 .drawflow .connection .point {
-  fill: white;
+  fill: #fff;
   stroke: var(--border-color);
   stroke-width: 2;
 }
@@ -147,4 +148,20 @@
 
 .box button {
   @apply bg-gray-100 px-2 w-full hover:bg-yellow-200;
+}
+
+.box label {
+  align-items: center;
+  display: flex;
+  font-size: unset;
+  justify-content: space-between;
+
+  input {
+    width: 16px;
+  }
+}
+
+.box hr {
+  color: #cacaca;
+  margin: 5px 0;
 }

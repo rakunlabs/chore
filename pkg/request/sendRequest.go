@@ -37,7 +37,7 @@ func NewClient() *Client {
 func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte) (*ClientResponse, error) {
 	req, err := c.Request(ctx, URL, method, payload)
 	if err != nil {
-		return nil, err //nolint:wraperr // not need here
+		return nil, err //nolint:wrapcheck // not need here
 	}
 
 	for k, v := range headers {

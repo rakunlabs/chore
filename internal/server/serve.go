@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 
 var timeOut = 5 * time.Second
 
-func Serve(ctx context.Context, name string, DB *gorm.DB) {
+func Serve(ctx context.Context, name string, db *gorm.DB) error {
 	app := fiber.New(fiber.Config{
 		AppName:               config.AppName,
 		DisableStartupMessage: true,
@@ -30,7 +31,7 @@ func Serve(ctx context.Context, name string, DB *gorm.DB) {
 	})
 
 	appStore := &registry.AppStore{
-		DB:       DB,
+		DB:       db,
 		Template: translate.NewTemplate(),
 		Client:   request.NewClient(),
 		App:      app,
@@ -48,6 +49,8 @@ func Serve(ctx context.Context, name string, DB *gorm.DB) {
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: true,
 	}))
+
+	// compression for gzip, deflate, brotli
 	app.Use(compress.New())
 
 	app.Use(func(c *fiber.Ctx) error {
@@ -73,14 +76,21 @@ func Serve(ctx context.Context, name string, DB *gorm.DB) {
 	log.Info().Msg("server starting [" + hostPort + "]")
 
 	if err := app.Listen(hostPort); err != nil {
-		log.Error().Err(err).Msg("server cannot start")
+		return fmt.Errorf("server cannot start: %v", err)
 	}
+
+	return nil
 }
 
-func Shutdown() {
-	registry.Reg().Iter(func(reg *registry.AppStore) {
+func Shutdown() error {
+	reg := registry.Reg().Get("main")
+
+	// check registry exist and server running
+	if reg != nil && reg.App.Server() != nil {
 		if err := reg.App.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to shutdown app")
+			return fmt.Errorf("failed to shutdown app: %v", err)
 		}
-	})
+	}
+
+	return nil
 }
