@@ -15,7 +15,8 @@
   import Token from "@/components/pages/Token.svelte";
   import Head from "@/components/ui/Head.svelte";
   import Users from "@/components/pages/Users.svelte";
-  import Send from "./pages/Send.svelte";
+  import Send from "@/components/pages/Send.svelte";
+  import Email from "@/components/pages/Email.svelte";
 
   const routes = new Map<string | RegExp, typeof SvelteComponent>();
   routes.set(new RegExp("/send(/(.*))*"), Send);
@@ -24,6 +25,7 @@
   routes.set(new RegExp("/templates(/(.*))*"), Templates);
   routes.set(new RegExp("/token(/(.*))*"), Token);
   routes.set(new RegExp("/users(/(.*))*"), Users);
+  routes.set(new RegExp("/email(/(.*))*"), Email);
   routes.set("*", Main);
 
   const sideLinks = [
@@ -31,7 +33,7 @@
     "control",
     "auths",
     "templates",
-    { settings: ["token", "users"] },
+    { settings: ["token", "users", "email"] },
   ];
 
   let layout: HTMLElement;

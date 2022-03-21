@@ -5,6 +5,7 @@ export type node = {
   input: number,
   output: number,
   optionalInput?: boolean,
+  class?: string
 };
 
 const endpoint: node = {
@@ -61,8 +62,9 @@ const request = {
   </div>
   `,
   data: {},
-  input: 1,
+  input: 2,
   output: 1,
+  class: "input1-value",
 };
 
 const script = {
@@ -152,4 +154,29 @@ const log = {
   output: 1,
 };
 
-export const nodes = { endpoint, template, request, script, respond, log } as Record<string, node>;
+const email = {
+  name: "email",
+  html: `
+  <div>
+    <div class="title-box">Email</div>
+    <div class="box">
+      <button data-action="editor">Open Editor</button>
+      <textarea df-script></textarea>
+    </div
+  </div>
+  `,
+  data: {
+    "script":
+`To:
+  - user@example.com
+Cc:
+  - user@example.com
+Subject:
+  - my subject
+`,
+  },
+  input: 1,
+  output: 0,
+};
+
+export const nodes = { endpoint, template, request, script, respond, log, email } as Record<string, node>;

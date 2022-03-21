@@ -6,17 +6,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
-)
 
-const (
-	timeout = 5
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 type ClientResponse struct {
+	Header     http.Header
 	Body       []byte
 	StatusCode int
-	Header     http.Header
 }
 
 type Client struct {
@@ -25,12 +22,13 @@ type Client struct {
 }
 
 func NewClient() *Client {
+	client := retryablehttp.NewClient()
+	client.RetryMax = 3
+	client.Logger = nil
+
 	return &Client{
-		HTTPClient: &http.Client{
-			Timeout:   timeout * time.Second,
-			Transport: http.DefaultTransport.(*http.Transport).Clone(),
-		},
-		Request: NewRequest,
+		HTTPClient: client.StandardClient(),
+		Request:    NewRequest,
 	}
 }
 

@@ -165,3 +165,18 @@
   color: #cacaca;
   margin: 5px 0;
 }
+
+.input1-value {
+  /* stylelint-disable-next-line selector-class-pattern */
+  .inputs .input_1 {
+    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'V';
+    }
+  }
+}

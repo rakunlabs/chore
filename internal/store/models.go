@@ -10,5 +10,6 @@ var Models = []interface{}{
 	&models.User{},
 	&models.Token{},
 	&models.Control{},
+	&models.Settings{},
 	// &models.Test{},
 }

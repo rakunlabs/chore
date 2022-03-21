@@ -30,6 +30,7 @@ func setHandlers(app *fiber.App) {
 	api.Login(v1Router)
 	api.Token(v1Router)
 	api.Control(v1Router)
+	api.Settings(v1Router)
 
 	// testing
 	// apitest.Test(v1Router)

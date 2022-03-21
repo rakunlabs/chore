@@ -312,7 +312,7 @@
         node.output,
         posX,
         posY,
-        "",
+        node.class ?? "",
         node.data,
         node.html,
         false

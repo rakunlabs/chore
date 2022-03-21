@@ -10,6 +10,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/consul/api v1.11.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/jackc/pgconn v1.10.1
 	github.com/jackc/pgx/v4 v4.14.1 // indirect
 	github.com/mattn/go-isatty v0.0.14
@@ -20,6 +21,8 @@ require (
 	github.com/wei840222/gorm-zerolog v0.0.0-20210303025759-235c42bb33fa
 	gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 v2.5.5
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+	gopkg.in/mail.v2 v2.3.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gorm.io/datatypes v1.0.5
 	gorm.io/driver/postgres v1.2.3

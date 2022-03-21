@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -10,7 +11,6 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 
 	"github.com/dop251/goja"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
@@ -94,8 +94,6 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, in
 		return n.inputHolder[i].input < n.inputHolder[j].input
 	})
 
-	log.Debug().Msgf("%#v", n.inputHolder)
-
 	passValues := []goja.Value{}
 	for i := range n.inputHolder {
 		passValues = append(passValues, scriptRunner.ToValue(n.inputHolder[i].value))
@@ -111,7 +109,10 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, in
 	case []byte:
 		returnRes = v
 	default:
-		returnRes = []byte(fmt.Sprintf("%v", res.Export()))
+		returnRes, err = json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("cannot marshal return type: %v", err)
+		}
 	}
 
 	return returnRes, nil
