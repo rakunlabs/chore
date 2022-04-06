@@ -1,0 +1,17 @@
+@import 'highlight.js/styles/monokai.css';
+// codemirror
+@import 'codemirror/lib/codemirror.css';
+@import 'codemirror/addon/lint/lint.css';
+@import 'codemirror/addon/display/fullscreen.css';
+// @import 'codemirror/theme/lucario.css';
+
+.cm-trailingspace {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QUXCToH00Y1UgAAACFJREFUCNdjPMDBUc/AwNDAAAFMTAwMDA0OP34wQgX/AQBYgwYEx4f9lQAAAABJRU5ErkJggg==');
+  background-position: bottom left;
+  background-repeat: repeat-x;
+}
+
+/* stylelint-disable-next-line selector-no-qualifying-type,selector-class-pattern */
+.CodeMirror pre.CodeMirror-placeholder {
+  @apply text-gray-400;
+}

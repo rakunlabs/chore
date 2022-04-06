@@ -14,6 +14,7 @@
   import axios from "axios";
   import Drawflow from "drawflow";
   import CodeMirror from "codemirror";
+  import { fullScreenKeys } from "@/helper/code";
 
   storeHead.set("ControlFlow");
 
@@ -38,6 +39,8 @@
 
   let currentGroups = "";
   let currentName = "";
+
+  let fullScreen = false;
 
   const setSelected = (v: string) => {
     formEdit.reset();
@@ -326,6 +329,10 @@
     editor.reroute_fix_curvature = true;
     editor.force_first_input = false;
 
+    // editor.curvature = 0;
+    // editor.reroute_curvature = 0;
+    // editor.reroute_curvature_start_end = 0;
+
     editor.start();
 
     // move element when click outside of the scaled element
@@ -357,10 +364,15 @@
 
     // set code editor
     codeEditor = CodeMirror(codeElement, {
-      mode: "text/javascript",
+      mode: "javascript",
       lineNumbers: true,
       tabSize: 2,
       lineWrapping: true,
+      styleActiveLine: true,
+      matchBrackets: true,
+      showTrailingSpace: true,
+      placeholder: "javascript\n\nF11 full-screen",
+      extraKeys: fullScreenKeys,
     });
     codeEditor.setSize("100%", "100%");
 
@@ -522,7 +534,7 @@
     <div
       class={`h-full border border-gray-600 relative ${
         selected == "table" ? "hidden" : ""
-      }`}
+      } ${fullScreen ? "fullscreen" : ""}`}
     >
       <div
         class="absolute z-30 bg-slate-200 flex items-center border-b border-r border-gray-600"
@@ -537,8 +549,8 @@
           bind:value={nodeSelected}
           class="py-1 border-l border-gray-600"
         >
-          {#each Object.keys(nodes) as n (n)}
-            <option value={n}>{n}</option>
+          {#each Object.entries(nodes) as n (n)}
+            <option value={n[0]}>{n[1].name}</option>
           {/each}
         </select>
         {#if nodes[nodeSelected].optionalInput}
@@ -556,23 +568,33 @@
               class="hover:bg-yellow-200 px-2 py-1 border-l border-gray-600"
               on:click={() => (editor.editor_mode = "edit")}
             >
-              fixed
+              <Icon icon="lock" />
             </button>
           {:else if (editor.editor_mode = "edit")}
             <button
               class="hover:bg-yellow-200 px-2 py-1 border-l border-gray-600"
               on:click={() => (editor.editor_mode = "fixed")}
             >
-              edit
+              <Icon icon="unlock" />
             </button>
           {/if}
         {/if}
         <button
           class="border-l border-gray-600 hover:bg-yellow-200 px-2 py-1"
+          on:click={() => (fullScreen = !fullScreen)}
+        >
+          {#if fullScreen}
+            <Icon icon="unfull" />
+          {:else}
+            <Icon icon="full" />
+          {/if}
+        </button>
+        <!-- <button
+          class="border-l border-gray-600 hover:bg-yellow-200 px-2 py-1"
           on:click={() => console.log(editor.export().drawflow.Home.data)}
         >
           log
-        </button>
+        </button> -->
       </div>
       <div
         bind:this={drawDiv}

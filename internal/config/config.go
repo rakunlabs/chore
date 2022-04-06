@@ -4,6 +4,7 @@ var (
 	AppName    = "chore"
 	AppVersion = "v0.0.0"
 	LoadName   = ""
+	Env        = "DEVELOPMENT"
 )
 
 var Application = struct {

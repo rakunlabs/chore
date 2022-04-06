@@ -40,11 +40,12 @@ type Inputs struct {
 // Noder for nodes like script, endpoint.
 type Noder interface {
 	GetType() string
-	Run(context.Context, *registry.AppStore, []byte, string) ([]byte, error)
+	Run(context.Context, *registry.AppStore, []byte, string) ([][]byte, error)
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
 	Validate() error
 	ActiveInput(string)
-	Next() []Connection
+	Next(int) []Connection
+	NextCount() int
 	CheckData() string
 }

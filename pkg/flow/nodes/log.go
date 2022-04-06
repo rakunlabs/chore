@@ -17,13 +17,13 @@ var logType = "log"
 type Log struct {
 	typeName  string
 	message   string
-	outputs   []flow.Connection
+	outputs   [][]flow.Connection
 	printData bool
 	logLevel  zerolog.Level
 }
 
 // Run get values from everywhere no need to check active input.
-func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value []byte, _ string) ([]byte, error) {
+func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value []byte, _ string) ([][]byte, error) {
 	var logEvent *zerolog.Event
 
 	switch n.logLevel {
@@ -45,7 +45,7 @@ func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value []byte, _ str
 
 	logEvent.Msg(n.message)
 
-	return value, nil
+	return [][]byte{value}, nil
 }
 
 func (n *Log) GetType() string {
@@ -64,8 +64,12 @@ func (n *Log) Validate() error {
 	return nil
 }
 
-func (n *Log) Next() []flow.Connection {
-	return n.outputs
+func (n *Log) Next(i int) []flow.Connection {
+	return n.outputs[i]
+}
+
+func (n *Log) NextCount() int {
+	return len(n.outputs)
 }
 
 func (n *Log) CheckData() string {
@@ -75,7 +79,7 @@ func (n *Log) CheckData() string {
 func (n *Log) ActiveInput(string) {}
 
 func NewLog(data flow.NodeData) flow.Noder {
-	outputs := data.Outputs["output_1"].Connections
+	outputs := flow.PrepareOutputs(data.Outputs)
 
 	// printData "true" or "false"
 	printData, _ := data.Data["data"].(string)

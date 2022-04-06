@@ -8,9 +8,6 @@ const login = async (data:object) => {
     "POST",
     data,
     false,
-    {
-      timeout: 2000,
-    }
   );
 };
 
@@ -21,9 +18,6 @@ const renew = async () => {
     "GET",
     null,
     true,
-    {
-      timeout: 2000,
-    }
   );
 };
 

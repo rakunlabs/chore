@@ -56,11 +56,13 @@ func (r *NodesReg) Wait() {
 	r.wg.Wait()
 }
 
-func (r *NodesReg) Get(number string) Noder {
+func (r *NodesReg) Get(number string) (Noder, bool) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
-	return r.reg[number]
+	node, ok := r.reg[number]
+
+	return node, ok
 }
 
 func (r *NodesReg) GetStarts() []Connection {

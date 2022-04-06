@@ -15,12 +15,12 @@ var endpointType = "endpoint"
 type Endpoint struct {
 	endpoint string
 	typeName string
-	outputs  []flow.Connection
+	outputs  [][]flow.Connection
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Endpoint) Run(_ context.Context, _ *registry.AppStore, value []byte, _ string) ([]byte, error) {
-	return value, nil
+func (n *Endpoint) Run(_ context.Context, _ *registry.AppStore, value []byte, _ string) ([][]byte, error) {
+	return [][]byte{value}, nil
 }
 
 func (n *Endpoint) GetType() string {
@@ -39,8 +39,12 @@ func (n *Endpoint) Validate() error {
 	return nil
 }
 
-func (n *Endpoint) Next() []flow.Connection {
-	return n.outputs
+func (n *Endpoint) Next(i int) []flow.Connection {
+	return n.outputs[i]
+}
+
+func (n *Endpoint) NextCount() int {
+	return len(n.outputs)
 }
 
 func (n *Endpoint) CheckData() string {
@@ -50,7 +54,7 @@ func (n *Endpoint) CheckData() string {
 func (n *Endpoint) ActiveInput(string) {}
 
 func NewEndpoint(data flow.NodeData) flow.Noder {
-	outputs := data.Outputs["output_1"].Connections
+	outputs := flow.PrepareOutputs(data.Outputs)
 
 	endpoint, _ := data.Data["endpoint"].(string)
 

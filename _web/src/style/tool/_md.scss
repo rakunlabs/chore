@@ -1,0 +1,66 @@
+.md {
+  h1 {
+    @apply text-2xl font-bold border-b border-gray-300 pb-1;
+  }
+
+  h2 {
+    @apply text-xl font-semibold border-b border-gray-300 pb-1 bg-zinc-700 text-white;
+  }
+
+  h3 {
+    @apply text-lg font-medium border-b border-gray-300 pb-1 bg-yellow-200;
+  }
+
+  h4,
+  h5,
+  h6 {
+    @apply font-medium border-b border-gray-300 pb-1 bg-zinc-200;
+  }
+
+  .anchor svg {
+    display: inline-block;
+    visibility: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    &:hover svg {
+      visibility: visible;
+    }
+
+    &:hover {
+      @apply text-red-400;
+    }
+  }
+
+  .anchor {
+    line-height: 1;
+
+    @apply pl-1 -ml-5 float-left;
+
+    &:hover svg {
+      visibility: visible;
+    }
+  }
+
+  code {
+    @apply bg-zinc-700 text-white;
+  }
+
+  pre code {
+    font-size: 80%;
+  }
+
+  /* stylelint-disable-next-line selector-no-qualifying-type */
+  img[alt='diagram'] {
+    height: 22rem;
+  }
+}
+
+.md-margin-y {
+  @apply my-2;
+}

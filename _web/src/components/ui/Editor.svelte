@@ -3,6 +3,7 @@
   import CodeMirror from "codemirror";
   import { requestSender } from "@/helper/api";
   import { addToast } from "@/store/toast";
+  import { fullScreenKeys } from "@/helper/code";
   import axios from "axios";
 
   let code: HTMLElement;
@@ -20,12 +21,16 @@
 
   onMount(() => {
     editor = CodeMirror(code, {
-      mode: "javascript",
+      mode: "yaml",
       lineNumbers: true,
       tabSize: 2,
-      scrollbarStyle: "native",
       readOnly: readOnly,
       lineWrapping: true,
+      styleActiveLine: true,
+      matchBrackets: true,
+      showTrailingSpace: true,
+      placeholder: "plain text\n\nF11 full-screen",
+      extraKeys: fullScreenKeys,
     });
     editor.setSize("100%", "100%");
     if (readOnly) {
@@ -58,6 +63,9 @@
       );
       toggleReadOnly(true);
       addToast("saved template", "info");
+      if (editableTitle) {
+        editableTitle = false;
+      }
     } catch (reason: unknown) {
       let msg = reason;
       if (axios.isAxiosError(reason)) {
@@ -68,9 +76,9 @@
   };
 </script>
 
-<div class={`h-full w-full grid [grid-template-rows:auto_1fr] ${className}`}>
+<div class={`h-full min-h-full flex flex-col ${className}`}>
   <div
-    class="px-1 pb-1 bg-gray-100 border-b border-gray-200 flex flex-row items-center justify-between"
+    class="px-1 pb-1 bg-gray-100 border-b border-gray-200 flex items-center justify-between"
   >
     {#if editableTitle}
       <input bind:value={title} />
@@ -104,5 +112,5 @@
       </button>
     </div>
   </div>
-  <code class="bg-gray-400 overflow-x-auto" bind:this={code} />
+  <code class="flex-1 bg-gray-400 overflow-x-auto" bind:this={code} />
 </div>

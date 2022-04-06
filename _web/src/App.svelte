@@ -1,8 +1,13 @@
 <script lang="ts">
-  import Router, { push, ConditionsFailedEvent } from "svelte-spa-router";
+  import Router, {
+    push,
+    ConditionsFailedEvent,
+    querystring,
+  } from "svelte-spa-router";
   import wrap from "svelte-spa-router/wrap";
   import { tokenCondition } from "@/helper/token";
   import Toast from "@/components/ui/Toast.svelte";
+  import { pushRedirect } from "@/helper/push";
 
   const routes = {
     "/login": wrap({
@@ -22,11 +27,11 @@
 
   const conditionsFailed = (event: ConditionsFailedEvent) => {
     if (event.detail.location == "/login") {
-      push("/");
+      pushRedirect($querystring);
       return;
     }
 
-    push("/login");
+    push(`/login?back=${event.detail.location}`);
   };
 </script>
 

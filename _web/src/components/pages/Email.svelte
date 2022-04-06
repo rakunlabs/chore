@@ -16,7 +16,9 @@
 
   const getSettings = async () => {
     try {
-      const l = await requestSender("settings", null, "GET", null, true);
+      const l = await requestSender("settings", null, "GET", null, true, {
+        noAlert: true,
+      });
       data = l.data.data;
     } catch (reason: unknown) {
       let msg = reason;

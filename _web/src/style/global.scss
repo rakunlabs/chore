@@ -3,9 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import 'codemirror/lib/codemirror.css';
-@import 'drawflow/dist/drawflow.min.css';
-@import 'tool/drawflow';
+@import 'tool';
 @import 'components';
 
 html,

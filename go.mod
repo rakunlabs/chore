@@ -17,7 +17,7 @@ require (
 	github.com/rs/zerolog v1.26.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/swaggo/swag v1.7.8
+	github.com/swaggo/swag v1.8.0
 	github.com/wei840222/gorm-zerolog v0.0.0-20210303025759-235c42bb33fa
 	gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 v2.5.5
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3

@@ -22,7 +22,7 @@ type Template struct {
 	typeName     string
 	inputs       []flow.Inputs
 	inputHolder  map[string]interface{}
-	outputs      []flow.Connection
+	outputs      [][]flow.Connection
 	content      []byte
 	wait         int
 	fetched      bool
@@ -30,7 +30,7 @@ type Template struct {
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, _ string) ([]byte, error) {
+func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, _ string) ([][]byte, error) {
 	n.lock.Lock()
 	n.wait--
 
@@ -61,7 +61,7 @@ func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, 
 		err = fmt.Errorf("template cannot render: %v", err)
 	}
 
-	return payload, err
+	return [][]byte{payload}, err
 }
 
 func (n *Template) GetType() string {
@@ -102,8 +102,12 @@ func (n *Template) Validate() error {
 	return nil
 }
 
-func (n *Template) Next() []flow.Connection {
-	return n.outputs
+func (n *Template) Next(i int) []flow.Connection {
+	return n.outputs[i]
+}
+
+func (n *Template) NextCount() int {
+	return len(n.outputs)
 }
 
 func (n *Template) ActiveInput(node string) {
@@ -122,15 +126,10 @@ func (n *Template) CheckData() string {
 }
 
 func NewTemplate(data flow.NodeData) flow.Noder {
-	inputs := make([]flow.Inputs, 0, len(data.Inputs))
+	inputs := flow.PrepareInputs(data.Inputs)
 
-	for _, input := range data.Inputs {
-		for _, connection := range input.Connections {
-			inputs = append(inputs, flow.Inputs{Node: connection.Node})
-		}
-	}
-
-	outputs := data.Outputs["output_1"].Connections
+	// add outputs with order
+	outputs := flow.PrepareOutputs(data.Outputs)
 
 	templateName, _ := data.Data["template"].(string)
 

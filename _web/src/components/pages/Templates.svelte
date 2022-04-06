@@ -83,8 +83,8 @@
   };
 </script>
 
-<div class="grid [grid-template-rows:auto_1fr] h-full">
-  <div class="border-b border-black flex justify-between items-center">
+<div class="h-full w-full grid [grid-template-rows:auto_1fr]">
+  <div class="border-b border-black flex justify-between items-center mb-1">
     <Bread url={params.input} />
     <div>
       <button
@@ -102,15 +102,17 @@
     </div>
   </div>
 
-  <div class="pt-1 h-full">
-    {#if view == "list"}
-      <List {items} prefix="/templates" />
-    {:else if view == "data"}
-      <Editor {data} {title} />
-    {:else if view == "add"}
-      <Editor title={input.replace(reg, "")} editableTitle={true} {closed} />
-    {:else}
-      <Loading />
-    {/if}
-  </div>
+  {#if view == "list"}
+    <List
+      {items}
+      prefix="/templates"
+      class="h-full min-h-full overflow-x-auto"
+    />
+  {:else if view == "data"}
+    <Editor {data} {title} />
+  {:else if view == "add"}
+    <Editor title={input.replace(reg, "")} editableTitle={true} {closed} />
+  {:else}
+    <Loading />
+  {/if}
 </div>

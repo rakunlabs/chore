@@ -26,13 +26,11 @@ ARG GOPROXY=https://proxy.golang.org,direct
 
 ## Add ca-certificates
 RUN apk add --no-cache \
-    ca-certificates git bash openssh-client-common
+    ca-certificates git bash
 
 # git configurations
 RUN git config --global url."https://".insteadOf git:// && \
-    git config --global http.sslVerify false && \
-    mkdir -p -m 0600 ~/.ssh && \
-    ssh-keyscan -H gitlab.test.igdcs.com >> ~/.ssh/known_hosts
+    git config --global http.sslVerify false
 #####
 
 WORKDIR /workspace

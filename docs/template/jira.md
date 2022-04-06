@@ -4,7 +4,9 @@ Ask to JIRA rest API to get which custom fields are usable.
 
 https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples/#creating-an-issue-examples
 
-### Service Increment
+## Get information with API
+
+TOKEN is access token but also you can request with basic auth.
 
 With this query, we see service increment's issuetypeid.
 
@@ -34,59 +36,13 @@ Example: https://jira.techno.ingenico.com/browse/LBO-72121
 
 Click export to XML format button to view datas but with looking api is better.
 
-### Template
+## Template
 
-Create myitsm ticket
+### Service increment
 
-```json
-{
-  "fields": {
-    "project":
-    {
-      "key": "LBO"
-    },
-    "reporter": "eates",
-    "summary": "Release - Validator to create TRSVALEX event when invalidating a transaction",
-    "description": "",
-    "issuetype": {
-      "name": "Service Increment"
-    },
-    "priority": {
-      "name": "Minor"
-    },
-    "customfield_10006": "LBO-59087",
-    "customfield_11601": {
-      "value": "FinOps - DeepCore"
-    }
-  },
-  "update":{
-    "issuelinks":[
-      {
-        "add":{
-          "type":{
-            "name":"Relates",
-          },
-          "outwardIssue": {
-            "key": "LBO-71558"
-          }
-        }
-      },
-      {
-        "add":{
-          "type":{
-            "name":"Relates",
-          },
-          "outwardIssue": {
-            "key": "LBO-71973"
-          }
-        }
-      }
-    ]
-  }
-}
-```
+Template for create service increments
 
-Template for create
+If field export value list give `{"value": "blabla"}` as value.
 
 ```json
 {
@@ -95,45 +51,18 @@ Template for create
     {
        "key": "LBO"
     },
-    "reporter": "{{.reporter}}",
     "summary": "{{.summary}}",
-    "description": "{{or .description ""}}",
+    "description": {{or (.description | quote) "null"}},
     "issuetype": {
       "name": "Service Increment"
     },
     "priority": {
       "name": "Minor"
     },
-    "customfield_10006": {
-      "value": "{{.epic}}"
-    },
+    "customfield_10006": "{{.epic}}",
     "customfield_11601": {
       "value": "FinOps - DeepCore"
     }
-  }
-}
-```
-
-Template for update links
-
-```json
-{
-  "update":{
-    "issuelinks":[
-      {{range $i, $value := .issuelinks }}
-      {{- if $i}},{{ end }}
-      {
-        "add":{
-          "type":{
-            "name":"Relates"
-          },
-          "outwardIssue": {
-            "key": "{{$value}}"
-          }
-        }
-      }
-      {{- end}}
-    ]
   }
 }
 ```
@@ -142,42 +71,20 @@ Values
 
 ```yml
 summary: Release - Validator to create TRSVALEX event when invalidating a transaction
-reporter: eates
 epic: LBO-59087
-issuelinks:
-  - LBO-71558
-  - LBO-71973
+squad: FinOps - DeepCore
 ```
 
-## Test Server
+Send this request to this link with POST method.
 
-Open test server with `docker run --rm -it --name="whoami" -p 9090:80 traefik/whoami`.
+```
+https://jira.techno.ingenico.com/rest/api/2/issue/
+```
 
-Add an auth entry to show this server.
+After that get this kind of result:
 
 ```json
-{"id":"secret","headers":"{\"Authorization\": \"Bearer <token>\"}","URL":"http://localhost:9090","method":"POST"}
-```
-
-Add an template and bind it.
-
-```
-hello {{.name}}
-```
-
-```json
-{"id":"sendhi","authentication":"secret","template":"test"}
-```
-
-Now send values with curl or in the swagger documentation.
-
-```sh
-curl -X 'POST' \
-  'http://localhost:3000/api/v1/send?name=sendhi' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer aaabbbccc'
-  -H 'Content-Type: text/plain' \
-  -d 'name: test'
+{"id":"705832","key":"LBO-73023","self":"https://jira.techno.ingenico.com/rest/api/2/issue/705832"}
 ```
 
 ## Local JIRA for testing
@@ -199,7 +106,7 @@ In the profile page, add a personal access token.
 Use your token with bearer header
 
 ```sh
-curl -H "Authorization: Bearer MjQ5Nzc3NTg3MjM4OosJndoCMilW9HAnAl4T2CfMEnbG" http://localhost:8282/rest/api/2/issue/SCRM-10
+curl -H "Authorization: Bearer ${TOKEN}" http://localhost:8282/rest/api/2/issue/SCRM-10
 ```
 
 Now add auth to chore with giving this header and `POST` method.

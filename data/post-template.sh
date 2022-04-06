@@ -12,7 +12,6 @@ for template in templates/*.json; do
         "http://localhost:8080/api/v1/template?name=internal%2F${name}" \
         -H "accept: application/json" \
         -H "Authorization: Bearer ${JWT_KEY}" \
-        -H "Content-Type: text/plain" \
         -d @${template}
     echo ""
 done

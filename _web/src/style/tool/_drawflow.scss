@@ -1,11 +1,8 @@
-:root {
-  --border-color: #cacaca;
-  --background-color: #fff;
-  --background-box-title: #f7f7f7;
-}
+/* stylelint-disable selector-max-compound-selectors */
+@import 'drawflow/dist/drawflow.min.css';
 
 .drag-drawflow {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #cacaca;
   cursor: move;
   line-height: 50px;
   padding-left: 20px;
@@ -13,7 +10,6 @@
 }
 
 .parent-drawflow-style {
-  // background: var(--background-color);
   @apply bg-white;
 
   background-image:
@@ -25,9 +21,9 @@
 /* Editing Drawflow */
 
 .drawflow .drawflow-node {
-  background: var(--background-color);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 2px 15px 2px var(--border-color);
+  background: #fff;
+  border: 1px solid #cacaca;
+  box-shadow: 0 2px 15px 2px #cacaca;
   padding: 0;
   width: 200px;
 }
@@ -39,7 +35,7 @@
 }
 
 .drawflow-node .title-box {
-  background: var(--background-box-title);
+  background: #f7f7f7;
   border-bottom: 1px solid #e9e9e9;
   border-radius: 4px 4px 0 0;
   height: 50px;
@@ -61,11 +57,21 @@
   @apply stroke-indigo-500;
 
   stroke-width: 3px;
+
+  ~ circle {
+    @apply fill-black invisible;
+  }
+
+  &.selected {
+    ~ circle {
+      @apply fill-yellow-200 visible;
+    }
+  }
 }
 
 .drawflow .drawflow-node .input,
 .drawflow .drawflow-node .output {
-  border: 2px solid var(--border-color);
+  border: 2px solid #cacaca;
   height: 15px;
   width: 15px;
 }
@@ -120,7 +126,7 @@
 .drawflow-node input,
 .drawflow-node select,
 .drawflow-node textarea {
-  border: 1px solid var(--border-color);
+  border: 1px solid #cacaca;
   border-radius: 4px;
   color: #555;
   font-size: 16px;
@@ -137,7 +143,7 @@
 
 .drawflow .connection .point {
   fill: #fff;
-  stroke: var(--border-color);
+  stroke: #cacaca;
   stroke-width: 2;
 }
 
@@ -164,19 +170,4 @@
 .box hr {
   color: #cacaca;
   margin: 5px 0;
-}
-
-.input1-value {
-  /* stylelint-disable-next-line selector-class-pattern */
-  .inputs .input_1 {
-    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
-
-    &:hover {
-      @apply text-white;
-    }
-
-    &::before {
-      content: 'V';
-    }
-  }
 }

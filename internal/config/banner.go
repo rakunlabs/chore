@@ -16,5 +16,10 @@ var bannerLogo = `
 
 func Banner(txt string) string {
 	//nolint:gomnd // banner static char count
-	return fmt.Sprintf(bannerLogo, strings.Repeat("=", 33-(len(txt)+len(AppVersion))), txt, AppVersion)
+	repeat := 33 - (len(txt) + len(AppVersion))
+	if 0 > repeat {
+		repeat = 0
+	}
+
+	return fmt.Sprintf(bannerLogo, strings.Repeat("=", repeat), txt, AppVersion)
 }

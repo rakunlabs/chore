@@ -8,10 +8,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var ErrStopGoroutine = errors.New("stop goroutine")
+var (
+	ErrStopGoroutine    = errors.New("stop goroutine")
+	ErrEndpointNotFound = errors.New("endpoint not found")
+)
 
 func VisitAndFetch(reg *NodesReg) error {
 	starts := reg.GetStarts()
+
+	if starts == nil {
+		return fmt.Errorf("%s %w", reg.startName, ErrEndpointNotFound)
+	}
 
 	return validateFetch("", starts, reg)
 }
@@ -25,7 +32,11 @@ func validateFetch(current string, outputs []Connection, reg *NodesReg) error {
 		default:
 		}
 
-		node := reg.Get(output.Node)
+		node, ok := reg.Get(output.Node)
+		if !ok {
+			return fmt.Errorf("node not found %s", output.Node)
+		}
+
 		if err := node.Validate(); err != nil {
 			return fmt.Errorf("ID %s, %s validate failed: %v", output, node.GetType(), err)
 		}
@@ -42,8 +53,10 @@ func validateFetch(current string, outputs []Connection, reg *NodesReg) error {
 			reg.respondChanActive = true
 		}
 
-		if err := validateFetch(output.Node, node.Next(), reg); err != nil {
-			return err
+		for i := 0; i < node.NextCount(); i++ {
+			if err := validateFetch(output.Node, node.Next(i), reg); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -61,6 +74,7 @@ func GoAndRun(reg *NodesReg, firstValue []byte) {
 	close(reg.respondChan)
 }
 
+// branch values already designed to same length of nexts.
 func branch(nexts []Connection, reg *NodesReg, value []byte) {
 	for _, next := range nexts {
 		// going goroutine to prevent too much recursive call
@@ -80,32 +94,66 @@ func branchRun(start Connection, reg *NodesReg, value []byte) {
 	default:
 	}
 
-	node := reg.Get(start.Node)
+	node, ok := reg.Get(start.Node)
+	if !ok {
+		log.Ctx(reg.ctx).Error().Msgf("node %s not found", start.Node)
 
-	outputData, err := node.Run(reg.ctx, reg.appStore, value, start.Output)
+		return
+	}
+
+	outputDatas, err := node.Run(reg.ctx, reg.appStore, value, start.Output)
 	if err != nil {
 		if errors.Is(err, ErrStopGoroutine) {
 			return
 		}
 
-		log.Error().Err(err).Msgf("%v cannot run", node.GetType())
+		log.Ctx(reg.ctx).Error().Err(err).Msgf("%v cannot run", node.GetType())
 
 		return
 	}
 
-	// only one respond protection
-	if node.GetType() == "respond" {
+	// special cases
+
+	switch node.GetType() {
+	case "respond":
+		// only one respond protection
 		reg.mutex.Lock()
 		if reg.respondChanActive {
 			reg.respondChanActive = false
 
 			reg.respondChan <- Respond{
-				Data:   outputData,
+				// respond has one output
+				Data:   outputDatas[0],
 				Status: http.StatusOK,
 			}
 		}
 		reg.mutex.Unlock()
+
+		return
+
+	case "forLoop":
+		for _, outputData := range outputDatas {
+			branch(node.Next(0), reg, outputData)
+		}
+
+		return
+
+	case "request", "script", "ifCase":
+		// first data is error
+		if outputDatas[0] != nil {
+			branch(node.Next(0), reg, outputDatas[0])
+
+			return
+		}
+
+		branch(node.Next(1), reg, outputDatas[1])
+
+		return
 	}
 
-	branch(node.Next(), reg, outputData)
+	// separate data for branchs
+	// first data goes to first output (output_1)
+	for i, outputData := range outputDatas {
+		branch(node.Next(i), reg, outputData)
+	}
 }

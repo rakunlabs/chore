@@ -16,6 +16,16 @@ const tokenClear = () => {
   localStorage.removeItem("token");
 };
 
+const isAdminToken = () => {
+  try {
+    const [, claims] = tokenGet();
+    const groups = claims["groups"] as string[];
+    return groups ? groups.includes("admin") : false;
+  } catch (error) {
+    return false;
+  }
+};
+
 const tokenGet = () => {
   const dataS = localStorage.getItem("token");
   if (dataS == null) {
@@ -53,4 +63,4 @@ const tokenCondition = async () => {
   return true;
 };
 
-export { tokenCheck, tokenClear, tokenGet, tokenSet, tokenCondition };
+export { isAdminToken, tokenCheck, tokenClear, tokenGet, tokenSet, tokenCondition };

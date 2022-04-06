@@ -1,6 +1,7 @@
 <script lang="ts">
   import Doc from "@/components/ui/Doc.svelte";
   import { requestSender } from "@/helper/api";
+  import { tokenGet } from "@/helper/token";
   import { storeHead } from "@/store/store";
   import { addToast } from "@/store/toast";
   import axios from "axios";
@@ -11,6 +12,13 @@
   let data = {} as Record<string, string>;
 
   const getIntro = async () => {
+    try {
+      tokenGet();
+    } catch {
+      // token not found possible clicked to logout
+      return;
+    }
+
     try {
       const response = await requestSender(
         "./info/intro.md",
@@ -35,6 +43,6 @@
   onMount(() => getIntro());
 </script>
 
-<div class="bg-slate-50 p-5 h-full">
+<div class="bg-slate-50 p-5 h-auto">
   <Doc md={data["intro"]} />
 </div>

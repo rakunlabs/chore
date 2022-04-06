@@ -1,0 +1,91 @@
+/* stylelint-disable no-descending-specificity */
+/* stylelint-disable selector-class-pattern */
+.node-request {
+  .inputs .input_1 {
+    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'V';
+    }
+  }
+
+  .outputs .output_1 {
+    @apply bg-red-400 text-center h-5 [line-height:1rem] text-white;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'F';
+    }
+  }
+}
+
+.node-email {
+  .inputs .input_1 {
+    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'V';
+    }
+  }
+}
+
+.node-script {
+  .outputs .output_1 {
+    @apply bg-red-400 text-center h-5 [line-height:1rem] text-white;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'F';
+    }
+  }
+}
+
+.node-if {
+  .outputs .output_1 {
+    @apply bg-red-400 text-center h-5 [line-height:1rem] text-white;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'F';
+    }
+  }
+
+  .outputs .output_2 {
+    @apply bg-green-400 text-center h-5 [line-height:1rem] text-white;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'T';
+    }
+  }
+}
+
+.node-note {
+  width: unset !important;
+
+  textarea {
+    resize: both;
+
+    @apply bg-yellow-100;
+  }
+}

@@ -37,13 +37,20 @@
         { offset, limit },
         "GET",
         null,
-        true
+        true,
+        {
+          noAlert: true,
+        }
       );
-      console.log(l);
+      // console.log(l);
       const items = l ? l.data : {};
       modify(items);
-    } catch (error) {
-      console.error(error);
+    } catch (reason: unknown) {
+      let msg = reason;
+      if (axios.isAxiosError(reason)) {
+        msg = reason.response.data.error ?? reason.message;
+      }
+      addToast(msg as string, "warn");
     }
   };
 

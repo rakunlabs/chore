@@ -61,6 +61,15 @@ func postSend(c *fiber.Ctx) error {
 		)
 	}
 
+	// file, err := c.FormFile("document")
+	// if err != nil {
+	// 	return c.Status(http.StatusInternalServerError).JSON(
+	// 		apimodels.Error{
+	// 			Error: err.Error(),
+	// 		},
+	// 	)
+	// }
+
 	content, err := base64.StdEncoding.DecodeString(control.Content)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(
@@ -71,6 +80,14 @@ func postSend(c *fiber.Ctx) error {
 	}
 
 	nodesReg, err := flow.StartFlow(c.UserContext(), control.Name, endpoint, content, reg, c.Body())
+	if errors.Is(err, flow.ErrEndpointNotFound) {
+		return c.Status(http.StatusNotFound).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(
 			apimodels.Error{

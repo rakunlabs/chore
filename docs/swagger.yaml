@@ -237,6 +237,17 @@ definitions:
       name:
         type: string
     type: object
+  models.Email:
+    properties:
+      email:
+        type: string
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+    type: object
   models.Token:
     properties:
       created_at:
@@ -752,6 +763,56 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Send request
+  /settings:
+    get:
+      description: Get whole settings
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.UserDataID'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Settings
+      tags:
+      - settings
+    patch:
+      description: Replace with new data
+      parameters:
+      - description: send part of the settings object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.Email'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Replace settings
+      tags:
+      - settings
   /template:
     delete:
       description: Delete with id, name

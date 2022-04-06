@@ -17,12 +17,12 @@ services:
       - db-data:/var/lib/postgresql/data
     configs:
       - source: postgres_init
-        target: /docker-entrypoint-initdb.d/init-migration-schema.sh
+        target: /docker-entrypoint-initdb.d/init-schema.sh
     # ports:
     #   - "5432:5432"
 
   chore:
-    image: am2vm2258.test.igdcs.com:8083/finops/chore:v0.0.1
+    image: am2vm2258.test.igdcs.com:8083/finops/chore:test
     environment:
       LOGLEVEL: info
       SECRET: thisissupersecretjustforthisapp
@@ -48,4 +48,4 @@ volumes:
 
 configs:
   postgres_init:
-    file: ./configs/init-migration-schema.sh
+    file: ./configs/init-schema.sh

@@ -2,8 +2,8 @@
   import { onDestroy, onMount, SvelteComponent } from "svelte";
   import update from "immutability-helper";
   import Router from "svelte-spa-router";
-  import { storeData } from "@/store/store";
   import { push } from "svelte-spa-router";
+  import { storeData } from "@/store/store";
 
   import Side from "@/components/ui/Side.svelte";
   import Navbar from "@/components/ui/Navbar.svelte";
@@ -17,6 +17,10 @@
   import Users from "@/components/pages/Users.svelte";
   import Send from "@/components/pages/Send.svelte";
   import Email from "@/components/pages/Email.svelte";
+  import { isAdminToken } from "@/helper/token";
+
+  // highlight operations
+  import "@/helper/highlight";
 
   const routes = new Map<string | RegExp, typeof SvelteComponent>();
   routes.set(new RegExp("/send(/(.*))*"), Send);
@@ -33,7 +37,7 @@
     "control",
     "auths",
     "templates",
-    { settings: ["token", "users", "email"] },
+    { settings: isAdminToken() ? ["token", "users", "email"] : ["token"] },
   ];
 
   let layout: HTMLElement;

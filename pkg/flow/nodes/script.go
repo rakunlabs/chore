@@ -3,14 +3,17 @@ package nodes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 
 	"github.com/dop251/goja"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
@@ -28,24 +31,12 @@ type Script struct {
 	typeName    string
 	inputs      []flow.Inputs
 	inputHolder []inputHolderS
-	outputs     []flow.Connection
+	outputs     [][]flow.Connection
 	wait        int
 	lock        sync.Mutex
 }
 
-func tomap(v []byte) map[string]interface{} {
-	var m map[string]interface{}
-
-	_ = yaml.Unmarshal(v, &m)
-
-	return m
-}
-
-func tostring(v []byte) string {
-	return string(v)
-}
-
-func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, input string) ([]byte, error) {
+func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value []byte, input string) ([][]byte, error) {
 	n.lock.Lock()
 	n.wait--
 
@@ -69,16 +60,10 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, in
 
 	scriptRunner := goja.New()
 
-	// custom functions set
-	if err := scriptRunner.Set("tomap", tomap); err != nil {
-		return nil, fmt.Errorf("tomap command cannot set: %v", err)
+	// set script special functions
+	if err := setScriptFuncs(scriptRunner); err != nil {
+		return nil, err
 	}
-
-	if err := scriptRunner.Set("tostring", tostring); err != nil {
-		return nil, fmt.Errorf("tostring command cannot set: %v", err)
-	}
-
-	// end custom functions set
 
 	if _, err := scriptRunner.RunString(n.script); err != nil {
 		return nil, fmt.Errorf("script cannot read: %v", err)
@@ -99,13 +84,27 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, in
 		passValues = append(passValues, scriptRunner.ToValue(n.inputHolder[i].value))
 	}
 
+	var retVal interface{}
+
+	returnToFalse := false
+
 	res, err := mainScript(goja.Undefined(), passValues...)
 	if err != nil {
-		return nil, fmt.Errorf("main function run: %v", err)
+		var jserr *goja.Exception
+
+		if errors.As(err, &jserr) {
+			retVal = jserr.Value().Export()
+			returnToFalse = true
+		} else {
+			return nil, fmt.Errorf("main function run: %v", err)
+		}
+	} else {
+		log.Ctx(ctx).Debug().Msg("passed well")
+		retVal = res.Export()
 	}
 
 	var returnRes []byte
-	switch v := res.Export().(type) {
+	switch v := retVal.(type) {
 	case []byte:
 		returnRes = v
 	default:
@@ -115,7 +114,11 @@ func (n *Script) Run(_ context.Context, reg *registry.AppStore, value []byte, in
 		}
 	}
 
-	return returnRes, nil
+	if returnToFalse {
+		return [][]byte{returnRes, nil}, nil
+	}
+
+	return [][]byte{nil, returnRes}, nil
 }
 
 func (n *Script) GetType() string {
@@ -134,8 +137,12 @@ func (n *Script) Validate() error {
 	return nil
 }
 
-func (n *Script) Next() []flow.Connection {
-	return n.outputs
+func (n *Script) Next(i int) []flow.Connection {
+	return n.outputs[i]
+}
+
+func (n *Script) NextCount() int {
+	return len(n.outputs)
 }
 
 func (n *Script) ActiveInput(node string) {
@@ -154,15 +161,10 @@ func (n *Script) CheckData() string {
 }
 
 func NewScript(data flow.NodeData) flow.Noder {
-	inputs := make([]flow.Inputs, 0, len(data.Inputs))
+	inputs := flow.PrepareInputs(data.Inputs)
 
-	for _, input := range data.Inputs {
-		for _, connection := range input.Connections {
-			inputs = append(inputs, flow.Inputs{Node: connection.Node})
-		}
-	}
-
-	outputs := data.Outputs["output_1"].Connections
+	// add outputs with order
+	outputs := flow.PrepareOutputs(data.Outputs)
 
 	script, _ := data.Data["script"].(string)
 
@@ -177,4 +179,58 @@ func NewScript(data flow.NodeData) flow.Noder {
 //nolint:gochecknoinits // moduler nodes
 func init() {
 	flow.NodeTypes[scriptType] = NewScript
+}
+
+// ///////////////////////////////////
+
+func toObject(v []byte) interface{} {
+	var m interface{}
+
+	_ = yaml.Unmarshal(v, &m)
+
+	return m
+}
+
+func toString(v []byte) string {
+	return string(v)
+}
+
+func sleep(length string) {
+	duration, err := time.ParseDuration(length)
+	if err != nil {
+		panic(err)
+	}
+
+	time.Sleep(duration)
+}
+
+type commands struct {
+	fn   interface{}
+	name string
+}
+
+var commandList = []commands{
+	{
+		fn:   toObject,
+		name: "toObject",
+	},
+	{
+		fn:   toString,
+		name: "toString",
+	},
+	{
+		fn:   sleep,
+		name: "sleep",
+	},
+}
+
+func setScriptFuncs(runner *goja.Runtime) error {
+	for _, v := range commandList {
+		// custom functions set
+		if err := runner.Set(v.name, v.fn); err != nil {
+			return fmt.Errorf("%s command cannot set: %w", v.name, err)
+		}
+	}
+
+	return nil
 }

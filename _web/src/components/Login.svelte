@@ -2,9 +2,10 @@
   import { banner } from "@/helper/banner";
   import { formToObject } from "@/helper/codec";
   import { login } from "@/helper/login";
+  import { pushRedirect } from "@/helper/push";
   import { tokenSet } from "@/helper/token";
   import axios from "axios";
-  import { push } from "svelte-spa-router";
+  import { querystring } from "svelte-spa-router";
 
   let error = "";
   let working = false;
@@ -18,6 +19,7 @@
   const signin = async (
     e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
   ) => {
+    // prevent multiple click
     if (working) {
       return;
     }
@@ -27,8 +29,7 @@
     try {
       const response = await login(data);
       tokenSet(response.data.data.token);
-      // TODO: use pop for history
-      push("/");
+      pushRedirect($querystring);
     } catch (reason: unknown) {
       if (axios.isAxiosError(reason)) {
         error = reason?.response?.data?.error ?? reason.message;

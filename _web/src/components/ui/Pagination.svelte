@@ -42,13 +42,13 @@
   <ul class="flex">
     <button
       disabled={prevDisabled}
-      class="w-20 border-r hover:bg-indigo-400 hover:disabled:bg-gray-300"
+      class="w-20 border-r hover:bg-indigo-400 hover:disabled:bg-gray-300 disabled:text-gray-400"
       on:click|stopPropagation={() => listF(prevOffset, meta.limit)}
       >Prev</button
     >
     <button
       disabled={nextDisabled}
-      class="w-20 hover:bg-indigo-400 hover:disabled:bg-gray-300"
+      class="w-20 hover:bg-indigo-400 hover:disabled:bg-gray-300 disabled:text-gray-400"
       on:click|stopPropagation={() => listF(nextOffset, meta.limit)}
       >Next</button
     >

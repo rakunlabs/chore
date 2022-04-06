@@ -17,6 +17,7 @@ PKG=$(head -n 1 go.mod | cut -d " " -f2)
 FLAG=(
 "${PKG}/internal/config.AppName=${APPNAME}"
 "${PKG}/internal/config.AppVersion=${VERSION}"
+"${PKG}/internal/config.Env=PRODUCTION"
 )
 
 FLAGS=$(echo ${FLAG[@]} | xargs -n 1 echo -n " -X")

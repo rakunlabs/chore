@@ -6,8 +6,15 @@
   import axios, { CancelTokenSource } from "axios";
   import CodeMirror from "codemirror";
   import { onMount } from "svelte";
+  import Code from "@/components/ui/Code.svelte";
+  import { fullScreenKeys } from "@/helper/code";
 
   storeHead.set("Send request to controlflow");
+
+  let URL = window.location.origin + window.location.pathname;
+  if (URL[URL.length - 1] == "/") {
+    URL = URL.slice(0, URL.length - 1);
+  }
 
   let formEdit: HTMLFormElement;
   let codeInput: HTMLElement;
@@ -18,6 +25,12 @@
   let error = "";
 
   let working = false;
+
+  let control = "";
+  let endpoint = "";
+
+  let beutify = false;
+  let originalValue = "";
 
   const showData = {
     status: "",
@@ -48,6 +61,9 @@
     let msg: unknown;
 
     try {
+      // reset settings
+      beutify = false;
+
       const responseGet = await requestSender(
         "send",
         data,
@@ -57,6 +73,7 @@
         {
           notTransformResponse: true,
           cancelToken: source.token,
+          timeout: 0,
         }
       );
 
@@ -86,27 +103,53 @@
     working = false;
   };
 
+  const showBeautify = () => {
+    if (beutify) {
+      editorOutput.setValue(originalValue);
+      beutify = false;
+    } else {
+      originalValue = editorOutput.getValue();
+      try {
+        const parsedValue = JSON.parse(originalValue);
+        editorOutput.setValue(JSON.stringify(parsedValue, null, "  "));
+      } catch (v: unknown) {
+        return;
+      }
+      beutify = true;
+    }
+  };
+
   onMount(() => {
     editorInput = CodeMirror(codeInput, {
-      mode: "text/yaml",
+      mode: "yaml",
       lineNumbers: true,
       tabSize: 2,
       readOnly: false,
       lineWrapping: true,
+      styleActiveLine: true,
+      matchBrackets: true,
+      showTrailingSpace: true,
+      placeholder:
+        "input value could be anything\nyaml/json supported in template\n\nF11 full-screen",
+      extraKeys: fullScreenKeys,
     });
     editorInput.setSize("100%", "100%");
 
     editorOutput = CodeMirror(codeOutput, {
-      mode: "text/plain",
+      mode: "yaml",
       lineNumbers: true,
       tabSize: 2,
       readOnly: true,
       lineWrapping: true,
+      styleActiveLine: true,
+      matchBrackets: true,
+      showTrailingSpace: true,
+      placeholder: "output of respond\n\nF11 full-screen",
+      extraKeys: fullScreenKeys,
     });
     editorOutput.setSize("100%", "100%");
 
     editorOutput.getWrapperElement().classList.add("bg-yellow-50");
-    // editor.setValue(data);
   });
 </script>
 
@@ -121,6 +164,7 @@
               type="text"
               name="control"
               placeholder="mycontrolflow"
+              bind:value={control}
               class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
             />
           </label>
@@ -130,6 +174,7 @@
               type="text"
               name="endpoint"
               placeholder="create"
+              bind:value={endpoint}
               class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
             />
           </label>
@@ -153,29 +198,31 @@
         >
       </div>
     </div>
+    <Code
+      lang="sh"
+      code={`curl -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
+    />
   </div>
 
   <div class="flex gap-3 h-full min-h-full overflow-x-auto">
-    <code
-      class="flex-1 bg-gray-400 h-full min-h-full overflow-x-auto"
-      bind:this={codeInput}
-    />
+    <code class="flex-1 bg-gray-400 overflow-x-auto" bind:this={codeInput} />
     <div class="flex-1 grid h-full grid-rows-[auto_1fr]">
-      <div class="bg-slate-50 p-5 mb-3">
-        <label class="flex">
-          <span class="w-20 inline-block"> Status </span>
+      <div class="bg-slate-50 p-5 mb-3 flex gap-1">
+        <label class="flex-1 flex">
+          <span class="pr-2">Status</span>
           <input
             type="text"
-            class={`flex-grow border border-gray-300 focus:border-gray-300 focus:outline-none focus:ring focus:ring-gray-200 focus:ring-opacity-50 status-${showData.color}`}
+            class={`flex-1 border border-gray-300 focus:border-gray-300 focus:outline-none focus:ring focus:ring-gray-200 focus:ring-opacity-50 status-${showData.color}`}
             readonly
             value={showData.status}
           />
         </label>
+        <button
+          class="px-2 border border-gray-300 bg-yellow-200 hover:bg-green-300"
+          on:click={showBeautify}>{beutify ? "Original" : "Beutify"}</button
+        >
       </div>
-      <code
-        class="bg-gray-400 h-full min-h-full overflow-x-auto"
-        bind:this={codeOutput}
-      />
+      <code class="bg-gray-400 overflow-x-auto" bind:this={codeOutput} />
     </div>
   </div>
 </div>

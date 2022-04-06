@@ -8,6 +8,7 @@ const optionsDefault = {
   timeout: undefined as number,
   cancelToken: undefined as CancelToken,
   rawArea: false,
+  noAlert: false,
 };
 
 const requestSender = async (area: string, params: object, method: Method, data: any = undefined, useToken = false, options: Partial<typeof optionsDefault> = optionsDefault) => {
@@ -29,7 +30,7 @@ const requestSender = async (area: string, params: object, method: Method, data:
       params: params,
       data: data,
       headers: headers,
-      timeout: options.timeout,
+      timeout: options.timeout == null || options.timeout == undefined ? 2000 : options.timeout,
       transformResponse: options.notTransformResponse ? null: undefined,
       cancelToken: options.cancelToken,
     });
@@ -38,7 +39,7 @@ const requestSender = async (area: string, params: object, method: Method, data:
   } catch (reason: unknown) {
     if (axios.isAxiosError(reason)) {
       const status = reason?.response?.status;
-      if (status == 403) {
+      if (!options.noAlert && status == 403) {
         addToast(reason?.response?.data?.error ?? reason?.message, "alert");
       }
     }
@@ -46,68 +47,5 @@ const requestSender = async (area: string, params: object, method: Method, data:
     throw reason;
   }
 };
-
-// const fixString = (area: string, key: string) => {
-//   if (area) {
-//     area = trimLeft(area);
-//   }
-//   if (key) {
-//     key = trimLeft(key);
-//   }
-
-//   return [area, key];
-// };
-
-// const getList = async (area: string, key: string) => {
-//   [area, key] = fixString(area, key);
-
-//   const params = {
-//     list: true,
-//     key: key,
-//   };
-
-//   return requestSender(area, key, params, "GET");
-// };
-
-// const getItem = async (area: string, key: string) => {
-//   [area, key] = fixString(area, key);
-
-//   const params = {
-//     key: key,
-//   };
-
-//   return requestSender(area, key, params, "GET");
-// };
-
-// const setItem = async (area: string, key: string, value: any) => {
-//   [area, key] = fixString(area, key);
-
-//   const params = {
-//     key: key,
-//   };
-
-//   return requestSender(area, key, params, "PUT", value);
-// };
-
-// const postItem = async (area: string, key: string, value: any) => {
-//   [area, key] = fixString(area, key);
-
-//   const params = {
-//     key: key,
-//   };
-
-//   return requestSender(area, key, params, "POST", value);
-// };
-
-
-// const deleteItem = async (area: string, key: string) => {
-//   [area, key] = fixString(area, key);
-
-//   const params = {
-//     key: key,
-//   };
-
-//   return requestSender(area, key, params, "DELETE");
-// };
 
 export { requestSender };

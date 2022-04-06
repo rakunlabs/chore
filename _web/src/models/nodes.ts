@@ -16,7 +16,7 @@ const endpoint: node = {
     <div class="box">
       <p>Enter endpoint name</p>
       <input type="text" placeholder="create" name="endpoint" df-endpoint>
-    </div
+    </div>
   </div>
   `,
   data: {
@@ -34,7 +34,7 @@ const template = {
     <div class="box">
       <p>Enter template name</p>
       <input type="text" placeholder="deepcore/create-issue" name="template" df-template>
-    </div
+    </div>
   </div>
   `,
   data: {
@@ -58,13 +58,13 @@ const request = {
       <textarea df-headers placeholder="json/yaml key:value"></textarea>
       <p>Enter auth</p>
       <input type="text" placeholder="myauth" name="auth" df-auth>
-    </div
+    </div>
   </div>
   `,
   data: {},
   input: 2,
-  output: 1,
-  class: "input1-value",
+  output: 2,
+  class: "node-request",
 };
 
 const script = {
@@ -75,18 +75,57 @@ const script = {
     <div class="box">
       <button data-action="editor">Open Editor</button>
       <textarea df-script></textarea>
-    </div
+    </div>
   </div>
   `,
   data: {
     "script": `function main(data) {
   return data;
 }
+`,
+  },
+  input: 1,
+  output: 2,
+  optionalInput: true,
+  class: "node-script",
+};
+
+const forLoop = {
+  name: "for",
+  html: `
+  <div>
+    <div class="title-box">For Loop</div>
+    <div class="box">
+      <p>Return an array</p>
+      <input type="text" placeholder="data" name="for" df-for>
+    </div>
+  </div>
   `,
+  data: {
+    "for": "data",
   },
   input: 1,
   output: 1,
-  optionalInput: true,
+};
+
+
+const ifCase = {
+  name: "if",
+  html: `
+  <div>
+    <div class="title-box">IF</div>
+    <div class="box">
+      <p>Expression</p>
+      <input type="text" placeholder="write expression" name="if" df-if>
+    </div>
+  </div>
+  `,
+  data: {
+    "if": "data > 0",
+  },
+  input: 1,
+  output: 2,
+  class: "node-if",
 };
 
 // const control = {
@@ -99,7 +138,7 @@ const script = {
 //       <input type="text" placeholder="mycontrol" name="url" df-control>
 //       <p>Enter endpoint name</p>
 //       <input type="text" placeholder="create" name="endpoint" df-endpoint>
-//     </div
+//     </div>
 //   </div>
 //   `,
 //   data: {
@@ -142,7 +181,7 @@ const log = {
         <span>Print data</span>
         <input type="checkbox" name="data" data-action="checkbox" df-data>
       </label>
-    </div
+    </div>
   </div>
   `,
   data: {
@@ -160,23 +199,44 @@ const email = {
   <div>
     <div class="title-box">Email</div>
     <div class="box">
-      <button data-action="editor">Open Editor</button>
-      <textarea df-script></textarea>
-    </div
+      <p>From</p>
+      <input type="text" name="email-from" df-from>
+      <p>To</p>
+      <input type="text" name="email-to" df-to>
+      <p>CC</p>
+      <input type="text" name="email-cc" df-cc>
+      <p>BCC</p>
+      <input type="text" name="email-bcc" df-bcc>
+      <p>Subject</p>
+      <input type="text" name="email-subject" df-subject>
+    </div>
   </div>
   `,
   data: {
-    "script":
-`To:
-  - user@example.com
-Cc:
-  - user@example.com
-Subject:
-  - my subject
-`,
+    "from": "",
+    "to": "",
+    "cc": "",
+    "bcc": "",
+    "subject": "",
   },
-  input: 1,
+  input: 2,
   output: 0,
+  class: "node-email",
 };
 
-export const nodes = { endpoint, template, request, script, respond, log, email } as Record<string, node>;
+const note = {
+  name: "note",
+  html: `
+  <div>
+    <div class="box">
+      <textarea df-script></textarea>
+    </div>
+  </div>
+  `,
+  data: {},
+  input: 0,
+  output: 0,
+  class: "node-note",
+};
+
+export const nodes = { endpoint, template, request, script, forLoop, ifCase, respond, log, email, note } as Record<string, node>;

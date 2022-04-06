@@ -22,22 +22,22 @@ type inputHolderRequest struct {
 
 // Request node has one input and one output.
 type Request struct {
+	headers       map[string]interface{}
 	auth          string
 	method        string
 	url           string
-	headers       map[string]interface{}
 	addHeadersRaw string
 	typeName      string
-	inputs        []flow.Inputs
-	outputs       []flow.Connection
-	wait          int
-	fetched       bool
 	inputHolder   inputHolderRequest
+	inputs        []flow.Inputs
+	outputs       [][]flow.Connection
+	wait          int
 	lock          sync.Mutex
+	fetched       bool
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte, input string) ([]byte, error) {
+func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte, input string) ([][]byte, error) {
 	n.lock.Lock()
 	n.wait--
 
@@ -68,7 +68,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte,
 	if n.inputHolder.value != nil {
 		var requestValues map[string]interface{}
 		if err := yaml.Unmarshal(n.inputHolder.value, &requestValues); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to hnmarshal request values: %v", err)
 		}
 
 		// render url
@@ -98,7 +98,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte,
 
 	var addHeaders map[string]interface{}
 	if err := yaml.Unmarshal([]byte(n.addHeadersRaw), &addHeaders); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("faild unmarshal headers in request: %v", err)
 	}
 
 	for k := range addHeaders {
@@ -113,10 +113,14 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte,
 		n.inputHolder.data,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to send request: %v", err)
 	}
 
-	return response.Body, nil
+	if response.StatusCode >= 100 && response.StatusCode < 400 {
+		return [][]byte{nil, response.Body}, nil
+	}
+
+	return [][]byte{response.Body}, nil
 }
 
 func (n *Request) GetType() string {
@@ -164,8 +168,12 @@ func (n *Request) Validate() error {
 	return nil
 }
 
-func (n *Request) Next() []flow.Connection {
-	return n.outputs
+func (n *Request) Next(i int) []flow.Connection {
+	return n.outputs[i]
+}
+
+func (n *Request) NextCount() int {
+	return 0
 }
 
 func (n *Request) ActiveInput(node string) {
@@ -184,15 +192,10 @@ func (n *Request) CheckData() string {
 }
 
 func NewRequest(data flow.NodeData) flow.Noder {
-	inputs := make([]flow.Inputs, 0, len(data.Inputs))
+	inputs := flow.PrepareInputs(data.Inputs)
 
-	for _, input := range data.Inputs {
-		for _, connection := range input.Connections {
-			inputs = append(inputs, flow.Inputs{Node: connection.Node})
-		}
-	}
-
-	outputs := data.Outputs["output_1"].Connections
+	// add outputs with order
+	outputs := flow.PrepareOutputs(data.Outputs)
 
 	auth, _ := data.Data["auth"].(string)
 	method, _ := data.Data["method"].(string)

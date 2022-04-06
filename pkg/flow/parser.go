@@ -23,7 +23,7 @@ func DataToNode(ctx context.Context, controlName, startName string, datas NodesD
 	for nodeNumber := range datas {
 		createFunc := NodeTypes[datas[nodeNumber].Name]
 		if createFunc == nil {
-			return nil, fmt.Errorf("node %s not found", datas[nodeNumber].Name)
+			continue
 		}
 
 		node := createFunc(datas[nodeNumber])

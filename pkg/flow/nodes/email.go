@@ -3,34 +3,89 @@ package nodes
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
 
-	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
+
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/email"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
-	"gopkg.in/yaml.v3"
-
-	"gorm.io/gorm"
 )
 
 var emailType = "email"
 
+type inputHolderEmail struct {
+	value []byte
+	data  []byte
+}
+
 // Email node has one input.
 type Email struct {
-	client   email.Client
-	typeName string
-	fetched  bool
-	headers  map[string][]string
+	values      map[string]string
+	client      email.Client
+	typeName    string
+	inputHolder inputHolderEmail
+	wait        int
+	lock        sync.Mutex
+	fetched     bool
 }
 
 // Run get values from active input nodes.
-func (n *Email) Run(_ context.Context, _ *registry.AppStore, value []byte, _ string) ([]byte, error) {
-	if err := n.client.Send(value, n.headers); err != nil {
-		return nil, fmt.Errorf("email send failed: %v", err)
+func (n *Email) Run(_ context.Context, reg *registry.AppStore, value []byte, input string) ([][]byte, error) {
+	n.lock.Lock()
+	n.wait--
+
+	if n.wait < 0 {
+		n.lock.Unlock()
+
+		return nil, flow.ErrStopGoroutine
 	}
 
-	return value, nil
+	// this block should be stay here in locking area
+	// save value if wait is zero and more
+	// input_1 is value
+	if input == "input_1" {
+		n.inputHolder.value = value
+	} else {
+		n.inputHolder.data = value
+	}
+
+	if n.wait != 0 {
+		n.lock.Unlock()
+
+		return nil, flow.ErrStopGoroutine
+	}
+
+	n.lock.Unlock()
+
+	headers := make(map[string][]string)
+
+	// check value and render it
+	if n.inputHolder.value != nil {
+		var requestValues map[string]interface{}
+		if err := yaml.Unmarshal(n.inputHolder.value, &requestValues); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal: %v", err)
+		}
+
+		for key, value := range n.values {
+			// render
+			payload, err := reg.Template.Ext(requestValues, value)
+			if err != nil {
+				return nil, fmt.Errorf("template cannot render: %v", err)
+			}
+
+			headers[key] = strings.Split(string(payload), ",")
+		}
+	}
+
+	if err := n.client.Send(value, headers); err != nil {
+		return nil, fmt.Errorf("failed to send email: %v", err)
+	}
+
+	return [][]byte{value}, nil
 }
 
 func (n *Email) GetType() string {
@@ -62,8 +117,12 @@ func (n *Email) Validate() error {
 	return nil
 }
 
-func (n *Email) Next() []flow.Connection {
+func (n *Email) Next(int) []flow.Connection {
 	return nil
+}
+
+func (n *Email) NextCount() int {
+	return 0
 }
 
 func (n *Email) CheckData() string {
@@ -73,14 +132,17 @@ func (n *Email) CheckData() string {
 func (n *Email) ActiveInput(string) {}
 
 func NewEmail(data flow.NodeData) flow.Noder {
-	var headers map[string][]string
-	if err := yaml.Unmarshal([]byte(data.Data["script"].(string)), &headers); err != nil {
-		log.Error().Err(err).Msg("email yaml unmarshal failed")
-	}
+	values := make(map[string]string)
+
+	values["From"], _ = data.Data["from"].(string)
+	values["To"], _ = data.Data["to"].(string)
+	values["Cc"], _ = data.Data["cc"].(string)
+	values["Bcc"], _ = data.Data["bcc"].(string)
+	values["Subject"], _ = data.Data["subject"].(string)
 
 	return &Email{
 		typeName: emailType,
-		headers:  headers,
+		values:   values,
 	}
 }
 

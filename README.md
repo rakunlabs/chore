@@ -2,7 +2,7 @@
 
 Chore tool help to send request with templates and customizable flow diagram.
 
-[intro page of ui](docs/info/intro.md)
+__-__ [info page of ui](docs/info/intro.md)
 
 ## Usages
 
@@ -44,7 +44,7 @@ __WARN__ when secret changed, all previous tokens not usable after that.
 
 ### Template
 
-Template is a text file format. Go template and sprig functions supported.
+Template is a text file format. `Go template` and `sprig` functions supported.
 
 For example using some functions and flow inside of template.
 
@@ -68,7 +68,7 @@ For testing in a playground try [repeatit.io](https://repeatit.io), this webapp 
 
 This give us information about secret headers after that use with request flow node.
 
-With basic-auth(username and password) use this header `Authorization: Basic <base64 username:password>` but in 2FA status this cannot work so use Bearer Token(personal access token PAT) most of cases.
+With basic-auth(username and password) use this header `Authorization: Basic <base64 username:password>` but in 2FA status this cannot work so use Bearer Token(personal access token PAT) most of cases or ask IT to get new user which can work with api.
 
 With Personal access token, generate token in the profile page and use with `Authorization: Bearer <TOKEN>`.
 
@@ -76,16 +76,35 @@ With Personal access token, generate token in the profile page and use with `Aut
 
 Flow diagram to create your algorithm in UI.
 
-To start flow send request `/send` endpoint.  
-Server will check __endpoint__ and __control__ values with your JSON/YAML payload.
+To start flow send request `/send` endpoint as POST request.  
+Server will check __endpoint__ and __control__ values with your __JSON/YAML__ payload.
+
+Example: (generate token in token section of chore)
+
+```sh
+curl -X POST -H "Authorization: Bearer ${TOKEN}" -d 'name: deepcore' "http://localhost:8080/api/v1/send?control=try&endpoint=test"
+```
+
+Or you can send as json value `-d '{"name":"deepcore"}'`
+
+Or send file directly, (when sending yaml format always use binary format due to yaml has new line and ascii format not hold that values)
+
+```sh
+curl -X POST -H "Authorization: Bearer ${TOKEN}" --data-binary @values.yml "http://localhost:8080/api/v1/send?control=try&endpoint=test"
+```
 
 ## Informations
 
-[JIRA template](docs/template/jira.md)
+__-__ [JIRA](docs/template/jira.md)
+__-__ [Confluence](docs/template/confluence.md)
+__-__ [MYITSM](docs/template/myitsm.md)
+__-__ [Link Issues](docs/template/issuelink.md)
 
 ## Development
 
 <details><summary>Build and run</summary>
+
+### Run
 
 Required services (PostgreSQL) before to run.
 
@@ -94,11 +113,6 @@ cd _example/chore
 docker-compose up
 # for close run
 # docker-compose down
-```
-
-Generate swagger (don't need if you didn't change related codes)
-```sh
-./build.sh --swag
 ```
 
 Run command
@@ -114,7 +128,19 @@ cd _web
 pnpm run dev -- --host
 ```
 
-Build project
+After this step just go to the `localhost:8080` or `localhost:3000` address.
+
+__NOTE__ in development mode, backend(`localhost:8080`) redirect request to frontend(`localhost:3000`)  
+Directly connect to frontend much better for development.
+
+### Build
+
+Generate swagger (don't need if you didn't change related codes)
+```sh
+./build.sh --swag
+```
+
+Build project to generate binary
 ```sh
 ./build.sh --build-all
 ```
@@ -147,6 +173,8 @@ docker run --rm -it --name="whoami" -p 9090:80 traefik/whoami
 </details>
 
 <details><summary>Fill tables</summary>
+
+THIS IS JUST PLAIN, NOT READY!
 
 Get a token and set to `JWT_KEY` value.
 

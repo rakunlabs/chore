@@ -18,6 +18,7 @@
       expDate = claims.exp * 1000;
     } catch (error) {
       addToast(error, "warn");
+      expDate = -1;
     }
   };
 
@@ -109,7 +110,14 @@
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-      let secondsShow = seconds + "s";
+      let secondsShow: string;
+
+      if (isNaN(seconds)) {
+        remain = "infinity";
+        return;
+      }
+
+      secondsShow = seconds + "s";
       if (seconds < 10) {
         secondsShow = "0" + secondsShow;
       }
@@ -136,36 +144,40 @@
 </script>
 
 <div class="text-yellow-200 flex items-center gap-2">
-  {#if remain != null}
-    <span>
-      Token Expire in {remain}
-    </span>
+  {#if remain == "infinity"}
+    <span>Infinity Token</span>
   {:else}
-    <span class="text-white bg-red-500 px-2 py-1">Token Expired</span>
-  {/if}
-  {#if showLogin}
-    <input
-      type="password"
-      bind:value={pass}
-      placeholder="password"
-      class="py-1 px-2 text-black"
-    />
-    <button
-      on:click={loginButton}
-      class="py-1 px-1 bg-transparent border-2 border-green-500 text-sm hover:bg-green-500 fill-white"
-      ><Icon icon="ok" height="1.25rem" /></button
-    >
-    <button
-      on:click={cancelButton}
-      class="py-1 px-1 bg-transparent border-2 border-red-500 text-sm hover:bg-red-500 fill-white"
-      ><Icon icon="close" height="1.25rem" /></button
-    >
-  {:else}
-    <button
-      class="px-4 py-1 my-auto bg-transparent border-2 border-yellow-200 text-sm hover:bg-yellow-200 hover:text-black"
-      on:click|stopPropagation={renewButton}
-    >
-      {remain != null ? "Renew Token" : "Login"}
-    </button>
+    {#if remain != null}
+      <span>
+        Token Expire in {remain}
+      </span>
+    {:else}
+      <span class="text-white bg-red-500 px-2 py-1">Token Expired</span>
+    {/if}
+    {#if showLogin}
+      <input
+        type="password"
+        bind:value={pass}
+        placeholder="password"
+        class="py-1 px-2 text-black"
+      />
+      <button
+        on:click={loginButton}
+        class="py-1 px-1 bg-transparent border-2 border-green-500 text-sm hover:bg-green-500 fill-white"
+        ><Icon icon="ok" height="1.25rem" /></button
+      >
+      <button
+        on:click={cancelButton}
+        class="py-1 px-1 bg-transparent border-2 border-red-500 text-sm hover:bg-red-500 fill-white"
+        ><Icon icon="close" height="1.25rem" /></button
+      >
+    {:else}
+      <button
+        class="px-4 py-1 my-auto bg-transparent border-2 border-yellow-200 text-sm hover:bg-yellow-200 hover:text-black"
+        on:click|stopPropagation={renewButton}
+      >
+        {remain != null ? "Renew Token" : "Login"}
+      </button>
+    {/if}
   {/if}
 </div>

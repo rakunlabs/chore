@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/rs/zerolog/log"
 )
 
 type ClientResponse struct {
@@ -24,7 +25,7 @@ type Client struct {
 func NewClient() *Client {
 	client := retryablehttp.NewClient()
 	client.RetryMax = 3
-	client.Logger = nil
+	client.Logger = LogZ{log.With().Str("component", "request").Logger()}
 
 	return &Client{
 		HTTPClient: client.StandardClient(),
@@ -42,12 +43,13 @@ func (c *Client) Send(ctx context.Context, URL, method string, headers map[strin
 		req.Header.Add(k, fmt.Sprint(v))
 	}
 
+	req.Header.Add("Content-Length", fmt.Sprint(len(payload)))
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request [%s]: %w", URL, err)
 	}
 
-	// _, _ = io.Copy(io.Discard, resp.Body)
 	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
