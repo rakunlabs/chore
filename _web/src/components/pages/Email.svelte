@@ -35,11 +35,13 @@
     const data = formToObject(e.currentTarget);
 
     // delete unused fields
-    for (const key of ["email", "host", "port", "password"]) {
+    for (const key of ["password"]) {
       if (data[key] == "") {
         delete data[key];
       }
     }
+
+    data["no_auth"] = !!data["no_auth"];
 
     try {
       await requestSender("settings", null, "PATCH", data, true);
@@ -111,6 +113,16 @@
             name="password"
             autocomplete="off"
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
+          />
+        </label>
+        <label class="mb-1 flex">
+          <span class="w-20 inline-block">NoAuth</span>
+          <input
+            type="checkbox"
+            name="no_auth"
+            autocomplete="off"
+            checked={!!data?.no_auth}
+            class="self-center px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
         <button

@@ -27,6 +27,7 @@ type Email struct {
 	values      map[string]string
 	client      email.Client
 	typeName    string
+	inputs      []flow.Inputs
 	inputHolder inputHolderEmail
 	wait        int
 	lock        sync.Mutex
@@ -63,26 +64,46 @@ func (n *Email) Run(_ context.Context, reg *registry.AppStore, value []byte, inp
 
 	headers := make(map[string][]string)
 
+	inputValuesUse := false
+
+	var requestValues map[string]interface{}
+
 	// check value and render it
 	if n.inputHolder.value != nil {
-		var requestValues map[string]interface{}
 		if err := yaml.Unmarshal(n.inputHolder.value, &requestValues); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal: %v", err)
 		}
 
-		for key, value := range n.values {
+		inputValuesUse = true
+	}
+
+	for key, value := range n.values {
+		payload := value
+
+		if inputValuesUse && requestValues != nil {
 			// render
-			payload, err := reg.Template.Ext(requestValues, value)
+			rendered, err := reg.Template.Ext(requestValues, value)
 			if err != nil {
 				return nil, fmt.Errorf("template cannot render: %v", err)
 			}
 
-			headers[key] = strings.Split(string(payload), ",")
+			payload = string(rendered)
+		}
+
+		if key == "Subject" {
+			headers[key] = []string{payload}
+
+			continue
+		}
+
+		payload = strings.ReplaceAll(payload, " ", "")
+		if payload != "" {
+			headers[key] = strings.Split(payload, ",")
 		}
 	}
 
 	if err := n.client.Send(value, headers); err != nil {
-		return nil, fmt.Errorf("failed to send email: %v", err)
+		return nil, fmt.Errorf("failed to send email: values %v, err %v", headers, err)
 	}
 
 	return [][]byte{value}, nil
@@ -102,7 +123,11 @@ func (n *Email) Fetch(ctx context.Context, db *gorm.DB) error {
 		return fmt.Errorf("email fetch failed: %v", result.Error)
 	}
 
-	n.client = email.NewClient(getData.Host, getData.Port, getData.Email, getData.Password)
+	n.client = email.NewClient(getData.Host, getData.Port, getData.NoAuth, getData.Email, getData.Password)
+
+	if n.values["From"] == "" {
+		n.values["From"] = getData.Email
+	}
 
 	n.fetched = true
 
@@ -129,9 +154,20 @@ func (n *Email) CheckData() string {
 	return ""
 }
 
-func (n *Email) ActiveInput(string) {}
+func (n *Email) ActiveInput(node string) {
+	for i := range n.inputs {
+		if n.inputs[i].Node == node {
+			n.inputs[i].Active = true
+			n.wait++
+
+			break
+		}
+	}
+}
 
 func NewEmail(data flow.NodeData) flow.Noder {
+	inputs := flow.PrepareInputs(data.Inputs)
+
 	values := make(map[string]string)
 
 	values["From"], _ = data.Data["from"].(string)
@@ -143,6 +179,7 @@ func NewEmail(data flow.NodeData) flow.Noder {
 	return &Email{
 		typeName: emailType,
 		values:   values,
+		inputs:   inputs,
 	}
 }
 

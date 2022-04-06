@@ -5,9 +5,10 @@ import (
 )
 
 type EmailPure struct {
-	Host  string `json:"host"`
-	Email string `json:"email"`
-	Port  int    `json:"port"`
+	Host   string `json:"host"`
+	Email  string `json:"email"`
+	Port   int    `json:"port"`
+	NoAuth bool   `json:"no_auth"`
 }
 
 type EmailPrivate struct {

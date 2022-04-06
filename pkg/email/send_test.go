@@ -17,7 +17,7 @@ func TestClient_Send(t *testing.T) {
 	}{
 		{
 			name:   "test",
-			client: NewClient("smtp.office365.com", 587, "eray.ates@ingenico.com", "---"),
+			client: NewClient("smtp.office365.com", 587, false, "eray.ates@ingenico.com", "---"),
 			args: args{
 				msg: []byte("<h1>this is test</h1>"),
 				headers: map[string][]string{

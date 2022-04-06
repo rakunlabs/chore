@@ -8,12 +8,20 @@ type Client struct {
 	d *gomail.Dialer
 }
 
-func NewClient(host string, port int, mail, password string) Client {
-	d := gomail.NewDialer(host, port, mail, password)
+func NewClient(host string, port int, noAuth bool, mail, password string) Client {
+	var mailDialer *gomail.Dialer
 
-	return Client{d}
+	if noAuth {
+		mailDialer = &gomail.Dialer{Host: host, Port: port}
+	} else {
+		mailDialer = gomail.NewDialer(host, port, mail, password)
+	}
+
+	return Client{mailDialer}
 }
 
+// Send with headers.
+// Headers should not be empty string array!
 func (c *Client) Send(msg []byte, headers map[string][]string) error {
 	m := gomail.NewMessage()
 
