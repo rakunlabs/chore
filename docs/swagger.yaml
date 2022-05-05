@@ -243,6 +243,8 @@ definitions:
         type: string
       host:
         type: string
+      no_auth:
+        type: boolean
       password:
         type: string
       port:
@@ -365,6 +367,10 @@ paths:
         in: query
         name: name
         type: string
+      - description: get for record values
+        in: query
+        name: dump
+        type: boolean
       responses:
         "200":
           description: OK
@@ -462,6 +468,30 @@ paths:
       summary: New auth
       tags:
       - auth
+    put:
+      description: Send and record auth
+      parameters:
+      - description: send auth object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.AuthPure'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New or Update auth
+      tags:
+      - auth
   /auths:
     get:
       description: Get list of the auths
@@ -544,9 +574,13 @@ paths:
         in: query
         name: name
         type: string
-      - description: get content
+      - description: not get content
         in: query
         name: nodata
+        type: boolean
+      - description: get for record values
+        in: query
+        name: dump
         type: boolean
       responses:
         "200":
@@ -643,6 +677,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: New control
+      tags:
+      - control
+    put:
+      description: Send and record control
+      parameters:
+      - description: send control object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.ControlPureContent'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New or Update control
       tags:
       - control
   /controls:
@@ -856,6 +914,10 @@ paths:
         in: query
         name: name
         type: string
+      - description: get raw content
+        in: query
+        name: dump
+        type: boolean
       responses:
         "200":
           description: OK
@@ -911,6 +973,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/apimodels.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apimodels.Error'
         "409":
           description: Conflict
           schema:
@@ -933,6 +999,10 @@ paths:
         in: query
         name: name
         required: true
+        type: string
+      - description: group names 'group1,group2'
+        in: query
+        name: groups
         type: string
       - description: send template object
         in: body
@@ -964,6 +1034,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: New template
+      tags:
+      - template
+    put:
+      consumes:
+      - text/plain
+      description: Send and record template
+      parameters:
+      - description: name of file 'deepcore/template1'
+        in: query
+        name: name
+        required: true
+        type: string
+      - description: group names 'group1,group2'
+        in: query
+        name: groups
+        type: string
+      - description: send template object
+        in: body
+        name: payload
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: New or Update template
       tags:
       - template
   /templates:

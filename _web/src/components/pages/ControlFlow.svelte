@@ -510,7 +510,7 @@
                     data-name={d.name}
                     data-groups={d.groups}
                     data-action="edit"
-                    class="bg-yellow-200 text-black hover:bg-red-500 hover:text-white px-2 rounded-sm"
+                    class="bg-yellow-200 text-black hover:bg-green-500 hover:text-white px-2 rounded-sm"
                   >
                     edit
                   </button>

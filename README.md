@@ -174,13 +174,13 @@ docker run --rm -it --name="whoami" -p 9090:80 traefik/whoami
 
 <details><summary>Fill tables</summary>
 
-THIS IS JUST PLAIN, NOT READY!
-
 Get a token and set to `JWT_KEY` value.
 
 ```sh
 export JWT_KEY=""
-./data/post-template.sh
+curl https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh | bash -s -- -h
+
+#--url http://localhost:8080 --mode download --auth jira
 ```
 
 </details>

@@ -176,7 +176,7 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
         ;;
     *)
         echo Not found $1
-        exit 0
+        exit 1
         ;;
     esac
     shift 1

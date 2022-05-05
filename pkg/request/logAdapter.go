@@ -12,17 +12,17 @@ type LogZ struct {
 var _ retryablehttp.LeveledLogger = LogZ{}
 
 func (l LogZ) Error(msg string, keysAndValues ...interface{}) {
-	l.Log.Error().Interface("value", keysAndValues).Msg(msg)
+	l.Log.Error().Fields(keysAndValues).Msg(msg)
 }
 
 func (l LogZ) Info(msg string, keysAndValues ...interface{}) {
-	l.Log.Info().Interface("value", keysAndValues).Msg(msg)
+	l.Log.Info().Fields(keysAndValues).Msg(msg)
 }
 
 func (l LogZ) Debug(msg string, keysAndValues ...interface{}) {
-	l.Log.Debug().Interface("value", keysAndValues).Msg(msg)
+	l.Log.Debug().Fields(keysAndValues).Msg(msg)
 }
 
 func (l LogZ) Warn(msg string, keysAndValues ...interface{}) {
-	l.Log.Warn().Interface("value", keysAndValues).Msg(msg)
+	l.Log.Warn().Fields(keysAndValues).Msg(msg)
 }

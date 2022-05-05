@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api/fn"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
@@ -84,26 +85,21 @@ func listControls(c *fiber.Ctx) error {
 // @Router /control [get]
 // @Param id query string false "get by id"
 // @Param name query string false "get by name"
-// @Param nodata query bool false "get content"
+// @Param nodata query bool false "not get content"
+// @Param dump query bool false "get for record values"
+// @Param pretty query bool false "pretty output for dump"
 // @Success 200 {object} apimodels.Data{data=ControlPureContentID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func getControl(c *fiber.Ctx) error {
-	nodata := false
-	nodataRaw := c.Query("nodata")
-
-	if nodataRaw != "" {
-		var err error
-
-		nodata, err = strconv.ParseBool(c.Query("nodata"))
-		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(
-				apimodels.Error{
-					Error: err.Error(),
-				},
-			)
-		}
+	nodata, err := fn.GetQueryBool(c, "nodata")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
 	}
 
 	id := c.Query("id")
@@ -113,6 +109,24 @@ func getControl(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
 				Error: apimodels.ErrRequiredIDName.Error(),
+			},
+		)
+	}
+
+	dump, err := fn.GetQueryBool(c, "dump")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	pretty, err := fn.GetQueryBool(c, "pretty")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
 			},
 		)
 	}
@@ -159,7 +173,22 @@ func getControl(c *fiber.Ctx) error {
 	if nodata {
 		ret = control
 	} else {
+		if dump {
+			contentRaw, err := base64.StdEncoding.DecodeString(controlContent.Content)
+			if err != nil {
+				return c.Status(http.StatusInternalServerError).JSON(
+					apimodels.Error{
+						Error: err.Error(),
+					},
+				)
+			}
+			controlContent.Content = string(contentRaw)
+		}
 		ret = controlContent
+	}
+
+	if dump {
+		return fn.JSON(c.Status(http.StatusOK), ret, pretty)
 	}
 
 	return c.Status(http.StatusOK).JSON(
@@ -246,6 +275,71 @@ func postControl(c *fiber.Ctx) error {
 			Data: apimodels.ID{ID: id},
 		},
 	)
+}
+
+// @Summary New or Update control
+// @Tags control
+// @Description Send and record control
+// @Security ApiKeyAuth
+// @Router /control [put]
+// @Param payload body models.ControlPureContent{} false "send control object"
+// @Success 204 "No Content"
+// @failure 400 {object} apimodels.Error{}
+// @failure 500 {object} apimodels.Error{}
+func putControl(c *fiber.Ctx) error {
+	var body models.ControlPureContent
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	if body.Name == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: apimodels.ErrRequiredName.Error(),
+			},
+		)
+	}
+
+	body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
+
+	reg := registry.Reg().Get(c.Locals("registry").(string))
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	result := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Clauses(
+		clause.OnConflict{
+			UpdateAll: true,
+			Columns:   []clause.Column{{Name: "name"}},
+		}).Create(
+		&models.Control{
+			ControlPureContent: body,
+			ModelCU: apimodels.ModelCU{
+				ID: apimodels.ID{ID: id},
+			},
+		},
+	)
+
+	if result.Error != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	//nolint:wrapcheck // checking before
+	return c.SendStatus(http.StatusNoContent)
 }
 
 // @Summary Replace control
@@ -347,7 +441,7 @@ func deleteControl(c *fiber.Ctx) error {
 	if id == "" && name == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName,
+				Error: apimodels.ErrRequiredIDName.Error(),
 			},
 		)
 	}
@@ -391,6 +485,7 @@ func Control(router fiber.Router) {
 	router.Get("/controls", middleware.JWTCheck(nil, nil), listControls)
 	router.Get("/control", middleware.JWTCheck(nil, nil), getControl)
 	router.Post("/control", middleware.JWTCheck(nil, nil), postControl)
+	router.Put("/control", middleware.JWTCheck(nil, nil), putControl)
 	router.Patch("/control", middleware.JWTCheck(nil, nil), patchControl)
 	router.Delete("/control", middleware.JWTCheck(nil, nil), deleteControl)
 }

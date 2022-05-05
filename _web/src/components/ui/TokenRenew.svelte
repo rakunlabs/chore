@@ -12,6 +12,8 @@
   let showLogin = false;
   let pass = "";
 
+  // let inputPass: HTMLInputElement;
+
   const getExpDate = () => {
     try {
       const [, claims] = tokenGet();
@@ -135,9 +137,11 @@
     setCountDown();
 
     window.addEventListener("storage", listenStoreEvent);
+    // inputPass.addEventListener("keypress", loginWithKey);
   });
 
   onDestroy(() => {
+    // inputPass.removeEventListener("keypress", loginWithKey);
     window.removeEventListener("storage", listenStoreEvent);
     clearInterval(countdown);
   });
@@ -155,22 +159,27 @@
       <span class="text-white bg-red-500 px-2 py-1">Token Expired</span>
     {/if}
     {#if showLogin}
-      <input
-        type="password"
-        bind:value={pass}
-        placeholder="password"
-        class="py-1 px-2 text-black"
-      />
-      <button
-        on:click={loginButton}
-        class="py-1 px-1 bg-transparent border-2 border-green-500 text-sm hover:bg-green-500 fill-white"
-        ><Icon icon="ok" height="1.25rem" /></button
+      <form
+        on:submit|preventDefault={loginButton}
+        class="flex items-center gap-2"
       >
-      <button
-        on:click={cancelButton}
-        class="py-1 px-1 bg-transparent border-2 border-red-500 text-sm hover:bg-red-500 fill-white"
-        ><Icon icon="close" height="1.25rem" /></button
-      >
+        <input
+          type="password"
+          bind:value={pass}
+          placeholder="password"
+          class="py-1 px-2 text-black"
+        />
+        <button
+          type="submit"
+          class="py-1 px-1 bg-transparent border-2 border-green-500 text-sm hover:bg-green-500 fill-white"
+          ><Icon icon="ok" height="1.25rem" /></button
+        >
+        <button
+          on:click={cancelButton}
+          class="py-1 px-1 bg-transparent border-2 border-red-500 text-sm hover:bg-red-500 fill-white"
+          ><Icon icon="close" height="1.25rem" /></button
+        >
+      </form>
     {:else}
       <button
         class="px-4 py-1 my-auto bg-transparent border-2 border-yellow-200 text-sm hover:bg-yellow-200 hover:text-black"

@@ -24,7 +24,9 @@ func VisitAndFetch(reg *NodesReg) error {
 }
 
 func validateFetch(current string, outputs []Connection, reg *NodesReg) error {
+	// log.Debug().Msgf("current %s", current)
 	for _, output := range outputs {
+		// log.Debug().Msgf("validating [%v]", output)
 		// before to run check context
 		select {
 		case <-reg.ctx.Done():

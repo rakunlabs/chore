@@ -155,7 +155,7 @@ func deleteUser(c *fiber.Ctx) error {
 	if id == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName,
+				Error: apimodels.ErrRequiredIDName.Error(),
 			},
 		)
 	}

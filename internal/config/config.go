@@ -8,12 +8,14 @@ var (
 )
 
 var Application = struct {
-	Host     string `cfg:"host" secret:"host,loggable"`
-	Port     string `cfg:"port" secret:"port,loggable"`
-	LogLevel string `cfg:"logLevel" secret:"logLevel,loggable"`
-	Secret   string `cfg:"secret" secret:"secret"`
-	User     User   `cfg:"user" secret:"user,loggable"`
-	Store    Store  `cfg:"store" secret:"store,loggable"`
+	Host     string `cfg:"host"`
+	Port     string `cfg:"port"`
+	LogLevel string `cfg:"logLevel"`
+	Secret   string `cfg:"secret" loggable:"false"`
+	// BasePath for swagger ui ex /chore/
+	BasePath string `cfg:"basePath"`
+	User     User   `cfg:"user"`
+	Store    Store  `cfg:"store"`
 }{
 	Host:     "0.0.0.0",
 	LogLevel: "debug",
@@ -30,17 +32,17 @@ var Application = struct {
 
 // User settings will use if doesn't have any user on database.
 type User struct {
-	Name     string `cfg:"name" secret:"name,loggable"`
-	Password string `cfg:"password" secret:"password"`
+	Name     string `cfg:"name"`
+	Password string `cfg:"password" loggable:"false"`
 }
 
 type Store struct {
-	Type     string `cfg:"type" secret:"type,loggable"`
-	FileName string `cfg:"fileName" secret:"fileName,loggable"`
-	Schema   string `cfg:"schema" secret:"schema,loggable"`
-	Host     string `cfg:"host" secret:"host,loggable"`
-	Port     string `cfg:"port" secret:"port,loggable"`
-	User     string `cfg:"user" secret:"user,loggable"`
-	Password string `cfg:"password" secret:"password"`
-	DBName   string `cfg:"dbName" secret:"dbName,loggable"`
+	Type     string `cfg:"type"`
+	FileName string `cfg:"fileName"`
+	Schema   string `cfg:"schema"`
+	Host     string `cfg:"host"`
+	Port     string `cfg:"port"`
+	User     string `cfg:"user"`
+	Password string `cfg:"password" loggable:"false"`
+	DBName   string `cfg:"dbName"`
 }

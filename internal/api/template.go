@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api/fn"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/utils"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
@@ -99,6 +101,7 @@ func listTemplates(c *fiber.Ctx) error {
 // @Router /template [get]
 // @Param id query string false "get by id"
 // @Param name query string false "get by name"
+// @Param dump query bool false "get raw content"
 // @Success 200 {object} apimodels.Data{data=TemplatePureID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
@@ -111,6 +114,15 @@ func getTemplate(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
 				Error: apimodels.ErrRequiredIDName.Error(),
+			},
+		)
+	}
+
+	dump, err := fn.GetQueryBool(c, "dump")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
 			},
 		)
 	}
@@ -147,6 +159,19 @@ func getTemplate(c *fiber.Ctx) error {
 		)
 	}
 
+	if dump {
+		v, err := base64.StdEncoding.DecodeString(getData.Content)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(
+				apimodels.Error{
+					Error: result.Error.Error(),
+				},
+			)
+		}
+
+		return c.Status(http.StatusOK).Send(v)
+	}
+
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
 			Data: getData,
@@ -160,6 +185,7 @@ func getTemplate(c *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Router /template [post]
 // @Param name query string true "name of file 'deepcore/template1'"
+// @Param groups query string false "group names 'group1,group2'"
 // @Param payload body string false "send template object"
 // @Accept plain
 // @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
@@ -183,6 +209,19 @@ func postTemplate(c *fiber.Ctx) error {
 
 	// trim slash
 	template.Name = strings.Trim(name, "/")
+
+	if groups := c.Query("groups"); groups != "" {
+		var err error
+
+		template.Groups.Groups, err = json.Marshal(strings.Split(groups, ","))
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(
+				apimodels.Error{
+					Error: err.Error(),
+				},
+			)
+		}
+	}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
@@ -236,6 +275,88 @@ func postTemplate(c *fiber.Ctx) error {
 	)
 }
 
+// @Summary New or Update template
+// @Tags template
+// @Description Send and record template
+// @Security ApiKeyAuth
+// @Router /template [put]
+// @Param name query string true "name of file 'deepcore/template1'"
+// @Param groups query string false "group names 'group1,group2'"
+// @Param payload body string false "send template object"
+// @Accept plain
+// @Success 204 "No Content"
+// @failure 400 {object} apimodels.Error{}
+// @failure 500 {object} apimodels.Error{}
+func putTemplate(c *fiber.Ctx) error {
+	template := new(models.Template)
+
+	body := c.Body()
+	template.Content = base64.StdEncoding.EncodeToString(body)
+
+	name := c.Query("name")
+	if name == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: "name is required",
+			},
+		)
+	}
+
+	// trim slash
+	template.Name = strings.Trim(name, "/")
+
+	if groups := c.Query("groups"); groups != "" {
+		var err error
+
+		template.Groups.Groups, err = json.Marshal(strings.Split(groups, ","))
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(
+				apimodels.Error{
+					Error: err.Error(),
+				},
+			)
+		}
+	}
+
+	reg := registry.Reg().Get(c.Locals("registry").(string))
+
+	var err error
+
+	template.ID.ID, err = uuid.NewUUID()
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	result := reg.DB.WithContext(c.UserContext()).Clauses(
+		clause.OnConflict{
+			UpdateAll: true,
+			Columns:   []clause.Column{{Name: "name"}},
+		}).Create(template)
+
+	if result.Error != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	// create folder
+	folderMap := utils.FolderFile(template.Name)
+
+	// on conflict do nothing
+	reg.DB.WithContext(c.UserContext()).Model(models.Folder{}).Clauses(
+		clause.OnConflict{DoNothing: true},
+	).Create(folderMap)
+
+	//nolint:wrapcheck // checking before
+	return c.SendStatus(http.StatusNoContent)
+}
+
 // TODO: currently just changeable inside of the data.
 
 // @Summary Replace template
@@ -248,6 +369,7 @@ func postTemplate(c *fiber.Ctx) error {
 // @Accept plain
 // @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
 // @failure 400 {object} apimodels.Error{}
+// @failure 404 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func patchTemplate(c *fiber.Ctx) error {
@@ -285,6 +407,14 @@ func patchTemplate(c *fiber.Ctx) error {
 
 	if pErr != nil && pErr.Code == "23505" {
 		return c.Status(http.StatusConflict).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return c.Status(http.StatusNotFound).JSON(
 			apimodels.Error{
 				Error: result.Error.Error(),
 			},
@@ -337,7 +467,7 @@ func deleteTemplate(c *fiber.Ctx) error {
 	if id == "" && name == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName,
+				Error: apimodels.ErrRequiredIDName.Error(),
 			},
 		)
 	}
@@ -394,6 +524,7 @@ func Template(router fiber.Router) {
 	router.Get("/templates", middleware.JWTCheck(nil, nil), listTemplates)
 	router.Get("/template", middleware.JWTCheck(nil, nil), getTemplate)
 	router.Post("/template", middleware.JWTCheck(nil, nil), postTemplate)
+	router.Put("/template", middleware.JWTCheck(nil, nil), putTemplate)
 	router.Patch("/template", middleware.JWTCheck(nil, nil), patchTemplate)
 	router.Delete("/template", middleware.JWTCheck(nil, nil), deleteTemplate)
 }

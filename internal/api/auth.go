@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api/fn"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
@@ -74,6 +76,8 @@ func listAuths(c *fiber.Ctx) error {
 // @Router /auth [get]
 // @Param id query string false "get by id"
 // @Param name query string false "get by name"
+// @Param dump query bool false "get for record values"
+// @Param pretty query bool false "pretty output for dump"
 // @Success 200 {object} apimodels.Data{data=AuthPureID{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
@@ -86,6 +90,24 @@ func getAuth(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
 				Error: apimodels.ErrRequiredIDName.Error(),
+			},
+		)
+	}
+
+	dump, err := fn.GetQueryBool(c, "dump")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	pretty, err := fn.GetQueryBool(c, "pretty")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
 			},
 		)
 	}
@@ -121,11 +143,78 @@ func getAuth(c *fiber.Ctx) error {
 		)
 	}
 
+	if dump {
+		return fn.JSON(c.Status(http.StatusOK), getData, pretty)
+	}
+
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
 			Data: getData,
 		},
 	)
+}
+
+// @Summary New or Update auth
+// @Tags auth
+// @Description Send and record auth
+// @Security ApiKeyAuth
+// @Router /auth [put]
+// @Param payload body models.AuthPure{} false "send auth object"
+// @Success 204 "No Content"
+// @failure 400 {object} apimodels.Error{}
+// @failure 500 {object} apimodels.Error{}
+func putAuth(c *fiber.Ctx) error {
+	var body models.AuthPure
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	if body.Name == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: apimodels.ErrRequiredName.Error(),
+			},
+		)
+	}
+
+	reg := registry.Reg().Get(c.Locals("registry").(string))
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	result := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Clauses(
+		clause.OnConflict{
+			UpdateAll: true,
+			Columns:   []clause.Column{{Name: "name"}},
+		}).Create(
+		&models.Auth{
+			AuthPure: body,
+			ModelCU: apimodels.ModelCU{
+				ID: apimodels.ID{ID: id},
+			},
+		},
+	)
+
+	if result.Error != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	//nolint:wrapcheck // checking before
+	return c.SendStatus(http.StatusNoContent)
 }
 
 // @Summary New auth
@@ -151,7 +240,7 @@ func postAuth(c *fiber.Ctx) error {
 	if body.Name == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: apimodels.ErrRequiredName,
+				Error: apimodels.ErrRequiredName.Error(),
 			},
 		)
 	}
@@ -300,7 +389,7 @@ func deleteAuth(c *fiber.Ctx) error {
 	if id == "" {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
-				Error: apimodels.ErrRequiredID,
+				Error: apimodels.ErrRequiredID.Error(),
 			},
 		)
 	}
@@ -336,6 +425,7 @@ func Auth(router fiber.Router) {
 	router.Get("/auths", middleware.JWTCheck(nil, nil), listAuths)
 	router.Get("/auth", middleware.JWTCheck(nil, nil), getAuth)
 	router.Post("/auth", middleware.JWTCheck(nil, nil), postAuth)
+	router.Put("/auth", middleware.JWTCheck(nil, nil), putAuth)
 	router.Patch("/auth", middleware.JWTCheck(nil, nil), patchAuth)
 	router.Delete("/auth", middleware.JWTCheck(nil, nil), deleteAuth)
 }

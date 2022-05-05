@@ -5,7 +5,7 @@ include:
 
 variables:
   DOCKER_IMAGE_NAME: "chore"
-  GO_IMAGE_: "golang:1.17.8-alpine"
+  GO_IMAGE_: "golang:1.17.9-alpine"
   BASE_IMAGE_: "scratch"
   AUTO_DEPLOY: "N"
   MAIN_BRANCH_IMAGE: "N"

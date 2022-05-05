@@ -2,3 +2,10 @@
 
 /internal/server/dist/*
 !/internal/server/dist/.gitkeep
+
+/data/auths/*
+!/data/auths/.gitkeep
+/data/controls/*
+!/data/controls/.gitkeep
+/data/templates/*
+!/data/templates/.gitkeep
