@@ -258,7 +258,8 @@
             true
           );
 
-          const content = JSON.parse(b64ToUtf8(responseGet.data.data.content));
+          const rawContent = b64ToUtf8(responseGet.data.data.content);
+          const content = JSON.parse(rawContent);
 
           // console.log(content);
 
@@ -275,7 +276,17 @@
           } else {
             error = reason as any;
           }
+
+          return;
         }
+
+        drawDiv
+          .querySelectorAll('input[type="checkbox"]')
+          .forEach((input: HTMLInputElement) => {
+            if (input.getAttribute("value") == "true") {
+              input.checked = true;
+            }
+          });
       })();
     }
   };
@@ -320,6 +331,18 @@
         node.html,
         false
       );
+    }
+  };
+
+  const listenKeys = (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key) {
+        // log editor output to console
+        case "l":
+          console.log(editor.export().drawflow.Home.data);
+          event.preventDefault();
+          break;
+      }
     }
   };
 
@@ -535,6 +558,7 @@
       class={`h-full border border-gray-600 relative ${
         selected == "table" ? "hidden" : ""
       } ${fullScreen ? "fullscreen" : ""}`}
+      on:keydown={listenKeys}
     >
       <div
         class="absolute z-30 bg-slate-200 flex items-center border-b border-r border-gray-600"

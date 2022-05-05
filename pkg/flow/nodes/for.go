@@ -20,12 +20,27 @@ type ForLoop struct {
 	typeName   string
 	expression string
 	outputs    [][]flow.Connection
+	checked    bool
 }
 
-func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value []byte, input string) ([][]byte, error) {
+type ForRet struct {
+	output [][]byte
+}
+
+func (r *ForRet) GetBinaryData() []byte {
+	return nil
+}
+
+func (r *ForRet) GetBinaryDatas() [][]byte {
+	return r.output
+}
+
+var _ flow.NodeRetDatas = &ForRet{}
+
+func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	scriptRunner := goja.New()
 
-	if err := scriptRunner.Set("data", toObject(value)); err != nil {
+	if err := scriptRunner.Set("data", toObject(value.GetBinaryData())); err != nil {
 		return nil, fmt.Errorf("cannot set data in script: %v", err)
 	}
 
@@ -38,16 +53,21 @@ func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value []byte, inp
 
 	if _, ok := gojaV.Export().([]interface{}); ok {
 		for _, exportVal := range gojaV.Export().([]interface{}) {
-			gojaVByte, err := json.Marshal(exportVal)
-			if err != nil {
-				return nil, fmt.Errorf("cannot marshal exported value: %v", err)
-			}
+			switch exportValTyped := exportVal.(type) {
+			case map[string]interface{}:
+				gojaVByte, err := json.Marshal(exportValTyped)
+				if err != nil {
+					return nil, fmt.Errorf("cannot marshal exported value: %v", err)
+				}
 
-			v = append(v, gojaVByte)
+				v = append(v, gojaVByte)
+			default:
+				v = append(v, []byte(fmt.Sprintf("%v", exportVal)))
+			}
 		}
 	}
 
-	return v, nil
+	return &ForRet{output: v}, nil
 }
 
 func (n *ForLoop) GetType() string {
@@ -60,6 +80,10 @@ func (n *ForLoop) Fetch(_ context.Context, _ *gorm.DB) error {
 
 func (n *ForLoop) IsFetched() bool {
 	return true
+}
+
+func (n *ForLoop) IsRespond() bool {
+	return false
 }
 
 func (n *ForLoop) Validate() error {
@@ -80,7 +104,15 @@ func (n *ForLoop) CheckData() string {
 	return ""
 }
 
-func NewForLoop(data flow.NodeData) flow.Noder {
+func (n *ForLoop) Check() {
+	n.checked = true
+}
+
+func (n *ForLoop) IsChecked() bool {
+	return n.checked
+}
+
+func NewForLoop(_ context.Context, data flow.NodeData) flow.Noder {
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 

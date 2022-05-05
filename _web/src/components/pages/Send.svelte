@@ -63,6 +63,9 @@
     try {
       // reset settings
       beutify = false;
+      showData.status = "";
+      showData.color = "yellow";
+      editorOutput.setValue("");
 
       const responseGet = await requestSender(
         "send",

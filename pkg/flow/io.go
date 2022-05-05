@@ -1,6 +1,10 @@
 package flow
 
-import "sort"
+import (
+	"sort"
+)
+
+var Input1 = "input_1"
 
 func PrepareOutputs(outputs NodeConnection) [][]Connection {
 	orderKey := make([]string, 0, len(outputs))
@@ -22,9 +26,9 @@ func PrepareOutputs(outputs NodeConnection) [][]Connection {
 func PrepareInputs(inputs NodeConnection) []Inputs {
 	retInputs := make([]Inputs, 0, len(inputs))
 
-	for _, input := range inputs {
+	for inputName, input := range inputs {
 		for _, connection := range input.Connections {
-			retInputs = append(retInputs, Inputs{Node: connection.Node})
+			retInputs = append(retInputs, Inputs{Node: connection.Node, InputName: inputName})
 		}
 	}
 

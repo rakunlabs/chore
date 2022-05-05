@@ -19,48 +19,54 @@ var emailType = "email"
 
 type inputHolderEmail struct {
 	value []byte
-	data  []byte
+	exist bool
+}
+
+type EmailRet struct {
+	output []byte
+}
+
+func (r *EmailRet) GetBinaryData() []byte {
+	return r.output
 }
 
 // Email node has one input.
 type Email struct {
 	values      map[string]string
 	client      email.Client
+	lockChan    chan struct{}
 	typeName    string
 	inputs      []flow.Inputs
 	inputHolder inputHolderEmail
-	wait        int
-	lock        sync.Mutex
+	mutex       sync.Mutex
 	fetched     bool
+	checked     bool
 }
 
 // Run get values from active input nodes.
-func (n *Email) Run(_ context.Context, reg *registry.AppStore, value []byte, input string) ([][]byte, error) {
-	n.lock.Lock()
-	n.wait--
-
-	if n.wait < 0 {
-		n.lock.Unlock()
-
-		return nil, flow.ErrStopGoroutine
-	}
-
-	// this block should be stay here in locking area
-	// save value if wait is zero and more
+func (n *Email) Run(_ context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
-	if input == "input_1" {
-		n.inputHolder.value = value
-	} else {
-		n.inputHolder.data = value
-	}
+	if input == flow.Input1 {
+		// don't allow multiple inputs
+		n.mutex.Lock()
+		defer n.mutex.Unlock()
 
-	if n.wait != 0 {
-		n.lock.Unlock()
+		if n.inputHolder.exist {
+			return nil, flow.ErrStopGoroutine
+		}
+
+		n.inputHolder.value = value.GetBinaryData()
+		n.inputHolder.exist = true
+
+		// cose channel to allow to other continue process.
+		close(n.lockChan)
 
 		return nil, flow.ErrStopGoroutine
 	}
 
-	n.lock.Unlock()
+	if n.lockChan != nil {
+		<-n.lockChan
+	}
 
 	headers := make(map[string][]string)
 
@@ -102,11 +108,11 @@ func (n *Email) Run(_ context.Context, reg *registry.AppStore, value []byte, inp
 		}
 	}
 
-	if err := n.client.Send(value, headers); err != nil {
+	if err := n.client.Send(value.GetBinaryData(), headers); err != nil {
 		return nil, fmt.Errorf("failed to send email: values %v, err %v", headers, err)
 	}
 
-	return [][]byte{value}, nil
+	return &EmailRet{output: value.GetBinaryData()}, nil
 }
 
 func (n *Email) GetType() string {
@@ -138,6 +144,10 @@ func (n *Email) IsFetched() bool {
 	return n.fetched
 }
 
+func (n *Email) IsRespond() bool {
+	return false
+}
+
 func (n *Email) Validate() error {
 	return nil
 }
@@ -154,18 +164,30 @@ func (n *Email) CheckData() string {
 	return ""
 }
 
+func (n *Email) Check() {
+	n.checked = true
+}
+
+func (n *Email) IsChecked() bool {
+	return n.checked
+}
+
 func (n *Email) ActiveInput(node string) {
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
 			n.inputs[i].Active = true
-			n.wait++
+
+			// input_1 for dynamic variable
+			if n.inputs[i].InputName == flow.Input1 {
+				n.lockChan = make(chan struct{})
+			}
 
 			break
 		}
 	}
 }
 
-func NewEmail(data flow.NodeData) flow.Noder {
+func NewEmail(_ context.Context, data flow.NodeData) flow.Noder {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	values := make(map[string]string)

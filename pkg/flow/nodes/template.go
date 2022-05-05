@@ -16,6 +16,14 @@ import (
 
 var templateType = "template"
 
+type TemplateRet struct {
+	output []byte
+}
+
+func (r *TemplateRet) GetBinaryData() []byte {
+	return r.output
+}
+
 // Template node has one input and one output.
 type Template struct {
 	templateName string
@@ -27,10 +35,11 @@ type Template struct {
 	wait         int
 	fetched      bool
 	lock         sync.Mutex
+	checked      bool
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, _ string) ([][]byte, error) {
+func (n *Template) Run(_ context.Context, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	n.lock.Lock()
 	n.wait--
 
@@ -42,7 +51,7 @@ func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, 
 
 	// this block should be stay here in locking area
 	// save value if wait is zero and more
-	if err := yaml.Unmarshal(value, &n.inputHolder); err != nil {
+	if err := yaml.Unmarshal(value.GetBinaryData(), &n.inputHolder); err != nil {
 		n.lock.Unlock()
 
 		return nil, fmt.Errorf("template cannot unmarhal: %v", err)
@@ -61,7 +70,11 @@ func (n *Template) Run(_ context.Context, reg *registry.AppStore, value []byte, 
 		err = fmt.Errorf("template cannot render: %v", err)
 	}
 
-	return [][]byte{payload}, err
+	return &TemplateRet{payload}, err
+}
+
+func (n *Template) Special(_ interface{}) interface{} {
+	return nil
 }
 
 func (n *Template) GetType() string {
@@ -98,6 +111,10 @@ func (n *Template) IsFetched() bool {
 	return n.fetched
 }
 
+func (n *Template) IsRespond() bool {
+	return false
+}
+
 func (n *Template) Validate() error {
 	return nil
 }
@@ -125,7 +142,15 @@ func (n *Template) CheckData() string {
 	return ""
 }
 
-func NewTemplate(data flow.NodeData) flow.Noder {
+func (n *Template) Check() {
+	n.checked = true
+}
+
+func (n *Template) IsChecked() bool {
+	return n.checked
+}
+
+func NewTemplate(_ context.Context, data flow.NodeData) flow.Noder {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order

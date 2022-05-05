@@ -63,7 +63,7 @@ const request = {
   `,
   data: {},
   input: 2,
-  output: 2,
+  output: 3,
   class: "node-request",
 };
 
@@ -85,7 +85,7 @@ const script = {
 `,
   },
   input: 1,
-  output: 2,
+  output: 3,
   optionalInput: true,
   class: "node-script",
 };
@@ -121,7 +121,7 @@ const ifCase = {
   </div>
   `,
   data: {
-    "if": "data > 0",
+    "if": "data.count > 0",
   },
   input: 1,
   output: 2,
@@ -153,10 +153,22 @@ const respond = {
   name: "respond",
   html: `
   <div>
-    <div class="title-box">Respond</div>
+    <div class="title-box flex items-center gap-2">Respond <input class="mr-2" type="number" name="status" df-status></div>
+    <div class="box">
+      <p>Enter headers</p>
+      <textarea df-headers placeholder="json/yaml key:value"></textarea>
+      <hr>
+      <label>
+        <span>Get respond in data</span>
+        <input type="checkbox" name="get" data-action="checkbox" df-get>
+      </label>
+    </div>
   </div>
   `,
-  data: {},
+  data: {
+    status: "200",
+    get: "false",
+  },
   input: 1,
   output: 0,
 };
@@ -175,6 +187,7 @@ const log = {
         <option value="info">Info</option>
         <option value="warn">Warn</option>
         <option value="error">Error</option>
+        <option value="">NoLevel</option>
       </select>
       <hr>
       <label>

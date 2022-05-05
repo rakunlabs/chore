@@ -14,18 +14,35 @@ import (
 
 var ifCaseType = "ifCase"
 
+type IfRet struct {
+	output    []byte
+	selection []int
+}
+
+func (r *IfRet) GetBinaryData() []byte {
+	return r.output
+}
+
+func (r *IfRet) GetSelection() []int {
+	return r.selection
+}
+
+var _ flow.NodeRetSelection = &IfRet{}
+
 // Ifcase node has one input and one output.
 // Not need to wait other inputs.
 type IfCase struct {
 	typeName   string
 	expression string
 	outputs    [][]flow.Connection
+	checked    bool
 }
 
-func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value []byte, input string) ([][]byte, error) {
+// selection 0 is false.
+func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	scriptRunner := goja.New()
 
-	if err := scriptRunner.Set("data", toObject(value)); err != nil {
+	if err := scriptRunner.Set("data", toObject(value.GetBinaryData())); err != nil {
 		return nil, fmt.Errorf("cannot set data in script: %v", err)
 	}
 
@@ -33,14 +50,23 @@ func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value []byte, in
 	if err != nil {
 		log.Ctx(ctx).Error().Err(err).Msgf("cannot run loop value, passing as false: %v", err)
 
-		return [][]byte{value, nil}, nil
+		return &IfRet{
+			output:    value.GetBinaryData(),
+			selection: []int{0},
+		}, nil
 	}
 
 	if gojaV.ToBoolean() {
-		return [][]byte{nil, value}, nil
+		return &IfRet{
+			output:    value.GetBinaryData(),
+			selection: []int{1},
+		}, nil
 	}
 
-	return [][]byte{value, nil}, nil
+	return &IfRet{
+		output:    value.GetBinaryData(),
+		selection: []int{0},
+	}, nil
 }
 
 func (n *IfCase) GetType() string {
@@ -53,6 +79,10 @@ func (n *IfCase) Fetch(_ context.Context, _ *gorm.DB) error {
 
 func (n *IfCase) IsFetched() bool {
 	return true
+}
+
+func (n *IfCase) IsRespond() bool {
+	return false
 }
 
 func (n *IfCase) Validate() error {
@@ -73,7 +103,15 @@ func (n *IfCase) CheckData() string {
 	return ""
 }
 
-func NewIfCase(data flow.NodeData) flow.Noder {
+func (n *IfCase) Check() {
+	n.checked = true
+}
+
+func (n *IfCase) IsChecked() bool {
+	return n.checked
+}
+
+func NewIfCase(_ context.Context, data flow.NodeData) flow.Noder {
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 

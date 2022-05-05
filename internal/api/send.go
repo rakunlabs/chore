@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -101,12 +102,11 @@ func postSend(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusAccepted)
 	}
 
-	// outputData := []flow.Respond{}
-	// for valueChan := range respondChan {
-	// 	outputData = append(outputData, valueChan)
-	// }
-
 	valueChan := <-respondChan
+
+	for k, v := range valueChan.Header {
+		c.Response().Header.Set(k, fmt.Sprint(v))
+	}
 
 	return c.Status(valueChan.Status).Send(valueChan.Data)
 }

@@ -10,9 +10,9 @@ import (
 )
 
 type Respond struct {
-	Data    []byte `json:"data"`
-	Status  int    `json:"status"`
-	IsError bool   `json:"isError"`
+	Header map[string]interface{} `json:"header"`
+	Data   []byte                 `json:"data"`
+	Status int                    `json:"status"`
 }
 
 // NodesReg hold concreate information of nodes and start points.
@@ -40,7 +40,6 @@ func NewNodesReg(ctx context.Context, controlName, startName string, appStore *r
 		reg:         make(map[string]Noder),
 		appStore:    appStore,
 		ctx:         logReg.WithContext(ctx),
-		respondChan: make(chan Respond, 1),
 	}
 }
 

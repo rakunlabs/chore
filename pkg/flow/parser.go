@@ -26,7 +26,7 @@ func DataToNode(ctx context.Context, controlName, startName string, datas NodesD
 			continue
 		}
 
-		node := createFunc(datas[nodeNumber])
+		node := createFunc(ctx, datas[nodeNumber])
 		reg.Set(nodeNumber, node)
 	}
 

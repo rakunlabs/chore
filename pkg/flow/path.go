@@ -3,7 +3,6 @@ package flow
 import (
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/rs/zerolog/log"
 )
@@ -39,6 +38,15 @@ func validateFetch(current string, outputs []Connection, reg *NodesReg) error {
 			return fmt.Errorf("node not found %s", output.Node)
 		}
 
+		// activate this input
+		node.ActiveInput(current)
+
+		if node.IsChecked() {
+			continue
+		}
+
+		// fetch and validation
+
 		if err := node.Validate(); err != nil {
 			return fmt.Errorf("ID %s, %s validate failed: %v", output, node.GetType(), err)
 		}
@@ -47,13 +55,14 @@ func validateFetch(current string, outputs []Connection, reg *NodesReg) error {
 			return fmt.Errorf("ID %s, %s fetch failed: %v", output, node.GetType(), err)
 		}
 
-		// activate this input
-		node.ActiveInput(current)
-
 		// respond channel activate
-		if node.GetType() == "respond" {
+		if node.IsRespond() {
+			reg.respondChan = make(chan Respond, 1)
 			reg.respondChanActive = true
 		}
+
+		// stamp check
+		node.Check()
 
 		for i := 0; i < node.NextCount(); i++ {
 			if err := validateFetch(output.Node, node.Next(i), reg); err != nil {
@@ -70,14 +79,14 @@ func GoAndRun(reg *NodesReg, firstValue []byte) {
 	starts := reg.GetStarts()
 
 	// change waitgroup to check all job is finished
-	branch(starts, reg, firstValue)
+	branch(starts, reg, &nodeRetOutput{firstValue})
 
 	reg.wgx.Wait()
 	close(reg.respondChan)
 }
 
 // branch values already designed to same length of nexts.
-func branch(nexts []Connection, reg *NodesReg, value []byte) {
+func branch(nexts []Connection, reg *NodesReg, value NodeRet) {
 	for _, next := range nexts {
 		// going goroutine to prevent too much recursive call
 		reg.wgx.Add(1)
@@ -86,7 +95,7 @@ func branch(nexts []Connection, reg *NodesReg, value []byte) {
 	}
 }
 
-func branchRun(start Connection, reg *NodesReg, value []byte) {
+func branchRun(start Connection, reg *NodesReg, value NodeRet) {
 	defer reg.wgx.Done()
 
 	// before to run check context
@@ -114,48 +123,39 @@ func branchRun(start Connection, reg *NodesReg, value []byte) {
 		return
 	}
 
-	// special cases
-
-	switch node.GetType() {
-	case "respond":
+	// check there is a repond interface
+	if _, ok := outputDatas.(NodeRetRespond); ok {
 		// only one respond protection
 		reg.mutex.Lock()
 		if reg.respondChanActive {
 			reg.respondChanActive = false
 
-			reg.respondChan <- Respond{
-				// respond has one output
-				Data:   outputDatas[0],
-				Status: http.StatusOK,
-			}
+			reg.respondChan <- outputDatas.(NodeRetRespond).GetRespond()
 		}
 		reg.mutex.Unlock()
 
 		return
+	}
 
-	case "forLoop":
-		for _, outputData := range outputDatas {
-			branch(node.Next(0), reg, outputData)
+	// returning more than one data
+	// call everything as for loop
+	if _, ok := outputDatas.(NodeRetDatas); ok {
+		for _, outputData := range outputDatas.(NodeRetDatas).GetBinaryDatas() {
+			branch(node.Next(0), reg, &nodeRetOutput{outputData})
 		}
-
-		return
-
-	case "request", "script", "ifCase":
-		// first data is error
-		if outputDatas[0] != nil {
-			branch(node.Next(0), reg, outputDatas[0])
-
-			return
-		}
-
-		branch(node.Next(1), reg, outputDatas[1])
 
 		return
 	}
 
-	// separate data for branchs
-	// first data goes to first output (output_1)
-	for i, outputData := range outputDatas {
-		branch(node.Next(i), reg, outputData)
+	// selection list for output
+	if _, ok := outputDatas.(NodeRetSelection); ok {
+		for _, i := range outputDatas.(NodeRetSelection).GetSelection() {
+			branch(node.Next(i), reg, outputDatas)
+		}
+
+		return
 	}
+
+	// just one output
+	branch(node.Next(0), reg, outputDatas)
 }

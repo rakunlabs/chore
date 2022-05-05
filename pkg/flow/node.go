@@ -9,7 +9,7 @@ import (
 )
 
 // NodeTypes hold new function of releated node.
-var NodeTypes = make(map[string]func(NodeData) Noder)
+var NodeTypes = make(map[string]func(context.Context, NodeData) Noder)
 
 type NodeData struct {
 	Data    map[string]interface{} `json:"data"`
@@ -33,14 +33,41 @@ type Connection = struct {
 type NodesData = map[string]NodeData
 
 type Inputs struct {
-	Node   string
-	Active bool
+	Node      string
+	InputName string
+	Active    bool
+}
+
+// NodeRet simple return.
+type NodeRet interface {
+	GetBinaryData() []byte
+}
+
+// NodeRetDatas usuful for-loop operation.
+type NodeRetDatas interface {
+	GetBinaryDatas() [][]byte
+}
+
+// NodeRetRespond using for responding request.
+type NodeRetRespond interface {
+	GetRespond() Respond
+}
+
+// NodeRetRespondData using if next node wants to respond data.
+type NodeRetRespondData interface {
+	GetRespondData() Respond
+}
+
+// NodeRetSelection usable if more than one output and want to choice between of them.
+// Write to output numbers 0-4-5.
+type NodeRetSelection interface {
+	GetSelection() []int
 }
 
 // Noder for nodes like script, endpoint.
 type Noder interface {
 	GetType() string
-	Run(context.Context, *registry.AppStore, []byte, string) ([][]byte, error)
+	Run(context.Context, *registry.AppStore, NodeRet, string) (NodeRet, error)
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
 	Validate() error
@@ -48,4 +75,16 @@ type Noder interface {
 	Next(int) []Connection
 	NextCount() int
 	CheckData() string
+	IsRespond() bool
+	Check()
+	IsChecked() bool
+}
+
+// nodeRetOutput struct for path.
+type nodeRetOutput struct {
+	output []byte
+}
+
+func (r *nodeRetOutput) GetBinaryData() []byte {
+	return r.output
 }

@@ -13,7 +13,6 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 
 	"github.com/dop251/goja"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
@@ -25,6 +24,21 @@ type inputHolderS struct {
 	value []byte
 }
 
+type ScriptRet struct {
+	selection []int
+	output    []byte
+}
+
+func (r *ScriptRet) GetBinaryData() []byte {
+	return r.output
+}
+
+func (r *ScriptRet) GetSelection() []int {
+	return r.selection
+}
+
+var _ flow.NodeRetSelection = &ScriptRet{}
+
 // Script node has many input and one output.
 type Script struct {
 	script      string
@@ -34,29 +48,39 @@ type Script struct {
 	outputs     [][]flow.Connection
 	wait        int
 	lock        sync.Mutex
+	checked     bool
+	directRun   bool
 }
 
-func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value []byte, input string) ([][]byte, error) {
-	n.lock.Lock()
-	n.wait--
+// selection 0 is false.
+func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+	var inputValues []inputHolderS
 
-	if n.wait < 0 {
+	if !n.directRun {
+		n.lock.Lock()
+		n.wait--
+
+		if n.wait < 0 {
+			n.lock.Unlock()
+
+			return nil, flow.ErrStopGoroutine
+		}
+
+		// this block should be stay here in locking area
+		// save value if wait is zero and more
+		n.inputHolder = append(n.inputHolder, inputHolderS{value: value.GetBinaryData(), input: input})
+
+		if n.wait != 0 {
+			n.lock.Unlock()
+
+			return nil, flow.ErrStopGoroutine
+		}
+
 		n.lock.Unlock()
-
-		return nil, flow.ErrStopGoroutine
+		inputValues = n.inputHolder
+	} else {
+		inputValues = []inputHolderS{{value: value.GetBinaryData(), input: input}}
 	}
-
-	// this block should be stay here in locking area
-	// save value if wait is zero and more
-	n.inputHolder = append(n.inputHolder, inputHolderS{value: value, input: input})
-
-	if n.wait != 0 {
-		n.lock.Unlock()
-
-		return nil, flow.ErrStopGoroutine
-	}
-
-	n.lock.Unlock()
 
 	scriptRunner := goja.New()
 
@@ -75,13 +99,13 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value []byte, 
 	}
 
 	// sort inputholder by input name, it effects to function arguments order
-	sort.Slice(n.inputHolder, func(i, j int) bool {
-		return n.inputHolder[i].input < n.inputHolder[j].input
+	sort.Slice(inputValues, func(i, j int) bool {
+		return inputValues[i].input < inputValues[j].input
 	})
 
 	passValues := []goja.Value{}
-	for i := range n.inputHolder {
-		passValues = append(passValues, scriptRunner.ToValue(n.inputHolder[i].value))
+	for i := range inputValues {
+		passValues = append(passValues, scriptRunner.ToValue(inputValues[i].value))
 	}
 
 	var retVal interface{}
@@ -99,7 +123,6 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value []byte, 
 			return nil, fmt.Errorf("main function run: %v", err)
 		}
 	} else {
-		log.Ctx(ctx).Debug().Msg("passed well")
 		retVal = res.Export()
 	}
 
@@ -115,10 +138,16 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value []byte, 
 	}
 
 	if returnToFalse {
-		return [][]byte{returnRes, nil}, nil
+		return &ScriptRet{
+			selection: []int{0, 2},
+			output:    returnRes,
+		}, nil
 	}
 
-	return [][]byte{nil, returnRes}, nil
+	return &ScriptRet{
+		selection: []int{1, 2},
+		output:    returnRes,
+	}, nil
 }
 
 func (n *Script) GetType() string {
@@ -131,6 +160,10 @@ func (n *Script) Fetch(_ context.Context, _ *gorm.DB) error {
 
 func (n *Script) IsFetched() bool {
 	return true
+}
+
+func (n *Script) IsRespond() bool {
+	return false
 }
 
 func (n *Script) Validate() error {
@@ -150,6 +183,7 @@ func (n *Script) ActiveInput(node string) {
 		if n.inputs[i].Node == node {
 			n.inputs[i].Active = true
 			n.wait++
+			n.directRun = n.wait == 1
 
 			break
 		}
@@ -160,7 +194,15 @@ func (n *Script) CheckData() string {
 	return ""
 }
 
-func NewScript(data flow.NodeData) flow.Noder {
+func (n *Script) Check() {
+	n.checked = true
+}
+
+func (n *Script) IsChecked() bool {
+	return n.checked
+}
+
+func NewScript(_ context.Context, data flow.NodeData) flow.Noder {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order

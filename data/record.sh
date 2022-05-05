@@ -123,7 +123,7 @@ fi
 # $3 -> file_name
 function requestUpload() {
   local CONVERTED_NAME=$(echo ${2} | sed s@/@%2F@g)
-  curl -fsSL -X 'PUT' --data-binary @${3} \
+  curl -ksSL -X 'PUT' --data-binary @${3} \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${JWT_KEY}" \
     "${URL}/${1}?name=${CONVERTED_NAME}"
@@ -135,7 +135,7 @@ function requestUpload() {
 # $3 -> file_name
 function requestDownload() {
   local CONVERTED_NAME=$(echo ${2} | sed s@/@%2F@g)
-  curl -fsSL -X 'GET' --create-dirs -o "${3}" \
+  curl -ksSL -X 'GET' --create-dirs -o "${3}" \
     -H "Authorization: Bearer ${JWT_KEY}" \
     "${URL}/${1}?name=${CONVERTED_NAME}&dump=true&pretty=true"
   echo "Dowloaded ${3} from ${1}"

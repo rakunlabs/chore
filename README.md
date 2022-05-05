@@ -178,7 +178,7 @@ Get a token and set to `JWT_KEY` value.
 
 ```sh
 export JWT_KEY=""
-curl https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh | bash -s -- -h
+curl -ksSL https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh | bash -s -- -h
 
 #--url http://localhost:8080 --mode download --auth jira
 ```

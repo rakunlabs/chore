@@ -3,6 +3,7 @@ package nodes
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
@@ -17,52 +18,72 @@ var requestType = "request"
 
 type inputHolderRequest struct {
 	value []byte
-	data  []byte
+	exist bool
 }
+
+type RequestRet struct {
+	selection []int
+	respond   flow.Respond
+}
+
+func (r *RequestRet) GetBinaryData() []byte {
+	return r.respond.Data
+}
+
+func (r *RequestRet) GetSelection() []int {
+	return r.selection
+}
+
+func (r *RequestRet) GetRespondData() flow.Respond {
+	return r.respond
+}
+
+var (
+	_ flow.NodeRetRespondData = &RequestRet{}
+	_ flow.NodeRetSelection   = &RequestRet{}
+)
 
 // Request node has one input and one output.
 type Request struct {
+	lockChan      chan struct{}
 	headers       map[string]interface{}
 	auth          string
 	method        string
 	url           string
 	addHeadersRaw string
 	typeName      string
-	inputHolder   inputHolderRequest
 	inputs        []flow.Inputs
 	outputs       [][]flow.Connection
-	wait          int
-	lock          sync.Mutex
+	inputHolder   inputHolderRequest
+	mutex         sync.Mutex
 	fetched       bool
+	checked       bool
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte, input string) ([][]byte, error) {
-	n.lock.Lock()
-	n.wait--
-
-	if n.wait < 0 {
-		n.lock.Unlock()
-
-		return nil, flow.ErrStopGoroutine
-	}
-
-	// this block should be stay here in locking area
-	// save value if wait is zero and more
+func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
-	if input == "input_1" {
-		n.inputHolder.value = value
-	} else {
-		n.inputHolder.data = value
-	}
+	if input == flow.Input1 {
+		// don't allow multiple inputs
+		n.mutex.Lock()
+		defer n.mutex.Unlock()
 
-	if n.wait != 0 {
-		n.lock.Unlock()
+		if n.inputHolder.exist {
+			return nil, flow.ErrStopGoroutine
+		}
+
+		n.inputHolder.value = value.GetBinaryData()
+		n.inputHolder.exist = true
+
+		// cose channel to allow to other continue process.
+		close(n.lockChan)
 
 		return nil, flow.ErrStopGoroutine
 	}
 
-	n.lock.Unlock()
+	if n.lockChan != nil {
+		<-n.lockChan
+	}
 
 	// check value and render it
 	if n.inputHolder.value != nil {
@@ -110,17 +131,44 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value []byte,
 		n.url,
 		n.method,
 		n.headers,
-		n.inputHolder.data,
+		value.GetBinaryData(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %v", err)
+		// return nil, fmt.Errorf("failed to send request: %v", err)
+		return &RequestRet{
+			respond: flow.Respond{
+				Header: nil,
+				Data:   []byte(fmt.Sprintf("failed to send request: %v", err)),
+				Status: http.StatusServiceUnavailable,
+			},
+			selection: []int{0, 2},
+		}, nil
+	}
+
+	header := make(map[string]interface{})
+	for k, v := range response.Header {
+		header[k] = v[0]
 	}
 
 	if response.StatusCode >= 100 && response.StatusCode < 400 {
-		return [][]byte{nil, response.Body}, nil
+		return &RequestRet{
+			respond: flow.Respond{
+				Header: header,
+				Data:   response.Body,
+				Status: response.StatusCode,
+			},
+			selection: []int{1, 2},
+		}, nil
 	}
 
-	return [][]byte{response.Body}, nil
+	return &RequestRet{
+		respond: flow.Respond{
+			Header: header,
+			Data:   response.Body,
+			Status: response.StatusCode,
+		},
+		selection: []int{0, 2},
+	}, nil
 }
 
 func (n *Request) GetType() string {
@@ -155,6 +203,10 @@ func (n *Request) IsFetched() bool {
 	return n.fetched
 }
 
+func (n *Request) IsRespond() bool {
+	return false
+}
+
 func (n *Request) Validate() error {
 	// correction
 	if n.method == "" {
@@ -173,14 +225,18 @@ func (n *Request) Next(i int) []flow.Connection {
 }
 
 func (n *Request) NextCount() int {
-	return 0
+	return len(n.outputs)
 }
 
 func (n *Request) ActiveInput(node string) {
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
 			n.inputs[i].Active = true
-			n.wait++
+
+			// input_1 for dynamic variable
+			if n.inputs[i].InputName == flow.Input1 {
+				n.lockChan = make(chan struct{})
+			}
 
 			break
 		}
@@ -191,7 +247,15 @@ func (n *Request) CheckData() string {
 	return ""
 }
 
-func NewRequest(data flow.NodeData) flow.Noder {
+func (n *Request) Check() {
+	n.checked = true
+}
+
+func (n *Request) IsChecked() bool {
+	return n.checked
+}
+
+func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order

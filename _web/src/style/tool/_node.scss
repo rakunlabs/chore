@@ -24,6 +24,30 @@
       content: 'F';
     }
   }
+
+  .outputs .output_2 {
+    @apply bg-green-400 text-center h-5 [line-height:1rem] text-white;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'T';
+    }
+  }
+
+  .outputs .output_3 {
+    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'R';
+    }
+  }
 }
 
 .node-email {
@@ -50,6 +74,30 @@
 
     &::before {
       content: 'F';
+    }
+  }
+
+  .outputs .output_2 {
+    @apply bg-green-400 text-center h-5 [line-height:1rem] text-white;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'T';
+    }
+  }
+
+  .outputs .output_3 {
+    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'R';
     }
   }
 }

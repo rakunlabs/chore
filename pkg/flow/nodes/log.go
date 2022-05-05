@@ -13,6 +13,14 @@ import (
 
 var logType = "log"
 
+type LogRet struct {
+	output []byte
+}
+
+func (r *LogRet) GetBinaryData() []byte {
+	return r.output
+}
+
 // Respond node has one input.
 type Log struct {
 	typeName  string
@@ -20,10 +28,11 @@ type Log struct {
 	outputs   [][]flow.Connection
 	printData bool
 	logLevel  zerolog.Level
+	checked   bool
 }
 
 // Run get values from everywhere no need to check active input.
-func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value []byte, _ string) ([][]byte, error) {
+func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	var logEvent *zerolog.Event
 
 	switch n.logLevel {
@@ -36,16 +45,20 @@ func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value []byte, _ str
 	case zerolog.ErrorLevel:
 		logEvent = log.Ctx(ctx).Error()
 	default:
-		logEvent = log.Ctx(ctx).Debug()
+		logEvent = log.Ctx(ctx).WithLevel(zerolog.NoLevel)
 	}
 
 	if n.printData {
-		logEvent = logEvent.Str("data", string(value))
+		logEvent = logEvent.Str("data", string(value.GetBinaryData()))
 	}
 
 	logEvent.Msg(n.message)
 
-	return [][]byte{value}, nil
+	return &LogRet{value.GetBinaryData()}, nil
+}
+
+func (n *Log) Special(_ interface{}) interface{} {
+	return nil
 }
 
 func (n *Log) GetType() string {
@@ -58,6 +71,10 @@ func (n *Log) Fetch(ctx context.Context, db *gorm.DB) error {
 
 func (n *Log) IsFetched() bool {
 	return true
+}
+
+func (n *Log) IsRespond() bool {
+	return false
 }
 
 func (n *Log) Validate() error {
@@ -76,9 +93,17 @@ func (n *Log) CheckData() string {
 	return ""
 }
 
+func (n *Log) Check() {
+	n.checked = true
+}
+
+func (n *Log) IsChecked() bool {
+	return n.checked
+}
+
 func (n *Log) ActiveInput(string) {}
 
-func NewLog(data flow.NodeData) flow.Noder {
+func NewLog(_ context.Context, data flow.NodeData) flow.Noder {
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	// printData "true" or "false"
