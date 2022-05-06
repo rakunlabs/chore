@@ -6,6 +6,7 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
@@ -42,7 +43,19 @@ type IfCase struct {
 func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	scriptRunner := goja.New()
 
-	if err := scriptRunner.Set("data", toObject(value.GetBinaryData())); err != nil {
+	var m interface{}
+	if value.GetBinaryData() != nil {
+		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
+			m = string(value.GetBinaryData())
+		}
+	}
+
+	// set script special functions
+	if err := setScriptFuncs(scriptRunner); err != nil {
+		return nil, err
+	}
+
+	if err := scriptRunner.Set("data", m); err != nil {
 		return nil, fmt.Errorf("cannot set data in script: %v", err)
 	}
 

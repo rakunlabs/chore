@@ -54,15 +54,17 @@ func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value flow.NodeRe
 	if _, ok := gojaV.Export().([]interface{}); ok {
 		for _, exportVal := range gojaV.Export().([]interface{}) {
 			switch exportValTyped := exportVal.(type) {
-			case map[string]interface{}:
-				gojaVByte, err := json.Marshal(exportValTyped)
+			case map[string]interface{}, []interface{}:
+				exportValM, err := json.Marshal(exportValTyped)
 				if err != nil {
 					return nil, fmt.Errorf("cannot marshal exported value: %v", err)
 				}
 
-				v = append(v, gojaVByte)
+				v = append(v, exportValM)
+			case []byte:
+				v = append(v, exportValTyped)
 			default:
-				v = append(v, []byte(fmt.Sprintf("%v", exportVal)))
+				v = append(v, []byte(fmt.Sprint(exportValTyped)))
 			}
 		}
 	}

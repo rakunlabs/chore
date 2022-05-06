@@ -128,16 +128,20 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.Nod
 
 	var returnRes []byte
 
-	switch exportValTyped := retVal.(type) {
-	case map[string]interface{}:
-		gojaVByte, err := json.Marshal(exportValTyped)
-		if err != nil {
-			return nil, fmt.Errorf("cannot marshal exported value: %v", err)
-		}
+	if retVal != nil {
+		switch exportValTyped := retVal.(type) {
+		case map[string]interface{}, []interface{}:
+			exportValM, err := json.Marshal(exportValTyped)
+			if err != nil {
+				return nil, fmt.Errorf("cannot marshal exported value: %v", err)
+			}
 
-		returnRes = gojaVByte
-	default:
-		returnRes = []byte(fmt.Sprintf("%v", exportValTyped))
+			returnRes = exportValM
+		case []byte:
+			returnRes = exportValTyped
+		default:
+			returnRes = []byte(fmt.Sprint(exportValTyped))
+		}
 	}
 
 	if returnToFalse {

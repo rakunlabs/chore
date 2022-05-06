@@ -121,7 +121,7 @@ const ifCase = {
   </div>
   `,
   data: {
-    "if": "data.count > 0",
+    "if": "data > 0",
   },
   input: 1,
   output: 2,
