@@ -13,7 +13,7 @@ import (
 //go:embed dist/*
 var embedWeb embed.FS
 
-func setFileHandler(app *fiber.App) {
+func setFileHandler(app fiber.Router) {
 	embedWebFolder, err := fs.Sub(embedWeb, "dist")
 	if err != nil {
 		log.Error().Err(err).Msg("cannot go to sub folder [dist]")

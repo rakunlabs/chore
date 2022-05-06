@@ -12,10 +12,10 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
-func setHandlers(app *fiber.App) {
+func setHandlers(app fiber.Router) {
 	apiRouter := app.Group("/api")                                // /api
 	v1Router := apiRouter.Group("/v1", func(c *fiber.Ctx) error { // middleware for /api/v1
-		c.Set("Version", "v1")
+		// c.Set("Version", "v1")
 
 		return c.Next() //nolint:wrapcheck
 	})

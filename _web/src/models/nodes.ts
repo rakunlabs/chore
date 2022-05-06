@@ -108,7 +108,6 @@ const forLoop = {
   output: 1,
 };
 
-
 const ifCase = {
   name: "if",
   html: `

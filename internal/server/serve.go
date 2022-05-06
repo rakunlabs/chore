@@ -61,17 +61,20 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 		return c.Next() //nolint:wrapcheck // not need
 	})
 
-	setHandlers(app)
+	log.Debug().Msg(config.Application.BasePath)
+	appRouter := app.Group(config.Application.BasePath)
+
+	setHandlers(appRouter)
 
 	// share file or proxy other server (for development purpose)
 	if config.Env == "DEVELOPMENT" {
-		app.Use("/", proxy.Balancer(proxy.Config{
+		appRouter.Use("/", proxy.Balancer(proxy.Config{
 			Servers: []string{
 				"localhost:3000",
 			},
 		}))
 	} else {
-		setFileHandler(app)
+		setFileHandler(appRouter)
 	}
 
 	// 404 if not found any handler

@@ -203,7 +203,7 @@
     </div>
     <Code
       lang="sh"
-      code={`curl -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
+      code={`curl -ksSL -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
     />
   </div>
 
@@ -229,15 +229,3 @@
     </div>
   </div>
 </div>
-
-<style lang="scss">
-  :global(.status-yellow) {
-    @apply bg-yellow-50;
-  }
-  :global(.status-green) {
-    @apply bg-green-100;
-  }
-  :global(.status-red) {
-    @apply bg-red-100;
-  }
-</style>
