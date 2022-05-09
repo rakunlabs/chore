@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgconn"
 
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/parser"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
@@ -50,6 +51,49 @@ func postLogin(c *fiber.Ctx) error {
 		)
 	}
 
+	return loginAndGetToken(c, *body, false)
+}
+
+// @Summary Login
+// @Description Get JWT token for 1 hour
+// @Tags public
+// @Router /login [get]
+// @Param raw query bool false "raw token output"
+// @Security BasicAuth
+// @Success 200 {object} apimodels.Data{data=LoginToken{}}
+// @failure 400 {object} apimodels.Error{}
+// @failure 401 {object} apimodels.Error{}
+// @failure 409 {object} apimodels.Error{}
+// @failure 500 {object} apimodels.Error{}
+func getLogin(c *fiber.Ctx) error {
+	// parse authorization basic if it is exist
+	login, err := parser.GetAuthorizationBasic(c)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	raw, err := parser.GetQueryBool(c, "raw")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	body := LoginModel{
+		Login:    login.User,
+		Password: login.Pass,
+	}
+
+	return loginAndGetToken(c, body, raw)
+}
+
+func loginAndGetToken(c *fiber.Ctx, body LoginModel, raw bool) error {
 	// declare user for result
 	user := UserPureID{}
 
@@ -104,6 +148,10 @@ func postLogin(c *fiber.Ctx) error {
 		)
 	}
 
+	if raw {
+		return c.Status(http.StatusOK).Send([]byte(token))
+	}
+
 	// return recorded data's id
 	return c.Status(http.StatusOK).JSON(
 		apimodels.Data{
@@ -116,4 +164,5 @@ func postLogin(c *fiber.Ctx) error {
 
 func Login(router fiber.Router) {
 	router.Post("/login", postLogin)
+	router.Get("/login", getLogin)
 }

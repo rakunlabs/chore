@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"sync"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
@@ -29,43 +28,20 @@ type Template struct {
 	templateName string
 	typeName     string
 	inputs       []flow.Inputs
-	inputHolder  map[string]interface{}
 	outputs      [][]flow.Connection
 	content      []byte
-	wait         int
 	fetched      bool
-	lock         sync.Mutex
 	checked      bool
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
 func (n *Template) Run(_ context.Context, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
-	n.lock.Lock()
-	n.wait--
-
-	if n.wait < 0 {
-		n.lock.Unlock()
-
-		return nil, flow.ErrStopGoroutine
-	}
-
-	// this block should be stay here in locking area
-	// save value if wait is zero and more
-	if err := yaml.Unmarshal(value.GetBinaryData(), &n.inputHolder); err != nil {
-		n.lock.Unlock()
-
+	var v map[string]interface{}
+	if err := yaml.Unmarshal(value.GetBinaryData(), &v); err != nil {
 		return nil, fmt.Errorf("template cannot unmarhal: %v", err)
 	}
 
-	if n.wait != 0 {
-		n.lock.Unlock()
-
-		return nil, flow.ErrStopGoroutine
-	}
-
-	n.lock.Unlock()
-
-	payload, err := reg.Template.Ext(n.inputHolder, string(n.content))
+	payload, err := reg.Template.Ext(v, string(n.content))
 	if err != nil {
 		err = fmt.Errorf("template cannot render: %v", err)
 	}
@@ -127,16 +103,7 @@ func (n *Template) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Template) ActiveInput(node string) {
-	for i := range n.inputs {
-		if n.inputs[i].Node == node {
-			n.inputs[i].Active = true
-			n.wait++
-
-			break
-		}
-	}
-}
+func (n *Template) ActiveInput(string) {}
 
 func (n *Template) CheckData() string {
 	return ""

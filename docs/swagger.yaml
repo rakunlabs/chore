@@ -371,6 +371,10 @@ paths:
         in: query
         name: dump
         type: boolean
+      - description: pretty output for dump
+        in: query
+        name: pretty
+        type: boolean
       responses:
         "200":
           description: OK
@@ -564,7 +568,7 @@ paths:
       tags:
       - control
     get:
-      description: Get one control with id
+      description: Get one control with id, content is base64 format
       parameters:
       - description: get by id
         in: query
@@ -581,6 +585,10 @@ paths:
       - description: get for record values
         in: query
         name: dump
+        type: boolean
+      - description: pretty output for dump
+        in: query
+        name: pretty
         type: boolean
       responses:
         "200":
@@ -645,7 +653,7 @@ paths:
       tags:
       - control
     post:
-      description: Send and record new control
+      description: Send and record new control, content must be base64 format
       parameters:
       - description: send control object
         in: body
@@ -680,7 +688,7 @@ paths:
       tags:
       - control
     put:
-      description: Send and record control
+      description: Send and record control, content must be base64 format
       parameters:
       - description: send control object
         in: body
@@ -743,6 +751,39 @@ paths:
       tags:
       - control
   /login:
+    get:
+      description: Get JWT token for 1 hour
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/api.LoginToken'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - BasicAuth: []
+      summary: Login
+      tags:
+      - public
     post:
       description: Get JWT token for 1 hour
       parameters:
@@ -781,6 +822,47 @@ paths:
       tags:
       - public
   /send:
+    get:
+      consumes:
+      - text/plain
+      description: Send request with bind id or name
+      parameters:
+      - description: set endpoint
+        in: query
+        name: endpoint
+        required: true
+        type: string
+      - description: set control
+        in: query
+        name: control
+        required: true
+        type: string
+      - description: send key values
+        in: body
+        name: payload
+        schema:
+          example: ""
+          type: string
+      responses:
+        "200":
+          description: respond from related server
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Send request
     post:
       consumes:
       - text/plain
@@ -800,6 +882,7 @@ paths:
         in: body
         name: payload
         schema:
+          example: ""
           type: string
       responses:
         "200":
@@ -1482,4 +1565,6 @@ securityDefinitions:
     in: header
     name: Authorization
     type: apiKey
+  BasicAuth:
+    type: basic
 swagger: "2.0"

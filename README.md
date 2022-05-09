@@ -174,13 +174,36 @@ docker run --rm -it --name="whoami" -p 9090:80 traefik/whoami
 
 <details><summary>Fill tables</summary>
 
-Get a token and set to `JWT_KEY` value.
+Use chore's record script to download/opload operation
+
+Before to run script export __JWT_KEY__ variable with own chore token.
+
+Change `-h` (help) parameter to any arguments of the shell script.
 
 ```sh
 export JWT_KEY=""
-curl -ksSL https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh | bash -s -- -h
+curl -fksSL https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh | bash -s -- -h
+```
 
-#--url http://localhost:8080 --mode download --auth jira
+Or first download it and after run.
+
+```sh
+curl -O -fksSL https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh && chmod +x record.sh
+```
+
+Example arguments
+```sh
+# download just jira auth
+--url http://localhost:8080 --mode download --auth jira
+
+# upload all auths folder
+--url http://localhost:8080 --mode upload --auths
+```
+
+Get temporary JWT key with username and password
+
+```sh
+export JWT_KEY="$(curl -ksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
 ```
 
 </details>

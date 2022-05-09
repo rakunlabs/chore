@@ -20,8 +20,8 @@ import (
 var scriptType = "script"
 
 type inputHolderS struct {
+	value interface{}
 	input string
-	value []byte
 }
 
 type ScriptRet struct {
@@ -56,6 +56,13 @@ type Script struct {
 func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	var inputValues []inputHolderS
 
+	var m interface{}
+	if value.GetBinaryData() != nil {
+		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
+			m = value.GetBinaryData()
+		}
+	}
+
 	if !n.directRun {
 		n.lock.Lock()
 		n.wait--
@@ -68,7 +75,7 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.Nod
 
 		// this block should be stay here in locking area
 		// save value if wait is zero and more
-		n.inputHolder = append(n.inputHolder, inputHolderS{value: value.GetBinaryData(), input: input})
+		n.inputHolder = append(n.inputHolder, inputHolderS{value: m, input: input})
 
 		if n.wait != 0 {
 			n.lock.Unlock()
@@ -79,7 +86,7 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.Nod
 		n.lock.Unlock()
 		inputValues = n.inputHolder
 	} else {
-		inputValues = []inputHolderS{{value: value.GetBinaryData(), input: input}}
+		inputValues = []inputHolderS{{value: m, input: input}}
 	}
 
 	scriptRunner := goja.New()
@@ -188,9 +195,11 @@ func (n *Script) NextCount() int {
 func (n *Script) ActiveInput(node string) {
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
-			n.inputs[i].Active = true
-			n.wait++
-			n.directRun = n.wait == 1
+			if !n.inputs[i].Active {
+				n.inputs[i].Active = true
+				n.wait++
+				n.directRun = n.wait == 1
+			}
 
 			break
 		}

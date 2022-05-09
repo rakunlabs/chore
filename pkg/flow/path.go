@@ -82,7 +82,10 @@ func GoAndRun(reg *NodesReg, firstValue []byte) {
 	branch(starts, reg, &nodeRetOutput{firstValue})
 
 	reg.wgx.Wait()
-	close(reg.respondChan)
+
+	if reg.respondChan != nil {
+		close(reg.respondChan)
+	}
 }
 
 // branch values already designed to same length of nexts.
@@ -130,7 +133,9 @@ func branchRun(start Connection, reg *NodesReg, value NodeRet) {
 		if reg.respondChanActive {
 			reg.respondChanActive = false
 
-			reg.respondChan <- outputDatas.(NodeRetRespond).GetRespond()
+			if reg.respondChan != nil {
+				reg.respondChan <- outputDatas.(NodeRetRespond).GetRespond()
+			}
 		}
 		reg.mutex.Unlock()
 

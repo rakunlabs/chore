@@ -4,7 +4,7 @@
   import { moveElement } from "@/helper/drag";
   import { storeHead } from "@/store/store";
   import { addToast } from "@/store/toast";
-  import { b64ToUtf8, formToObject } from "@/helper/codec";
+  import { b64ToUtf8, formToObject, utf8ToB64 } from "@/helper/codec";
   import { nodes } from "@/models/nodes";
   import type { node } from "@/models/nodes";
   import Pagination from "@/components/ui/Pagination.svelte";
@@ -125,7 +125,8 @@
       }
     }
 
-    data["content"] = JSON.stringify(editor.export().drawflow.Home.data);
+    const content = JSON.stringify(editor.export().drawflow.Home.data);
+    data["content"] = utf8ToB64(content);
 
     try {
       const response = await requestSender(

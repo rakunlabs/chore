@@ -20,15 +20,16 @@ import (
 // @Description Send request with bind id or name
 // @Security ApiKeyAuth
 // @Router /send [post]
+// @Router /send [get]
 // @Param endpoint query string true "set endpoint"
 // @Param control query string true "set control"
-// @Param payload body string false "send key values"
+// @Param payload body string false "send key values" SchemaExample()
 // @Accept plain
 // @Success 200 {object} interface{} "respond from related server"
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postSend(c *fiber.Ctx) error {
+func send(c *fiber.Ctx) error {
 	endpoint := c.Query("endpoint")
 	name := c.Query("control")
 
@@ -112,5 +113,6 @@ func postSend(c *fiber.Ctx) error {
 }
 
 func Send(router fiber.Router) {
-	router.Post("/send", middleware.JWTCheck(nil, nil), postSend)
+	router.Post("/send", middleware.JWTCheck(nil, nil), send)
+	router.Get("/send", middleware.JWTCheck(nil, nil), send)
 }

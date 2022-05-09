@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
@@ -45,7 +47,8 @@ var (
 
 // Request node has one input and one output.
 type Request struct {
-	lockChan      chan struct{}
+	lockCtx       context.Context
+	lockCancel    context.CancelFunc
 	headers       map[string]interface{}
 	auth          string
 	method        string
@@ -75,14 +78,24 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		n.inputHolder.value = value.GetBinaryData()
 		n.inputHolder.exist = true
 
-		// cose channel to allow to other continue process.
-		close(n.lockChan)
+		// close context to allow to others continue process
+		n.lockCancel()
 
 		return nil, flow.ErrStopGoroutine
 	}
 
-	if n.lockChan != nil {
-		<-n.lockChan
+	if n.lockCtx != nil {
+		select {
+		case <-time.After(time.Hour * 1):
+			log.Ctx(ctx).Warn().Msg("timeline exceded, terminated request")
+
+			return nil, flow.ErrStopGoroutine
+		case <-ctx.Done():
+			log.Ctx(ctx).Warn().Msg("program closed, terminated request")
+
+			return nil, flow.ErrStopGoroutine
+		case <-n.lockCtx.Done():
+		}
 	}
 
 	// check value and render it
@@ -231,11 +244,12 @@ func (n *Request) NextCount() int {
 func (n *Request) ActiveInput(node string) {
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
-			n.inputs[i].Active = true
-
-			// input_1 for dynamic variable
-			if n.inputs[i].InputName == flow.Input1 {
-				n.lockChan = make(chan struct{})
+			if !n.inputs[i].Active {
+				n.inputs[i].Active = true
+				// input_1 for dynamic variable
+				if n.inputs[i].InputName == flow.Input1 {
+					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
+				}
 			}
 
 			break

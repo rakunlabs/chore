@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
@@ -32,9 +34,10 @@ func (r *EmailRet) GetBinaryData() []byte {
 
 // Email node has one input.
 type Email struct {
+	lockCtx     context.Context
+	lockCancel  context.CancelFunc
 	values      map[string]string
 	client      email.Client
-	lockChan    chan struct{}
 	typeName    string
 	inputs      []flow.Inputs
 	inputHolder inputHolderEmail
@@ -44,7 +47,7 @@ type Email struct {
 }
 
 // Run get values from active input nodes.
-func (n *Email) Run(_ context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Email) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
 	if input == flow.Input1 {
 		// don't allow multiple inputs
@@ -58,14 +61,24 @@ func (n *Email) Run(_ context.Context, reg *registry.AppStore, value flow.NodeRe
 		n.inputHolder.value = value.GetBinaryData()
 		n.inputHolder.exist = true
 
-		// cose channel to allow to other continue process.
-		close(n.lockChan)
+		// close context to allow to others continue process
+		n.lockCancel()
 
 		return nil, flow.ErrStopGoroutine
 	}
 
-	if n.lockChan != nil {
-		<-n.lockChan
+	if n.lockCtx != nil {
+		select {
+		case <-time.After(time.Hour * 1):
+			log.Ctx(ctx).Warn().Msg("timeline exceded, terminated request")
+
+			return nil, flow.ErrStopGoroutine
+		case <-ctx.Done():
+			log.Ctx(ctx).Warn().Msg("program closed, terminated request")
+
+			return nil, flow.ErrStopGoroutine
+		case <-n.lockCtx.Done():
+		}
 	}
 
 	headers := make(map[string][]string)
@@ -175,11 +188,12 @@ func (n *Email) IsChecked() bool {
 func (n *Email) ActiveInput(node string) {
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
-			n.inputs[i].Active = true
-
-			// input_1 for dynamic variable
-			if n.inputs[i].InputName == flow.Input1 {
-				n.lockChan = make(chan struct{})
+			if !n.inputs[i].Active {
+				n.inputs[i].Active = true
+				// input_1 for dynamic variable
+				if n.inputs[i].InputName == flow.Input1 {
+					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
+				}
 			}
 
 			break

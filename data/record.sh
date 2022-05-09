@@ -11,7 +11,7 @@ Record script for chore
 
 Usage: $0 <OPTIONS>
 OPTIONS:
-  --chore-url <URL>
+  --url <URL>
     Show url of chore
     Ex: http://localhost:8080
         http://example.com/chore

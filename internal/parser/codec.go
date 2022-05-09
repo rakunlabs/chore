@@ -1,4 +1,4 @@
-package fn
+package parser
 
 import (
 	"encoding/json"

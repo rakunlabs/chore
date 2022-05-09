@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,7 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api/fn"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/parser"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
@@ -80,7 +79,7 @@ func listControls(c *fiber.Ctx) error {
 
 // @Summary Get control
 // @Tags control
-// @Description Get one control with id
+// @Description Get one control with id, content is base64 format
 // @Security ApiKeyAuth
 // @Router /control [get]
 // @Param id query string false "get by id"
@@ -93,7 +92,7 @@ func listControls(c *fiber.Ctx) error {
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func getControl(c *fiber.Ctx) error {
-	nodata, err := fn.GetQueryBool(c, "nodata")
+	nodata, err := parser.GetQueryBool(c, "nodata")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
@@ -113,7 +112,7 @@ func getControl(c *fiber.Ctx) error {
 		)
 	}
 
-	dump, err := fn.GetQueryBool(c, "dump")
+	dump, err := parser.GetQueryBool(c, "dump")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
@@ -122,7 +121,7 @@ func getControl(c *fiber.Ctx) error {
 		)
 	}
 
-	pretty, err := fn.GetQueryBool(c, "pretty")
+	pretty, err := parser.GetQueryBool(c, "pretty")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
@@ -173,22 +172,23 @@ func getControl(c *fiber.Ctx) error {
 	if nodata {
 		ret = control
 	} else {
-		if dump {
-			contentRaw, err := base64.StdEncoding.DecodeString(controlContent.Content)
-			if err != nil {
-				return c.Status(http.StatusInternalServerError).JSON(
-					apimodels.Error{
-						Error: err.Error(),
-					},
-				)
-			}
-			controlContent.Content = string(contentRaw)
-		}
+		// use only base64 for all control operations
+		// if dump {
+		// 	contentRaw, err := base64.StdEncoding.DecodeString(controlContent.Content)
+		// 	if err != nil {
+		// 		return c.Status(http.StatusInternalServerError).JSON(
+		// 			apimodels.Error{
+		// 				Error: err.Error(),
+		// 			},
+		// 		)
+		// 	}
+		// 	controlContent.Content = string(contentRaw)
+		// }
 		ret = controlContent
 	}
 
 	if dump {
-		return fn.JSON(c.Status(http.StatusOK), ret, pretty)
+		return parser.JSON(c.Status(http.StatusOK), ret, pretty)
 	}
 
 	return c.Status(http.StatusOK).JSON(
@@ -200,7 +200,7 @@ func getControl(c *fiber.Ctx) error {
 
 // @Summary New control
 // @Tags control
-// @Description Send and record new control
+// @Description Send and record new control, content must be base64 format
 // @Security ApiKeyAuth
 // @Router /control [post]
 // @Param payload body models.ControlPureContent{} false "send control object"
@@ -226,7 +226,8 @@ func postControl(c *fiber.Ctx) error {
 		)
 	}
 
-	body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
+	// body content must be base64
+	// body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
@@ -279,7 +280,7 @@ func postControl(c *fiber.Ctx) error {
 
 // @Summary New or Update control
 // @Tags control
-// @Description Send and record control
+// @Description Send and record control, content must be base64 format
 // @Security ApiKeyAuth
 // @Router /control [put]
 // @Param payload body models.ControlPureContent{} false "send control object"
@@ -304,7 +305,8 @@ func putControl(c *fiber.Ctx) error {
 		)
 	}
 
-	body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
+	// body content must be base64
+	// body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
@@ -370,8 +372,8 @@ func patchControl(c *fiber.Ctx) error {
 		)
 	}
 
-	content, _ := body["content"].(string)
-	body["content"] = base64.StdEncoding.EncodeToString([]byte(content))
+	// content, _ := body["content"].(string)
+	// body["content"] = base64.StdEncoding.EncodeToString([]byte(content))
 
 	if body["groups"] != nil {
 		var err error

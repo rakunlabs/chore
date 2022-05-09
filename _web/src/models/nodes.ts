@@ -1,11 +1,12 @@
 export type node = {
-  name: string;
-  html: string,
+  name: string
+  html: string
   data: Record<string, string>
-  input: number,
-  output: number,
-  optionalInput?: boolean,
+  input: number
+  output: number
+  optionalInput?: boolean
   class?: string
+  style?: string
 };
 
 const endpoint: node = {
@@ -241,7 +242,7 @@ const note = {
   html: `
   <div>
     <div class="box">
-      <textarea df-script></textarea>
+      <textarea df-note style="width: 250px; height: 100px"></textarea>
     </div>
   </div>
   `,

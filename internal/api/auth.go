@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api/fn"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/parser"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
@@ -94,7 +94,7 @@ func getAuth(c *fiber.Ctx) error {
 		)
 	}
 
-	dump, err := fn.GetQueryBool(c, "dump")
+	dump, err := parser.GetQueryBool(c, "dump")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
@@ -103,7 +103,7 @@ func getAuth(c *fiber.Ctx) error {
 		)
 	}
 
-	pretty, err := fn.GetQueryBool(c, "pretty")
+	pretty, err := parser.GetQueryBool(c, "pretty")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{
@@ -144,7 +144,7 @@ func getAuth(c *fiber.Ctx) error {
 	}
 
 	if dump {
-		return fn.JSON(c.Status(http.StatusOK), getData, pretty)
+		return parser.JSON(c.Status(http.StatusOK), getData, pretty)
 	}
 
 	return c.Status(http.StatusOK).JSON(

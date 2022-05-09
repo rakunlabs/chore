@@ -46,6 +46,12 @@ const docTemplate = `{
                         "description": "get for record values",
                         "name": "dump",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "pretty output for dump",
+                        "name": "pretty",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -369,7 +375,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get one control with id",
+                "description": "Get one control with id, content is base64 format",
                 "tags": [
                     "control"
                 ],
@@ -397,6 +403,12 @@ const docTemplate = `{
                         "type": "boolean",
                         "description": "get for record values",
                         "name": "dump",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "pretty output for dump",
+                        "name": "pretty",
                         "in": "query"
                     }
                 ],
@@ -445,7 +457,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Send and record control",
+                "description": "Send and record control, content must be base64 format",
                 "tags": [
                     "control"
                 ],
@@ -484,7 +496,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Send and record new control",
+                "description": "Send and record new control, content must be base64 format",
                 "tags": [
                     "control"
                 ],
@@ -715,6 +727,62 @@ const docTemplate = `{
             }
         },
         "/login": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Get JWT token for 1 hour",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Login",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.Data"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/api.LoginToken"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Get JWT token for 1 hour",
                 "tags": [
@@ -778,6 +846,69 @@ const docTemplate = `{
             }
         },
         "/send": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Send request with bind id or name",
+                "consumes": [
+                    "text/plain"
+                ],
+                "summary": "Send request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "set endpoint",
+                        "name": "endpoint",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "set control",
+                        "name": "control",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "send key values",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string",
+                            "example": ""
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "respond from related server",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -809,7 +940,8 @@ const docTemplate = `{
                         "name": "payload",
                         "in": "body",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "example": ""
                         }
                     }
                 ],
@@ -2405,6 +2537,9 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "BasicAuth": {
+            "type": "basic"
         }
     }
 }`

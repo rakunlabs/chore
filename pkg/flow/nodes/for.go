@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dop251/goja"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
@@ -40,7 +41,14 @@ var _ flow.NodeRetDatas = &ForRet{}
 func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	scriptRunner := goja.New()
 
-	if err := scriptRunner.Set("data", toObject(value.GetBinaryData())); err != nil {
+	var m interface{}
+	if value.GetBinaryData() != nil {
+		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
+			m = value.GetBinaryData()
+		}
+	}
+
+	if err := scriptRunner.Set("data", m); err != nil {
 		return nil, fmt.Errorf("cannot set data in script: %v", err)
 	}
 
@@ -100,7 +108,7 @@ func (n *ForLoop) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *ForLoop) ActiveInput(node string) {}
+func (n *ForLoop) ActiveInput(string) {}
 
 func (n *ForLoop) CheckData() string {
 	return ""

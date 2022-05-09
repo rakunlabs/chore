@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api/fn"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/parser"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/utils"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
@@ -118,7 +118,7 @@ func getTemplate(c *fiber.Ctx) error {
 		)
 	}
 
-	dump, err := fn.GetQueryBool(c, "dump")
+	dump, err := parser.GetQueryBool(c, "dump")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			apimodels.Error{

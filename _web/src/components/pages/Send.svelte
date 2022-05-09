@@ -203,7 +203,7 @@
     </div>
     <Code
       lang="sh"
-      code={`curl -ksSL -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
+      code={`curl -ksSL -X POST -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
     />
   </div>
 

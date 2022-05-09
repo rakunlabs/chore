@@ -12,6 +12,9 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
+// @securityDefinitions.basic BasicAuth
+// @in header
+// @name Authorization
 func setHandlers(app fiber.Router) {
 	apiRouter := app.Group("/api")                                // /api
 	v1Router := apiRouter.Group("/v1", func(c *fiber.Ctx) error { // middleware for /api/v1

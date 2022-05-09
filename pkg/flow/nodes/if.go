@@ -46,7 +46,7 @@ func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeR
 	var m interface{}
 	if value.GetBinaryData() != nil {
 		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
-			m = string(value.GetBinaryData())
+			m = value.GetBinaryData()
 		}
 	}
 
@@ -110,7 +110,7 @@ func (n *IfCase) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *IfCase) ActiveInput(node string) {}
+func (n *IfCase) ActiveInput(string) {}
 
 func (n *IfCase) CheckData() string {
 	return ""
