@@ -62,7 +62,9 @@ func (n *Email) Run(ctx context.Context, reg *registry.AppStore, value flow.Node
 		n.inputHolder.exist = true
 
 		// close context to allow to others continue process
-		n.lockCancel()
+		if n.lockCancel != nil {
+			n.lockCancel()
+		}
 
 		return nil, flow.ErrStopGoroutine
 	}
