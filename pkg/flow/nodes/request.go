@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -45,18 +48,27 @@ var (
 	_ flow.NodeRetSelection   = &RequestRet{}
 )
 
+type retryRaw struct {
+	Codes    string
+	Time     string
+	Count    string
+	Increase string
+}
+
 // Request node has one input and one output.
 type Request struct {
 	lockCtx       context.Context
 	lockCancel    context.CancelFunc
 	headers       map[string]interface{}
-	auth          string
-	method        string
+	retry         *request.Retry
+	retryRaw      retryRaw
 	url           string
 	addHeadersRaw string
 	typeName      string
-	inputs        []flow.Inputs
+	method        string
+	auth          string
 	outputs       [][]flow.Connection
+	inputs        []flow.Inputs
 	inputHolder   inputHolderRequest
 	mutex         sync.Mutex
 	fetched       bool
@@ -147,6 +159,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		n.method,
 		n.headers,
 		value.GetBinaryData(),
+		n.retry,
 	)
 	if err != nil {
 		// return nil, fmt.Errorf("failed to send request: %v", err)
@@ -232,6 +245,53 @@ func (n *Request) Validate() error {
 		return fmt.Errorf("url is empty")
 	}
 
+	// fill retry values
+	if rCodes := strings.ReplaceAll(n.retryRaw.Codes, " ", ""); rCodes != "" {
+		var retryCodes []int
+
+		for _, rCode := range strings.Split(rCodes, ",") {
+			rCodeInt, err := strconv.Atoi(rCode)
+			if err != nil {
+				return fmt.Errorf("value %s cannot convert to integer", rCode)
+			}
+
+			retryCodes = append(retryCodes, rCodeInt)
+		}
+
+		if retryCodes != nil {
+			retryCount := 5
+
+			if n.retryRaw.Count != "" {
+				var err error
+
+				retryCount, err = strconv.Atoi(n.retryRaw.Count)
+				if err != nil {
+					return fmt.Errorf("count %q cannot convert to integer", n.retryRaw.Count)
+				}
+			}
+
+			retryTime := 1
+
+			if n.retryRaw.Time != "" {
+				var err error
+
+				retryTime, err = strconv.Atoi(n.retryRaw.Time)
+				if err != nil {
+					return fmt.Errorf("time %q cannot convert to integer", n.retryRaw.Time)
+				}
+			}
+
+			increase, _ := strconv.ParseBool(n.retryRaw.Increase)
+
+			n.retry = &request.Retry{
+				Codes:    retryCodes,
+				Time:     time.Duration(retryTime) * time.Second,
+				Count:    retryCount,
+				Increase: increase,
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -282,6 +342,11 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 	url, _ := data.Data["url"].(string)
 	addHeadersRaw, _ := data.Data["headers"].(string)
 
+	retryCodes, _ := data.Data["retry_codes"].(string)
+	retryTime, _ := data.Data["retry_time"].(string)
+	retryCount, _ := data.Data["retry_count"].(string)
+	retryIncrease, _ := data.Data["retry_increase"].(string)
+
 	return &Request{
 		typeName:      requestType,
 		inputs:        inputs,
@@ -290,6 +355,12 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 		method:        method,
 		url:           url,
 		addHeadersRaw: addHeadersRaw,
+		retryRaw: retryRaw{
+			Codes:    retryCodes,
+			Time:     retryTime,
+			Count:    retryCount,
+			Increase: retryIncrease,
+		},
 	}
 }
 

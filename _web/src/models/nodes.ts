@@ -55,14 +55,29 @@ const request = {
       <input type="url" placeholder="https://createmyissue.com" name="url" df-url>
       <p>Enter method</p>
       <input type="text" placeholder="POST" name="method" df-method>
-      <p>Enter additional headers</p>
-      <textarea df-headers placeholder="json/yaml key:value"></textarea>
       <p>Enter auth</p>
       <input type="text" placeholder="myauth" name="auth" df-auth>
+      <details><summary>Enter additional headers</summary>
+        <textarea df-headers placeholder="json/yaml key:value"></textarea>
+      </details>
+      <details><summary>Retry with status codes</summary>
+        <p>Status Codes</p>
+        <input type="text" placeholder="Ex: 401, 403" name="retry_codes" df-retry_codes>
+        <p>Retry Time (seconds)</p>
+        <input type="text" placeholder="1" name="retry_time" df-retry_time>
+        <p>Retry Count</p>
+        <input type="text" placeholder="5" name="retry_count" df-retry_count>
+        <label>
+          <span>Increase Retry Time</span>
+          <input type="checkbox" data-parent="6" name="retry_increase" data-action="checkbox" df-retry_increase>
+        </label>
+      </details>
     </div>
   </div>
   `,
-  data: {},
+  data: {
+    retry_increase: "false",
+  },
   input: 2,
   output: 3,
   class: "node-request",

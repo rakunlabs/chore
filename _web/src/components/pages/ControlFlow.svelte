@@ -207,11 +207,21 @@
     if (action == "checkbox") {
       const modifyElement = e.target as HTMLInputElement;
 
-      const nodeName = (e.target as HTMLElement).parentElement.parentElement
-        .parentElement.parentElement.parentElement.id;
+      let nodeName = "";
+      if (modifyElement.dataset["parent"]) {
+        const count = parseInt(modifyElement.dataset["parent"]);
+        let e = modifyElement as HTMLElement;
+        for (let i = 0; i < count; i++) {
+          e = e.parentElement;
+        }
+        nodeName = e.id;
+      } else {
+        nodeName =
+          modifyElement.parentElement.parentElement.parentElement.parentElement
+            .parentElement.id;
+      }
 
       const nodeId = nodeName.slice(nodeName.indexOf("-") + 1);
-
       editor.updateNodeDataFromId(nodeId, {
         ...editor.getNodeFromId(nodeId).data,
         [modifyElement.name]: modifyElement.checked,

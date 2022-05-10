@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rs/zerolog/log"
@@ -22,6 +23,13 @@ type Client struct {
 	Request    func(context.Context, string, string, []byte) (*http.Request, error)
 }
 
+type Retry struct {
+	Codes    []int
+	Time     time.Duration
+	Count    int
+	Increase bool
+}
+
 func NewClient() *Client {
 	client := retryablehttp.NewClient()
 	client.RetryMax = 3
@@ -33,25 +41,60 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte) (*ClientResponse, error) {
-	req, err := c.Request(ctx, URL, method, payload)
-	if err != nil {
-		return nil, err //nolint:wrapcheck // not need here
+func (c *Client) Send(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte, retry *Retry) (*ClientResponse, error) {
+	// set default values
+	rCount := 0
+	rTime := 1 * time.Second
+
+	if retry != nil {
+		rTime = retry.Time
 	}
 
-	for k, v := range headers {
-		req.Header.Add(k, fmt.Sprint(v))
+	var resp *http.Response
+
+	for ok := true; ok; ok = retry != nil && rCount <= retry.Count {
+		req, err := c.Request(ctx, URL, method, payload)
+		if err != nil {
+			return nil, err //nolint:wrapcheck // not need here
+		}
+
+		for k, v := range headers {
+			req.Header.Add(k, fmt.Sprint(v))
+		}
+
+		req.Header.Add("Content-Length", fmt.Sprint(len(payload)))
+
+		//nolint:govet // for loop
+		if resp != nil {
+			resp.Body.Close()
+		}
+
+		//nolint:bodyclose // body closing after for loop and before generating
+		resp, err = c.HTTPClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to send request [%s]: %w", URL, err)
+		}
+
+		if retry != nil {
+			for _, retryCode := range retry.Codes {
+				if resp.StatusCode == retryCode {
+					// wait before next request
+					time.Sleep(rTime)
+
+					if retry.Increase {
+						rTime += retry.Time
+					}
+
+					rCount++
+
+					break
+				}
+			}
+		}
 	}
 
-	req.Header.Add("Content-Length", fmt.Sprint(len(payload)))
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request [%s]: %w", URL, err)
-	}
-
-	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
 
 	return &ClientResponse{
 		Body:       body,
