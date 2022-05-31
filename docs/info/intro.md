@@ -14,6 +14,8 @@ It is continue to run even return a respond.
 Endpoint is starting point of the control flow.  
 This is required name for sending request to chore to start flow.
 
+If public is enabled, it can callable without authentication.
+
 #### INPUT
 
 Input is bytes of payload, usually values of request to chore.
@@ -30,6 +32,7 @@ Directly send to bytes to other nodes.
  │ ┌────────────────────┐ └┼┘
  │ │                    │  │
  │ └────────────────────┘  │
+ │ Public              │ │ │
  └─────────────────────────┘
 ```
 

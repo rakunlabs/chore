@@ -15,6 +15,7 @@
   import Drawflow from "drawflow";
   import CodeMirror from "codemirror";
   import { fullScreenKeys } from "@/helper/code";
+  import { getPublicEndpoints } from "@/helper/nodes";
 
   storeHead.set("ControlFlow");
 
@@ -125,8 +126,14 @@
       }
     }
 
-    const content = JSON.stringify(editor.export().drawflow.Home.data);
+    const exportedData = editor.export().drawflow.Home.data;
+    const content = JSON.stringify(exportedData);
     data["content"] = utf8ToB64(content);
+
+    const publicEndpoints = getPublicEndpoints(exportedData);
+    if (publicEndpoints.length > 0) {
+      data["public_endpoints"] = JSON.stringify(publicEndpoints);
+    }
 
     try {
       const response = await requestSender(

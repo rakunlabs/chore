@@ -17,11 +17,16 @@ const endpoint: node = {
     <div class="box">
       <p>Enter endpoint name</p>
       <input type="text" placeholder="create" name="endpoint" df-endpoint>
+      <label>
+        <span>Public</span>
+        <input type="checkbox" data-parent="5" name="public" data-action="checkbox" df-public>
+      </label>
     </div>
   </div>
   `,
   data: {
-    "endpoint": "",
+    endpoint: "",
+    public: "false",
   },
   input: 0,
   output: 1,

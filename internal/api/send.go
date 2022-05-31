@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -30,16 +31,8 @@ import (
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func send(c *fiber.Ctx) error {
-	endpoint := c.Query("endpoint")
-	name := c.Query("control")
-
-	if endpoint == "" || name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: "endpoint and control parameters cannot be empty",
-			},
-		)
-	}
+	endpoint := c.Locals("endpoint").(string)
+	name := c.Locals("control").(string)
 
 	control := models.Control{}
 
@@ -112,7 +105,78 @@ func send(c *fiber.Ctx) error {
 	return c.Status(valueChan.Status).Send(valueChan.Data)
 }
 
+// PublicCheck middleware is checking endpoint.
+func PublicCheck(c *fiber.Ctx) error {
+	endpoint := c.Query("endpoint")
+	name := c.Query("control")
+
+	if endpoint == "" || name == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: "endpoint and control parameters cannot be empty",
+			},
+		)
+	}
+
+	c.Locals("endpoint", endpoint)
+	c.Locals("control", name)
+
+	v := models.ControlPublicEndpoint{}
+
+	reg := registry.Reg().Get(c.Locals("registry").(string))
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Where("name = ?", name)
+	result := query.First(&v)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return c.Status(http.StatusNotFound).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	if result.Error != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	if v.PublicEndpoints == nil {
+		//nolint:wrapcheck // next middleware
+		return c.Next()
+	}
+
+	publicEndpoints := make([]string, 0)
+	if err := json.Unmarshal(v.PublicEndpoints, &publicEndpoints); err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	public := false
+
+	for _, e := range publicEndpoints {
+		if e == endpoint {
+			public = true
+
+			break
+		}
+	}
+
+	if public {
+		// next middleware, order important
+		_ = c.Next()
+	}
+
+	//nolint:wrapcheck // next middleware
+	return c.Next()
+}
+
 func Send(router fiber.Router) {
-	router.Post("/send", middleware.JWTCheck(nil, nil), send)
-	router.Get("/send", middleware.JWTCheck(nil, nil), send)
+	router.Post("/send", PublicCheck, middleware.JWTCheck(nil, nil), send)
+	router.Get("/send", PublicCheck, middleware.JWTCheck(nil, nil), send)
 }

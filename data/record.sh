@@ -6,7 +6,7 @@ BASE_DIR="$(realpath $(dirname "$0"))"
 cd $BASE_DIR
 
 function usage() {
-    cat - <<EOF
+  cat - <<EOF
 Record script for chore
 
 Usage: $0 <OPTIONS>
@@ -46,8 +46,8 @@ EOF
 }
 
 [[ $# -eq 0 ]] && {
-    usage
-    exit 0
+  usage
+  exit 0
 }
 
 set -o allexport
