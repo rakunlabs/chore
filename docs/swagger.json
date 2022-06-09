@@ -674,6 +674,12 @@
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -728,6 +734,14 @@
                     "public"
                 ],
                 "summary": "Login",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "raw token output",
+                        "name": "raw",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2118,6 +2132,16 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "public_endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "scan",
+                        "create"
+                    ]
                 }
             }
         },
@@ -2140,6 +2164,16 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "public_endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "scan",
+                        "create"
+                    ]
                 }
             }
         },
@@ -2350,6 +2384,9 @@
                 "offset": {
                     "type": "integer",
                     "example": 0
+                },
+                "search": {
+                    "type": "string"
                 }
             }
         },
@@ -2401,6 +2438,16 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "public_endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "scan",
+                        "create"
+                    ]
                 }
             }
         },

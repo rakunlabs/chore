@@ -23,7 +23,6 @@ func (r *LogRet) GetBinaryData() []byte {
 
 // Respond node has one input.
 type Log struct {
-	typeName  string
 	message   string
 	outputs   [][]flow.Connection
 	printData bool
@@ -62,7 +61,7 @@ func (n *Log) Special(_ interface{}) interface{} {
 }
 
 func (n *Log) GetType() string {
-	return n.typeName
+	return logType
 }
 
 func (n *Log) Fetch(ctx context.Context, db *gorm.DB) error {
@@ -119,7 +118,6 @@ func NewLog(_ context.Context, data flow.NodeData) flow.Noder {
 	}
 
 	return &Log{
-		typeName:  logType,
 		outputs:   outputs,
 		printData: printData == "true",
 		logLevel:  logLevel,

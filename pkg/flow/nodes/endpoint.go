@@ -22,7 +22,6 @@ func (r *EndpointRet) GetBinaryData() []byte {
 // Endpoint node has one output.
 type Endpoint struct {
 	endpoint string
-	typeName string
 	outputs  [][]flow.Connection
 	checked  bool
 }
@@ -33,7 +32,7 @@ func (n *Endpoint) Run(_ context.Context, _ *registry.AppStore, value flow.NodeR
 }
 
 func (n *Endpoint) GetType() string {
-	return n.typeName
+	return endpointType
 }
 
 func (n *Endpoint) Fetch(ctx context.Context, db *gorm.DB) error {
@@ -80,7 +79,6 @@ func NewEndpoint(_ context.Context, data flow.NodeData) flow.Noder {
 	endpoint, _ := data.Data["endpoint"].(string)
 
 	return &Endpoint{
-		typeName: endpointType,
 		outputs:  outputs,
 		endpoint: endpoint,
 	}

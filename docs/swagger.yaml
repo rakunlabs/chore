@@ -40,6 +40,13 @@ definitions:
         type: string
       name:
         type: string
+      public_endpoints:
+        example:
+        - scan
+        - create
+        items:
+          type: string
+        type: array
     type: object
   api.ControlPureID:
     properties:
@@ -55,6 +62,13 @@ definitions:
         type: string
       name:
         type: string
+      public_endpoints:
+        example:
+        - scan
+        - create
+        items:
+          type: string
+        type: array
     type: object
   api.ItemName:
     properties:
@@ -201,6 +215,8 @@ definitions:
       offset:
         example: 0
         type: integer
+      search:
+        type: string
     type: object
   models.AuthPure:
     properties:
@@ -236,6 +252,13 @@ definitions:
         type: array
       name:
         type: string
+      public_endpoints:
+        example:
+        - scan
+        - create
+        items:
+          type: string
+        type: array
     type: object
   models.Email:
     properties:
@@ -723,6 +746,10 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: search item
+        in: query
+        name: search
+        type: string
       responses:
         "200":
           description: OK
@@ -753,6 +780,11 @@ paths:
   /login:
     get:
       description: Get JWT token for 1 hour
+      parameters:
+      - description: raw token output
+        in: query
+        name: raw
+        type: boolean
       responses:
         "200":
           description: OK

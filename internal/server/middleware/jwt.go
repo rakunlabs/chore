@@ -24,6 +24,10 @@ func JWTCheck(groups []string, getID func(c *fiber.Ctx) string) func(*fiber.Ctx)
 	}
 
 	return func(c *fiber.Ctx) error {
+		if v, _ := c.Locals("skip-middleware-jwt").(bool); v {
+			return c.Next()
+		}
+
 		JWT := registry.Reg().Get(c.Locals("registry").(string)).JWT
 		if JWT == nil {
 			return c.Next()

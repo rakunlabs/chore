@@ -35,6 +35,7 @@ type ControlPureID struct {
 // @Router /controls [get]
 // @Param limit query int false "set the limit, default is 20"
 // @Param offset query int false "set the offset, default is 0"
+// @Param search query string string "search item"
 // @Success 200 {object} apimodels.DataMeta{data=[]ControlPureID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
@@ -54,6 +55,10 @@ func listControls(c *fiber.Ctx) error {
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Limit(meta.Limit).Offset(meta.Offset)
+
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
 
 	result := query.Find(&controlsPureID)
 

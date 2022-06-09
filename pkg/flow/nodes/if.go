@@ -33,7 +33,6 @@ var _ flow.NodeRetSelection = &IfRet{}
 // Ifcase node has one input and one output.
 // Not need to wait other inputs.
 type IfCase struct {
-	typeName   string
 	expression string
 	outputs    [][]flow.Connection
 	checked    bool
@@ -83,7 +82,7 @@ func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeR
 }
 
 func (n *IfCase) GetType() string {
-	return n.typeName
+	return ifCaseType
 }
 
 func (n *IfCase) Fetch(_ context.Context, _ *gorm.DB) error {
@@ -131,7 +130,6 @@ func NewIfCase(_ context.Context, data flow.NodeData) flow.Noder {
 	expression, _ := data.Data["if"].(string)
 
 	return &IfCase{
-		typeName:   ifCaseType,
 		outputs:    outputs,
 		expression: expression,
 	}

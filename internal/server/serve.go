@@ -61,7 +61,7 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 		return c.Next() //nolint:wrapcheck // not need
 	})
 
-	log.Debug().Msg(config.Application.BasePath)
+	log.Info().Msgf("Application BasePath: %s", config.Application.BasePath)
 	appRouter := app.Group(config.Application.BasePath)
 
 	setHandlers(appRouter)

@@ -11,9 +11,10 @@ import (
 var Limit = 20
 
 type Meta struct {
-	Limit  int   `json:"limit" query:"limit" example:"20"`
-	Offset int   `json:"offset" query:"offset" example:"0"`
-	Count  int64 `json:"count" query:"count" example:"35"`
+	Limit  int    `json:"limit" query:"limit" example:"20"`
+	Offset int    `json:"offset" query:"offset" example:"0"`
+	Count  int64  `json:"count" query:"count" example:"35"`
+	Search string `json:"search,omitempty" query:"search"`
 }
 
 type Error struct {

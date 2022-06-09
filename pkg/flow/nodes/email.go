@@ -38,7 +38,6 @@ type Email struct {
 	lockCancel  context.CancelFunc
 	values      map[string]string
 	client      email.Client
-	typeName    string
 	inputs      []flow.Inputs
 	inputHolder inputHolderEmail
 	mutex       sync.Mutex
@@ -131,7 +130,7 @@ func (n *Email) Run(ctx context.Context, reg *registry.AppStore, value flow.Node
 }
 
 func (n *Email) GetType() string {
-	return n.typeName
+	return emailType
 }
 
 func (n *Email) Fetch(ctx context.Context, db *gorm.DB) error {
@@ -215,9 +214,8 @@ func NewEmail(_ context.Context, data flow.NodeData) flow.Noder {
 	values["Subject"], _ = data.Data["subject"].(string)
 
 	return &Email{
-		typeName: emailType,
-		values:   values,
-		inputs:   inputs,
+		values: values,
+		inputs: inputs,
 	}
 }
 

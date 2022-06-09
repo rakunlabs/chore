@@ -42,7 +42,6 @@ var _ flow.NodeRetSelection = &ScriptRet{}
 // Script node has many input and one output.
 type Script struct {
 	script      string
-	typeName    string
 	inputs      []flow.Inputs
 	inputHolder []inputHolderS
 	outputs     [][]flow.Connection
@@ -165,7 +164,7 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.Nod
 }
 
 func (n *Script) GetType() string {
-	return n.typeName
+	return scriptType
 }
 
 func (n *Script) Fetch(_ context.Context, _ *gorm.DB) error {
@@ -227,10 +226,9 @@ func NewScript(_ context.Context, data flow.NodeData) flow.Noder {
 	script, _ := data.Data["script"].(string)
 
 	return &Script{
-		typeName: scriptType,
-		inputs:   inputs,
-		outputs:  outputs,
-		script:   script,
+		inputs:  inputs,
+		outputs: outputs,
+		script:  script,
 	}
 }
 

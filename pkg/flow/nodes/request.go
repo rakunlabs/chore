@@ -64,7 +64,6 @@ type Request struct {
 	retryRaw      retryRaw
 	url           string
 	addHeadersRaw string
-	typeName      string
 	method        string
 	auth          string
 	outputs       [][]flow.Connection
@@ -200,7 +199,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 }
 
 func (n *Request) GetType() string {
-	return n.typeName
+	return requestType
 }
 
 func (n *Request) Fetch(ctx context.Context, db *gorm.DB) error {
@@ -348,7 +347,6 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 	retryIncrease, _ := data.Data["retry_increase"].(string)
 
 	return &Request{
-		typeName:      requestType,
 		inputs:        inputs,
 		outputs:       outputs,
 		auth:          auth,

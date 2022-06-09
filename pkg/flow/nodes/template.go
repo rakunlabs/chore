@@ -26,7 +26,6 @@ func (r *TemplateRet) GetBinaryData() []byte {
 // Template node has one input and one output.
 type Template struct {
 	templateName string
-	typeName     string
 	inputs       []flow.Inputs
 	outputs      [][]flow.Connection
 	content      []byte
@@ -54,7 +53,7 @@ func (n *Template) Special(_ interface{}) interface{} {
 }
 
 func (n *Template) GetType() string {
-	return n.typeName
+	return templateType
 }
 
 func (n *Template) Fetch(ctx context.Context, db *gorm.DB) error {
@@ -126,7 +125,6 @@ func NewTemplate(_ context.Context, data flow.NodeData) flow.Noder {
 	templateName, _ := data.Data["template"].(string)
 
 	return &Template{
-		typeName:     templateType,
 		inputs:       inputs,
 		outputs:      outputs,
 		templateName: templateName,

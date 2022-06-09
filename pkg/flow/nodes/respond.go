@@ -31,7 +31,6 @@ var _ flow.NodeRetRespond = &RespondRet{}
 
 // Respond node has one input.
 type Respond struct {
-	typeName      string
 	statusCodeRaw string
 	headersRaw    string
 	getData       bool
@@ -80,7 +79,7 @@ func (n *Respond) Run(ctx context.Context, _ *registry.AppStore, value flow.Node
 }
 
 func (n *Respond) GetType() string {
-	return n.typeName
+	return respondType
 }
 
 func (n *Respond) Fetch(ctx context.Context, db *gorm.DB) error {
@@ -130,7 +129,6 @@ func NewRespond(_ context.Context, data flow.NodeData) flow.Noder {
 	getData, _ := data.Data["get"].(string)
 
 	return &Respond{
-		typeName:      respondType,
 		statusCodeRaw: statusCodeRaw,
 		headersRaw:    headersRaw,
 		getData:       getData == "true",

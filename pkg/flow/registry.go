@@ -32,7 +32,7 @@ type NodesReg struct {
 
 func NewNodesReg(ctx context.Context, controlName, startName string, appStore *registry.AppStore) *NodesReg {
 	// set new logger for reg and set it in ctx
-	logReg := log.With().Str("control", controlName).Str("endpoint", startName).Logger()
+	logReg := log.Ctx(ctx).With().Str("control", controlName).Str("endpoint", startName).Logger()
 
 	return &NodesReg{
 		controlName: controlName,

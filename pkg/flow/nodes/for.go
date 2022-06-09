@@ -18,7 +18,6 @@ var forLoopType = "forLoop"
 // ForLoop node has one input and one output.
 // Not need to wait other inputs.
 type ForLoop struct {
-	typeName   string
 	expression string
 	outputs    [][]flow.Connection
 	checked    bool
@@ -81,7 +80,7 @@ func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value flow.NodeRe
 }
 
 func (n *ForLoop) GetType() string {
-	return n.typeName
+	return forLoopType
 }
 
 func (n *ForLoop) Fetch(_ context.Context, _ *gorm.DB) error {
@@ -129,7 +128,6 @@ func NewForLoop(_ context.Context, data flow.NodeData) flow.Noder {
 	expression, _ := data.Data["for"].(string)
 
 	return &ForLoop{
-		typeName:   forLoopType,
 		outputs:    outputs,
 		expression: expression,
 	}

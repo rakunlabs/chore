@@ -684,6 +684,12 @@ const docTemplate = `{
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -738,6 +744,14 @@ const docTemplate = `{
                     "public"
                 ],
                 "summary": "Login",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "raw token output",
+                        "name": "raw",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2128,6 +2142,16 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "public_endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "scan",
+                        "create"
+                    ]
                 }
             }
         },
@@ -2150,6 +2174,16 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "public_endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "scan",
+                        "create"
+                    ]
                 }
             }
         },
@@ -2360,6 +2394,9 @@ const docTemplate = `{
                 "offset": {
                     "type": "integer",
                     "example": 0
+                },
+                "search": {
+                    "type": "string"
                 }
             }
         },
@@ -2411,6 +2448,16 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "public_endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "scan",
+                        "create"
+                    ]
                 }
             }
         },

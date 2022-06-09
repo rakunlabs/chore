@@ -16,6 +16,7 @@
   import CodeMirror from "codemirror";
   import { fullScreenKeys } from "@/helper/code";
   import { getPublicEndpoints } from "@/helper/nodes";
+  import Search from "@/components/ui/Search.svelte";
 
   storeHead.set("ControlFlow");
 
@@ -42,6 +43,8 @@
   let currentName = "";
 
   let fullScreen = false;
+
+  let search = "";
 
   const setSelected = (v: string) => {
     formEdit.reset();
@@ -70,11 +73,15 @@
     });
   };
 
-  const listControls = async (offset: number, limit = 20) => {
+  const listControlsSearch = async (
+    search: string,
+    offset: number,
+    limit = 20
+  ) => {
     try {
       const l = await requestSender(
         "controls",
-        { offset, limit },
+        { offset, limit, search },
         "GET",
         null,
         true
@@ -85,6 +92,10 @@
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const listControls = async (offset: number, limit = 20) => {
+    listControlsSearch(search, offset, limit);
   };
 
   const modify = (i: Record<string, any>) => {
@@ -130,6 +141,7 @@
     const content = JSON.stringify(exportedData);
     data["content"] = utf8ToB64(content);
 
+    data["public_endpoints"] = null;
     const publicEndpoints = getPublicEndpoints(exportedData);
     if (publicEndpoints.length > 0) {
       data["public_endpoints"] = JSON.stringify(publicEndpoints);
@@ -364,6 +376,10 @@
     }
   };
 
+  const searchFn = (s: string) => {
+    listControlsSearch(s, 0);
+  };
+
   onMount(() => {
     editor = new Drawflow(drawDiv, null);
     editor.reroute = true;
@@ -529,6 +545,9 @@
       class={`bg-slate-50 p-5 ${selected == "table" ? "" : "hidden"}`}
       bind:this={listenElement}
     >
+      <div class="flex items-center justify-end mb-1">
+        <Search {searchFn} bind:search />
+      </div>
       <div class="overflow-x-auto rounded-none bg-white">
         <table class="w-full table-custom">
           <thead>

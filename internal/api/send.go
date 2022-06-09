@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
@@ -73,6 +74,8 @@ func send(c *fiber.Ctx) error {
 			},
 		)
 	}
+
+	log.Ctx(c.UserContext()).Info().Msgf("call control=[%s] endpoint=[%s]", control.Name, endpoint)
 
 	nodesReg, err := flow.StartFlow(c.UserContext(), control.Name, endpoint, content, reg, c.Body())
 	if errors.Is(err, flow.ErrEndpointNotFound) {
@@ -168,8 +171,7 @@ func PublicCheck(c *fiber.Ctx) error {
 	}
 
 	if public {
-		// next middleware, order important
-		_ = c.Next()
+		c.Locals("skip-middleware-jwt", true)
 	}
 
 	//nolint:wrapcheck // next middleware

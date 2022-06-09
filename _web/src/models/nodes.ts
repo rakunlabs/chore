@@ -148,26 +148,26 @@ const ifCase = {
   class: "node-if",
 };
 
-// const control = {
-//   name: "control",
-//   html: `
-//   <div>
-//     <div class="title-box">Control</div>
-//     <div class="box">
-//       <p>Enter control name</p>
-//       <input type="text" placeholder="mycontrol" name="url" df-control>
-//       <p>Enter endpoint name</p>
-//       <input type="text" placeholder="create" name="endpoint" df-endpoint>
-//     </div>
-//   </div>
-//   `,
-//   data: {
-//     "control": "",
-//     "endpoint": "",
-//   },
-//   input: 1,
-//   output: 1,
-// };
+const control = {
+  name: "control",
+  html: `
+  <div>
+    <div class="title-box">Control</div>
+    <div class="box">
+      <p>Enter control name</p>
+      <input type="text" name="control" df-control>
+      <p>Enter endpoint name</p>
+      <input type="text" name="endpoint" df-endpoint>
+    </div>
+  </div>
+  `,
+  data: {
+    "control": "",
+    "endpoint": "",
+  },
+  input: 1,
+  output: 1,
+};
 
 const respond = {
   name: "respond",
@@ -200,7 +200,7 @@ const log = {
     <div class="title-box">Log</div>
     <div class="box">
       <p>Message</p>
-      <input type="text" placeholder="awesome log message" name="url" df-message>
+      <input type="text" placeholder="awesome log message" df-message>
       <p>Log Level</p>
       <select df-level>
         <option value="debug">Debug</option>
@@ -272,4 +272,4 @@ const note = {
   class: "node-note",
 };
 
-export const nodes = { endpoint, template, request, script, forLoop, ifCase, respond, log, email, note } as Record<string, node>;
+export const nodes = { endpoint, template, request, script, forLoop, ifCase, control, respond, log, email, note } as Record<string, node>;
