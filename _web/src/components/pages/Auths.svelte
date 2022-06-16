@@ -1,7 +1,6 @@
 <script lang="ts">
   import { requestSender } from "@/helper/api";
   import { formToObjectMulti } from "@/helper/codec";
-
   import { storeHead } from "@/store/store";
   import { addToast } from "@/store/toast";
   import axios from "axios";
@@ -9,6 +8,7 @@
   import Icon from "@/components/ui/Icon.svelte";
   import Pagination from "@/components/ui/Pagination.svelte";
   import NoData from "@/components/ui/NoData.svelte";
+  import Search from "@/components/ui/Search.svelte";
 
   storeHead.set("Authentications");
 
@@ -24,11 +24,13 @@
     editMode = v;
   };
 
-  const listAuth = async (offset: number, limit = 20) => {
+  let search = "";
+
+  const listAuthSearch = async (search: string, offset: number, limit = 20) => {
     try {
       const l = await requestSender(
         "auths",
-        { offset, limit },
+        { offset, limit, search },
         "GET",
         null,
         true
@@ -39,6 +41,10 @@
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const listAuth = async (offset: number, limit = 20) => {
+    listAuthSearch(search, offset, limit);
   };
 
   let datas = [];
@@ -162,6 +168,10 @@
   let error = "";
 
   let headerCount = [];
+
+  const searchFn = (s: string) => {
+    listAuthSearch(s, 0);
+  };
 
   onMount(() => {
     listenElement.addEventListener("click", clickListen);
@@ -289,6 +299,9 @@
 </div>
 
 <div class="bg-slate-50 p-5" bind:this={listenElement}>
+  <div class="flex items-center justify-end mb-1">
+    <Search {searchFn} bind:search />
+  </div>
   <div class="overflow-x-auto rounded-none bg-white">
     <table class="w-full table-custom">
       <thead>

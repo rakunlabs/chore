@@ -23,13 +23,13 @@
   import "@/helper/highlight";
 
   const routes = new Map<string | RegExp, typeof SvelteComponent>();
-  routes.set(new RegExp("/send(/(.*))*"), Send);
-  routes.set(new RegExp("/control(/(.*))*"), ControlFlow);
-  routes.set(new RegExp("/auths(/(.*))*"), Auths);
-  routes.set(new RegExp("/templates(/(.*))*"), Templates);
-  routes.set(new RegExp("/token(/(.*))*"), Token);
-  routes.set(new RegExp("/users(/(.*))*"), Users);
-  routes.set(new RegExp("/email(/(.*))*"), Email);
+  routes.set(new RegExp("^/send(/(.*))*"), Send);
+  routes.set(new RegExp("^/control(/(.*))*"), ControlFlow);
+  routes.set(new RegExp("^/auths(/(.*))*"), Auths);
+  routes.set(new RegExp("^/templates(/(.*))*"), Templates);
+  routes.set(new RegExp("^/token(/(.*))*"), Token);
+  routes.set(new RegExp("^/users(/(.*))*"), Users);
+  routes.set(new RegExp("^/email(/(.*))*"), Email);
   routes.set("*", Main);
 
   const sideLinks = [

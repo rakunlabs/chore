@@ -326,6 +326,12 @@ const docTemplate = `{
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -909,6 +915,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/apimodels.Error"
                         }
                     },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -968,6 +980,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
                         "schema": {
                             "$ref": "#/definitions/apimodels.Error"
                         }
@@ -1753,6 +1771,12 @@ const docTemplate = `{
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2042,6 +2066,12 @@ const docTemplate = `{
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2126,6 +2156,12 @@ const docTemplate = `{
                     "format": "base64",
                     "example": "aGVsbG8ge3submFtZX19Cg=="
                 },
+                "endpoints": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -2142,22 +2178,18 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "public_endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "scan",
-                        "create"
-                    ]
                 }
             }
         },
         "api.ControlPureID": {
             "type": "object",
             "properties": {
+                "endpoints": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -2174,16 +2206,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "public_endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "scan",
-                        "create"
-                    ]
                 }
             }
         },
@@ -2436,6 +2458,12 @@ const docTemplate = `{
                     "format": "base64",
                     "example": "aGVsbG8ge3submFtZX19Cg=="
                 },
+                "endpoints": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -2448,16 +2476,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "public_endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "scan",
-                        "create"
-                    ]
                 }
             }
         },

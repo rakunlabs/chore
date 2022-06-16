@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -23,6 +24,7 @@ type NodesReg struct {
 	respondChan       chan Respond
 	controlName       string
 	startName         string
+	method            string
 	starts            []Connection
 	mutex             sync.RWMutex
 	wg                sync.WaitGroup
@@ -30,13 +32,14 @@ type NodesReg struct {
 	respondChanActive bool
 }
 
-func NewNodesReg(ctx context.Context, controlName, startName string, appStore *registry.AppStore) *NodesReg {
+func NewNodesReg(ctx context.Context, controlName, startName, method string, appStore *registry.AppStore) *NodesReg {
 	// set new logger for reg and set it in ctx
 	logReg := log.Ctx(ctx).With().Str("control", controlName).Str("endpoint", startName).Logger()
 
 	return &NodesReg{
 		controlName: controlName,
 		startName:   startName,
+		method:      method,
 		reg:         make(map[string]Noder),
 		appStore:    appStore,
 		ctx:         logReg.WithContext(ctx),
@@ -72,11 +75,18 @@ func (r *NodesReg) GetStarts() []Connection {
 // Number is a node number like 2, 4.
 func (r *NodesReg) Set(number string, node Noder) {
 	// checkdata usable for starter nodes like endpoint
-	if node.CheckData() == r.startName {
-		// starts doesn't have inputs so keep it empty
-		r.starts = append(r.starts, Connection{
-			Node: number,
-		})
+	if nodeEndpoint, ok := node.(NoderEndpoint); ok {
+		if nodeEndpoint.Endpoint() == r.startName {
+			for _, v := range nodeEndpoint.Methods() {
+				if strings.ToUpper(v) == r.method {
+					r.starts = append(r.starts, Connection{
+						Node: number,
+					})
+
+					break
+				}
+			}
+		}
 	}
 
 	r.mutex.Lock()

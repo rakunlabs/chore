@@ -1,9 +1,6 @@
 <script lang="ts">
   import { requestSender } from "@/helper/api";
-
   import { storeHead } from "@/store/store";
-  // import { addToast } from "@/store/toast";
-  // import axios from "axios";
   import { onMount } from "svelte";
   import { formToObject } from "@/helper/codec";
   import axios from "axios";
@@ -79,7 +76,7 @@
         <label class="mb-1 flex">
           <span class="w-20 inline-block">Email</span>
           <input
-            type="text"
+            type="email"
             name="email"
             placeholder="user@ingenico.com"
             value={data?.email}

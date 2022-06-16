@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/rs/zerolog/log"
@@ -50,6 +51,8 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: true,
 	}))
+
+	app.Use(cors.New())
 
 	// compression for gzip, deflate, brotli
 	app.Use(compress.New())

@@ -17,8 +17,13 @@ func ParseData(content []byte) (NodesData, error) {
 	return datas, nil
 }
 
-func DataToNode(ctx context.Context, controlName, startName string, datas NodesData, appStore *registry.AppStore) (*NodesReg, error) {
-	reg := NewNodesReg(ctx, controlName, startName, appStore)
+func DataToNode(
+	ctx context.Context,
+	controlName, startName, method string,
+	datas NodesData,
+	appStore *registry.AppStore,
+) (*NodesReg, error) {
+	reg := NewNodesReg(ctx, controlName, startName, method, appStore)
 
 	for nodeNumber := range datas {
 		createFunc := NodeTypes[datas[nodeNumber].Name]

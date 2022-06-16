@@ -316,6 +316,12 @@
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -899,6 +905,12 @@
                             "$ref": "#/definitions/apimodels.Error"
                         }
                     },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -958,6 +970,12 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
                         "schema": {
                             "$ref": "#/definitions/apimodels.Error"
                         }
@@ -1743,6 +1761,12 @@
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2032,6 +2056,12 @@
                         "description": "set the offset, default is 0",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search item",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2116,6 +2146,12 @@
                     "format": "base64",
                     "example": "aGVsbG8ge3submFtZX19Cg=="
                 },
+                "endpoints": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -2132,22 +2168,18 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "public_endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "scan",
-                        "create"
-                    ]
                 }
             }
         },
         "api.ControlPureID": {
             "type": "object",
             "properties": {
+                "endpoints": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -2164,16 +2196,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "public_endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "scan",
-                        "create"
-                    ]
                 }
             }
         },
@@ -2426,6 +2448,12 @@
                     "format": "base64",
                     "example": "aGVsbG8ge3submFtZX19Cg=="
                 },
+                "endpoints": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -2438,16 +2466,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "public_endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "scan",
-                        "create"
-                    ]
                 }
             }
         },

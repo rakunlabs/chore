@@ -8,7 +8,7 @@ import (
 
 func StartFlow(
 	ctx context.Context,
-	controlName, endPoint string,
+	controlName, endPoint, method string,
 	content []byte,
 	appStore *registry.AppStore,
 	value []byte,
@@ -18,7 +18,7 @@ func StartFlow(
 		return nil, err
 	}
 
-	nodesReg, err := DataToNode(ctx, controlName, endPoint, nodesData, appStore)
+	nodesReg, err := DataToNode(ctx, controlName, endPoint, method, nodesData, appStore)
 	if err != nil {
 		return nil, err
 	}

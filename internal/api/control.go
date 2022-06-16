@@ -54,13 +54,13 @@ func listControls(c *fiber.Ctx) error {
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Limit(meta.Limit).Offset(meta.Offset)
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{})
 
 	if meta.Search != "" {
 		query = query.Where("name LIKE ?", meta.Search+"%")
 	}
 
-	result := query.Find(&controlsPureID)
+	result := query.Limit(meta.Limit).Offset(meta.Offset).Find(&controlsPureID)
 
 	// check write error
 	if result.Error != nil {
@@ -72,7 +72,12 @@ func listControls(c *fiber.Ctx) error {
 	}
 
 	// get counts
-	reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Count(&meta.Count)
+	query = reg.DB.WithContext(c.UserContext()).Model(&models.Control{})
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
+	query.Count(&meta.Count)
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{
@@ -380,17 +385,24 @@ func patchControl(c *fiber.Ctx) error {
 	// content, _ := body["content"].(string)
 	// body["content"] = base64.StdEncoding.EncodeToString([]byte(content))
 
-	if body["groups"] != nil {
-		var err error
+	var err error
 
-		body["groups"], err = json.Marshal(body["groups"])
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(
-				apimodels.Error{
-					Error: err.Error(),
-				},
-			)
-		}
+	body["endpoints"], err = json.Marshal(body["endpoints"])
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	body["groups"], err = json.Marshal(body["groups"])
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
 	}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))

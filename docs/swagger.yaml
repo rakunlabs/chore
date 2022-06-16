@@ -28,6 +28,10 @@ definitions:
         example: aGVsbG8ge3submFtZX19Cg==
         format: base64
         type: string
+      endpoints:
+        additionalProperties:
+          type: string
+        type: object
       groups:
         example:
         - admin
@@ -40,16 +44,13 @@ definitions:
         type: string
       name:
         type: string
-      public_endpoints:
-        example:
-        - scan
-        - create
-        items:
-          type: string
-        type: array
     type: object
   api.ControlPureID:
     properties:
+      endpoints:
+        additionalProperties:
+          type: string
+        type: object
       groups:
         example:
         - admin
@@ -62,13 +63,6 @@ definitions:
         type: string
       name:
         type: string
-      public_endpoints:
-        example:
-        - scan
-        - create
-        items:
-          type: string
-        type: array
     type: object
   api.ItemName:
     properties:
@@ -243,6 +237,10 @@ definitions:
         example: aGVsbG8ge3submFtZX19Cg==
         format: base64
         type: string
+      endpoints:
+        additionalProperties:
+          type: string
+        type: object
       groups:
         example:
         - admin
@@ -252,13 +250,6 @@ definitions:
         type: array
       name:
         type: string
-      public_endpoints:
-        example:
-        - scan
-        - create
-        items:
-          type: string
-        type: array
     type: object
   models.Email:
     properties:
@@ -531,6 +522,10 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: search item
+        in: query
+        name: search
+        type: string
       responses:
         "200":
           description: OK
@@ -884,6 +879,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/apimodels.Error'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/apimodels.Error'
         "409":
           description: Conflict
           schema:
@@ -923,6 +922,10 @@ paths:
             type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "405":
+          description: Method Not Allowed
           schema:
             $ref: '#/definitions/apimodels.Error'
         "409":
@@ -1394,6 +1397,10 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: search item
+        in: query
+        name: search
+        type: string
       responses:
         "200":
           description: OK
@@ -1565,6 +1572,10 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: search item
+        in: query
+        name: search
+        type: string
       responses:
         "200":
           description: OK

@@ -30,6 +30,7 @@ type AuthPureID struct {
 // @Router /auths [get]
 // @Param limit query int false "set the limit, default is 20"
 // @Param offset query int false "set the offset, default is 0"
+// @Param search query string string "search item"
 // @Success 200 {object} apimodels.DataMeta{data=[]AuthPureID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
@@ -47,7 +48,13 @@ func listAuths(c *fiber.Ctx) error {
 	}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
-	result := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Limit(meta.Limit).Offset(meta.Offset).Find(&auths)
+	query := reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Limit(meta.Limit).Offset(meta.Offset)
+
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
+	result := query.Find(&auths)
 
 	// check write error
 	if result.Error != nil {
@@ -59,7 +66,12 @@ func listAuths(c *fiber.Ctx) error {
 	}
 
 	// get counts
-	reg.DB.WithContext(c.UserContext()).Model(&models.Auth{}).Count(&meta.Count)
+	query = reg.DB.WithContext(c.UserContext()).Model(&models.Auth{})
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
+	query.Count(&meta.Count)
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{

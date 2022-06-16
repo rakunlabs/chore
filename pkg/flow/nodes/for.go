@@ -109,10 +109,6 @@ func (n *ForLoop) NextCount() int {
 
 func (n *ForLoop) ActiveInput(string) {}
 
-func (n *ForLoop) CheckData() string {
-	return ""
-}
-
 func (n *ForLoop) Check() {
 	n.checked = true
 }

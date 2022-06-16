@@ -111,10 +111,6 @@ func (n *IfCase) NextCount() int {
 
 func (n *IfCase) ActiveInput(string) {}
 
-func (n *IfCase) CheckData() string {
-	return ""
-}
-
 func (n *IfCase) Check() {
 	n.checked = true
 }

@@ -88,10 +88,6 @@ func (n *Log) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Log) CheckData() string {
-	return ""
-}
-
 func (n *Log) Check() {
 	n.checked = true
 }

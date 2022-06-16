@@ -10,7 +10,7 @@
 <a
   href={`#/${link}`}
   use:active={{
-    path: new RegExp(`/${link}(/(.*))*`),
+    path: new RegExp(`^/${link}(/(.*))*`),
     className: "sidebar-active",
     inactiveClassName: "sidebar-inactive",
   }}

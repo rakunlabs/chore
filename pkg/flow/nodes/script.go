@@ -205,10 +205,6 @@ func (n *Script) ActiveInput(node string) {
 	}
 }
 
-func (n *Script) CheckData() string {
-	return ""
-}
-
 func (n *Script) Check() {
 	n.checked = true
 }

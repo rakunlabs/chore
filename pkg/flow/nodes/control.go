@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog/log"
+
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
@@ -34,6 +35,7 @@ var _ flow.NodeRetRespond = &ControlRet{}
 type Control struct {
 	controlName  string
 	endpointName string
+	methodName   string
 	inputs       []flow.Inputs
 	outputs      [][]flow.Connection
 	checked      bool
@@ -60,7 +62,8 @@ func (n *Control) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 	}
 
 	log.Ctx(ctx).Info().Msgf("internal call control=[%s] endpoint=[%s]", control.Name, n.endpointName)
-	nodesReg, err := flow.StartFlow(ctx, control.Name, n.endpointName, content, reg, value.GetBinaryData())
+
+	nodesReg, err := flow.StartFlow(ctx, control.Name, n.endpointName, n.methodName, content, reg, value.GetBinaryData())
 	if errors.Is(err, flow.ErrEndpointNotFound) {
 		return nil, fmt.Errorf("endpoint not found %s; %w", n.endpointName, err)
 	}
@@ -113,10 +116,6 @@ func (n *Control) NextCount() int {
 
 func (n *Control) ActiveInput(string) {}
 
-func (n *Control) CheckData() string {
-	return ""
-}
-
 func (n *Control) Check() {
 	n.checked = true
 }
@@ -131,12 +130,14 @@ func NewControl(_ context.Context, data flow.NodeData) flow.Noder {
 
 	controlName, _ := data.Data["control"].(string)
 	endpointName, _ := data.Data["endpoint"].(string)
+	methodName, _ := data.Data["method"].(string)
 
 	return &Control{
 		inputs:       inputs,
 		outputs:      outputs,
 		controlName:  controlName,
 		endpointName: endpointName,
+		methodName:   methodName,
 	}
 }
 

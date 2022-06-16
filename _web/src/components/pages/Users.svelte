@@ -1,6 +1,5 @@
 <script lang="ts">
   import { requestSender } from "@/helper/api";
-
   import { storeHead } from "@/store/store";
   import Pagination from "@/components/ui/Pagination.svelte";
   import { addToast } from "@/store/toast";
@@ -8,6 +7,7 @@
   import { onDestroy, onMount } from "svelte";
   import { formToObject } from "@/helper/codec";
   import NoData from "@/components/ui/NoData.svelte";
+  import Search from "@/components/ui/Search.svelte";
 
   storeHead.set("Users");
 
@@ -18,7 +18,12 @@
   let editMode = false;
   let error = "";
 
-  let editID = "";
+  const edit = {
+    id: "",
+    name: "",
+    email: "",
+    groups: "",
+  };
 
   let viewPass = false;
   let viewPassR = false;
@@ -26,15 +31,21 @@
   let formEdit: HTMLFormElement;
 
   const setEditMode = (v: boolean) => {
-    editID = "";
+    edit.id = "";
     editMode = v;
   };
 
-  const listUsers = async (offset: number, limit = 20) => {
+  let search = "";
+
+  const listUsersSearch = async (
+    search: string,
+    offset: number,
+    limit = 20
+  ) => {
     try {
       const l = await requestSender(
         "users",
-        { offset, limit },
+        { offset, limit, search },
         "GET",
         null,
         true,
@@ -52,6 +63,10 @@
       }
       addToast(msg as string, "warn");
     }
+  };
+
+  const listUsers = async (offset: number, limit = 20) => {
+    listUsersSearch(search, offset, limit);
   };
 
   const modify = (i: Record<string, any>) => {
@@ -87,7 +102,7 @@
     delete data["passwordr"];
 
     // delete unused fields
-    for (const key of ["password", "groups", "email", "name"]) {
+    for (const key of ["password"]) {
       if (data[key] == "") {
         delete data[key];
       }
@@ -170,8 +185,16 @@
       formEdit.reset();
 
       const dataset = (e.target as HTMLElement).dataset;
-      editID = dataset["id"];
+
+      edit.id = dataset["id"];
+      edit.name = dataset["name"];
+      edit.email = dataset["email"];
+      edit.groups = dataset["groups"];
     }
+  };
+
+  const searchFn = (s: string) => {
+    listUsersSearch(s, 0);
   };
 
   onMount(() => {
@@ -215,7 +238,7 @@
             name="id"
             placeholder="----"
             disabled={!editMode}
-            bind:value={editID}
+            bind:value={edit.id}
             autocomplete="off"
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
@@ -227,15 +250,17 @@
             name="name"
             placeholder="userX"
             autocomplete="off"
+            bind:value={edit.name}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
         <label class="mb-1 flex">
           <span class="w-20 inline-block">Email</span>
           <input
-            type="text"
+            type="email"
             name="email"
             placeholder="user@worldline.com"
+            bind:value={edit.email}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
@@ -245,6 +270,7 @@
             type="text"
             name="groups"
             placeholder="admin, deepcore"
+            bind:value={edit.groups}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
@@ -300,6 +326,9 @@
 </div>
 
 <div class="bg-slate-50 p-5" bind:this={listenElement}>
+  <div class="flex items-center justify-end mb-1">
+    <Search {searchFn} bind:search />
+  </div>
   <div class="overflow-x-auto rounded-none bg-white">
     <table class="w-full table-custom">
       <thead>
@@ -313,7 +342,7 @@
       </thead>
       <tbody>
         {#each datas as d, i (d.id)}
-          <tr class={editID == d.id ? "!bg-indigo-200" : ""}>
+          <tr class={edit.id == d.id ? "!bg-indigo-200" : ""}>
             <th>{i + 1}</th>
             <th>{d.name}</th>
             <th>{d.email ?? ""}</th>
@@ -321,6 +350,9 @@
             <th>
               <button
                 data-id={d.id}
+                data-name={d.name}
+                data-email={d.email}
+                data-groups={d.groups}
                 data-action="edit"
                 class="bg-yellow-200 text-black hover:bg-green-500 hover:text-white px-2 rounded-sm"
               >

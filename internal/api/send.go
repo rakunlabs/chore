@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
@@ -29,6 +30,7 @@ import (
 // @Accept plain
 // @Success 200 {object} interface{} "respond from related server"
 // @failure 400 {object} apimodels.Error{}
+// @failure 405 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func send(c *fiber.Ctx) error {
@@ -77,7 +79,7 @@ func send(c *fiber.Ctx) error {
 
 	log.Ctx(c.UserContext()).Info().Msgf("call control=[%s] endpoint=[%s]", control.Name, endpoint)
 
-	nodesReg, err := flow.StartFlow(c.UserContext(), control.Name, endpoint, content, reg, c.Body())
+	nodesReg, err := flow.StartFlow(c.UserContext(), control.Name, endpoint, c.Method(), content, reg, c.Body())
 	if errors.Is(err, flow.ErrEndpointNotFound) {
 		return c.Status(http.StatusNotFound).JSON(
 			apimodels.Error{
@@ -108,8 +110,8 @@ func send(c *fiber.Ctx) error {
 	return c.Status(valueChan.Status).Send(valueChan.Data)
 }
 
-// PublicCheck middleware is checking endpoint.
-func PublicCheck(c *fiber.Ctx) error {
+// EndpointCheck middleware is checking endpoint.
+func EndpointCheck(c *fiber.Ctx) error {
 	endpoint := c.Query("endpoint")
 	name := c.Query("control")
 
@@ -124,7 +126,7 @@ func PublicCheck(c *fiber.Ctx) error {
 	c.Locals("endpoint", endpoint)
 	c.Locals("control", name)
 
-	v := models.ControlPublicEndpoint{}
+	v := models.Endpoints{}
 
 	reg := registry.Reg().Get(c.Locals("registry").(string))
 	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Where("name = ?", name)
@@ -146,13 +148,8 @@ func PublicCheck(c *fiber.Ctx) error {
 		)
 	}
 
-	if v.PublicEndpoints == nil {
-		//nolint:wrapcheck // next middleware
-		return c.Next()
-	}
-
-	publicEndpoints := make([]string, 0)
-	if err := json.Unmarshal(v.PublicEndpoints, &publicEndpoints); err != nil {
+	endpoints := make(map[string]models.ControlEndpoint)
+	if err := json.Unmarshal(v.Endpoints, &endpoints); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(
 			apimodels.Error{
 				Error: err.Error(),
@@ -160,25 +157,48 @@ func PublicCheck(c *fiber.Ctx) error {
 		)
 	}
 
-	public := false
+	endpointSpec, ok := endpoints[endpoint]
+	if !ok {
+		return c.Status(http.StatusNotFound).JSON(
+			apimodels.Error{
+				Error: fmt.Sprintf("endpoint %s not found", endpoint),
+			},
+		)
+	}
 
-	for _, e := range publicEndpoints {
-		if e == endpoint {
-			public = true
+	// method check
+	allowMethod := false
+
+	for _, endpointMethod := range endpointSpec.Methods {
+		if endpointMethod == c.Method() {
+			allowMethod = true
 
 			break
 		}
 	}
 
-	if public {
-		c.Locals("skip-middleware-jwt", true)
+	if !allowMethod {
+		c.Response().Header.Set("Allow", strings.ToUpper(strings.Join(endpointSpec.Methods, ", ")))
+
+		return c.Status(http.StatusMethodNotAllowed).JSON(
+			apimodels.Error{
+				Error: fmt.Sprintf("method %s not allowed", c.Method()),
+			},
+		)
 	}
+
+	// public check
+	if !endpointSpec.Public {
+		//nolint:wrapcheck // next middleware
+		return c.Next()
+	}
+
+	c.Locals("skip-middleware-jwt", true)
 
 	//nolint:wrapcheck // next middleware
 	return c.Next()
 }
 
 func Send(router fiber.Router) {
-	router.Post("/send", PublicCheck, middleware.JWTCheck(nil, nil), send)
-	router.Get("/send", PublicCheck, middleware.JWTCheck(nil, nil), send)
+	router.All("/send", EndpointCheck, middleware.JWTCheck(nil, nil), send)
 }

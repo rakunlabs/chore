@@ -39,6 +39,7 @@ type UserMetaAdmin struct {
 // @Router /users [get]
 // @Param limit query int false "set the limit, default is 20"
 // @Param offset query int false "set the offset, default is 0"
+// @Param search query string string "search item"
 // @Success 200 {object} apimodels.DataMeta{data=[]UserDataID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
@@ -62,6 +63,10 @@ func listUsers(c *fiber.Ctx) error {
 
 	query := reg.DB.WithContext(c.UserContext()).Model(&models.User{}).Limit(meta.Limit).Offset(meta.Offset)
 
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
 	result := query.Find(&users)
 
 	// check write error
@@ -74,7 +79,12 @@ func listUsers(c *fiber.Ctx) error {
 	}
 
 	// get counts
-	reg.DB.WithContext(c.UserContext()).Model(&models.User{}).Count(&meta.Count)
+	query = reg.DB.WithContext(c.UserContext()).Model(&models.User{})
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
+	query.Count(&meta.Count)
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{

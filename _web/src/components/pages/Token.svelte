@@ -7,6 +7,7 @@
   import axios from "axios";
   import { onDestroy, onMount } from "svelte";
   import NoData from "@/components/ui/NoData.svelte";
+  import Search from "@/components/ui/Search.svelte";
 
   storeHead.set("Personal Access Token");
 
@@ -14,11 +15,17 @@
 
   let showID = "";
 
-  const listToken = async (offset: number, limit = 20) => {
+  let search = "";
+
+  const listTokenSearch = async (
+    search: string,
+    offset: number,
+    limit = 20
+  ) => {
     try {
       const l = await requestSender(
         "tokens",
-        { offset, limit },
+        { offset, limit, search },
         "GET",
         null,
         true
@@ -29,6 +36,10 @@
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const listToken = async (offset: number, limit = 20) => {
+    listTokenSearch(search, offset, limit);
   };
 
   let datas = [];
@@ -126,6 +137,10 @@
 
   let infinity = false;
   let error = "";
+
+  const searchFn = (s: string) => {
+    listTokenSearch(s, 0);
+  };
 
   onMount(() => {
     listenElement.addEventListener("click", clickListen);
@@ -234,6 +249,9 @@
 </div>
 
 <div class="bg-slate-50 p-5" bind:this={listenElement}>
+  <div class="flex items-center justify-end mb-1">
+    <Search {searchFn} bind:search />
+  </div>
   <div class="overflow-x-auto rounded-none bg-white">
     <table class="w-full table-custom">
       <thead>

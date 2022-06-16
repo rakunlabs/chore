@@ -15,7 +15,7 @@
   import Drawflow from "drawflow";
   import CodeMirror from "codemirror";
   import { fullScreenKeys } from "@/helper/code";
-  import { getPublicEndpoints } from "@/helper/nodes";
+  import { getEndpoints } from "@/helper/nodes";
   import Search from "@/components/ui/Search.svelte";
 
   storeHead.set("ControlFlow");
@@ -141,11 +141,7 @@
     const content = JSON.stringify(exportedData);
     data["content"] = utf8ToB64(content);
 
-    data["public_endpoints"] = null;
-    const publicEndpoints = getPublicEndpoints(exportedData);
-    if (publicEndpoints.length > 0) {
-      data["public_endpoints"] = JSON.stringify(publicEndpoints);
-    }
+    data["endpoints"] = getEndpoints(exportedData);
 
     try {
       const response = await requestSender(

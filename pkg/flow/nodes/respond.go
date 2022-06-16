@@ -106,10 +106,6 @@ func (n *Respond) NextCount() int {
 	return 0
 }
 
-func (n *Respond) CheckData() string {
-	return ""
-}
-
 func (n *Respond) Check() {
 	n.checked = true
 }

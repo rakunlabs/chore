@@ -17,6 +17,8 @@ const endpoint: node = {
     <div class="box">
       <p>Enter endpoint name</p>
       <input type="text" placeholder="create" name="endpoint" df-endpoint>
+      <p>Methods</p>
+      <input type="text" placeholder="POST, GET" name="methods" df-methods>
       <label>
         <span>Public</span>
         <input type="checkbox" data-parent="5" name="public" data-action="checkbox" df-public>
@@ -26,6 +28,7 @@ const endpoint: node = {
   `,
   data: {
     endpoint: "",
+    methods: "POST",
     public: "false",
   },
   input: 0,
@@ -158,12 +161,15 @@ const control = {
       <input type="text" name="control" df-control>
       <p>Enter endpoint name</p>
       <input type="text" name="endpoint" df-endpoint>
+      <p>Methods</p>
+      <input type="text" placeholder="POST" name="method" df-method>
     </div>
   </div>
   `,
   data: {
     "control": "",
     "endpoint": "",
+    "method": "POST",
   },
   input: 1,
   output: 1,

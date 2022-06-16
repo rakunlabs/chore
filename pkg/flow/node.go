@@ -74,10 +74,14 @@ type Noder interface {
 	ActiveInput(string)
 	Next(int) []Connection
 	NextCount() int
-	CheckData() string
 	IsRespond() bool
 	Check()
 	IsChecked() bool
+}
+
+type NoderEndpoint interface {
+	Endpoint() string
+	Methods() []string
 }
 
 // nodeRetOutput struct for path.

@@ -3,7 +3,7 @@
 
   import { formToObject } from "@/helper/codec";
   import { storeHead } from "@/store/store";
-  import axios, { CancelTokenSource } from "axios";
+  import axios, { CancelTokenSource, Method } from "axios";
   import CodeMirror from "codemirror";
   import { onMount } from "svelte";
   import Code from "@/components/ui/Code.svelte";
@@ -28,6 +28,7 @@
 
   let control = "";
   let endpoint = "";
+  let method = "";
 
   let beutify = false;
   let originalValue = "";
@@ -70,7 +71,7 @@
       const responseGet = await requestSender(
         "send",
         data,
-        "POST",
+        `${method ? method : "POST"}` as Method,
         editorInput.getValue(),
         true,
         {
@@ -181,6 +182,16 @@
               class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
             />
           </label>
+          <label class="mb-1 flex">
+            <span class="w-20 inline-block">Method</span>
+            <input
+              type="text"
+              name="method"
+              placeholder="POST"
+              bind:value={method}
+              class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
+            />
+          </label>
           <div
             class={`mt-2 bg-red-200 w-full h-6 ${
               error != "" ? "" : "invisible"
@@ -203,7 +214,9 @@
     </div>
     <Code
       lang="sh"
-      code={`curl -ksSL -X POST -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
+      code={`curl -ksSL -X ${
+        method ? method : "POST"
+      } -H "Authorization: Bearer \${TOKEN}" --data-binary @filename "${URL}/api/v1/send?control=${control}&endpoint=${endpoint}"`}
     />
   </div>
 

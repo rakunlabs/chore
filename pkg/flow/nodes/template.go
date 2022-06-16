@@ -104,10 +104,6 @@ func (n *Template) NextCount() int {
 
 func (n *Template) ActiveInput(string) {}
 
-func (n *Template) CheckData() string {
-	return ""
-}
-
 func (n *Template) Check() {
 	n.checked = true
 }

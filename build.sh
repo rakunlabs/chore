@@ -25,6 +25,9 @@ OUTPUT_FOLDER="${BASE_DIR}/_out"
 
 PLATFORMS="${PLATFORMS:-linux:amd64}"
 
+SWAG_VERSION="v1.8.1"
+TOOLS_FOLDER="${BASE_DIR}/tools"
+
 # set docker
 DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME:-${APPNAME}}
 export GO_IMAGE=${GO_IMAGE:-golang:1.17.8-alpine}
@@ -210,6 +213,7 @@ fi
 
 # Create output folder
 mkdir -p ${OUTPUT_FOLDER}
+mkdir -p ${TOOLS_FOLDER}
 
 # Clean output folder
 if [[ "${CLEAN}" == "Y" ]]; then
@@ -228,16 +232,15 @@ fi
 # Swag documents
 if [[ "${SWAG}" == "Y" ]]; then
     echo "> Checking swag command"
-    if [[ ! $(command -v swag) ]]; then
-        echo "> Command swag not found!"
-        [[ ! ${AUTO_INSTALL} == "Y" ]] && return 1
+    if [[ ! -e ${TOOLS_FOLDER}/swag ]] || [[ ! "$(${TOOLS_FOLDER}/swag -v 2> /dev/null | cut -d " " -f3)" == "${SWAG_VERSION}" ]]; then
+        # echo "> Command swag not found or different version!"
+        # [[ ! ${AUTO_INSTALL} == "Y" ]] && exit 1
 
         echo "> Installing swag"
-        go install github.com/swaggo/swag/cmd/swag@latest
-        return $?
+        GOBIN=${TOOLS_FOLDER} go install github.com/swaggo/swag/cmd/swag@${SWAG_VERSION}
     fi
 
-    swag init --parseDependency --parseInternal --parseDepth 1 -g handlers.go --dir internal/server,internal/api --output docs/
+    ${TOOLS_FOLDER}/swag init -g handlers.go --dir internal/server,internal/api,models --output docs/
 fi
 
 # Build frontend

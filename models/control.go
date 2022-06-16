@@ -6,14 +6,20 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
 )
 
+// ControlEndpoint is representation of Endpoints json object.
+type ControlEndpoint struct {
+	Methods []string `json:"methods"`
+	Public  bool     `json:"public"`
+}
+
 type ControlPure struct {
 	Name string `json:"name" gorm:"unique;uniqueIndex;not null"`
-	ControlPublicEndpoint
+	Endpoints
 	apimodels.Groups
 }
 
-type ControlPublicEndpoint struct {
-	PublicEndpoints datatypes.JSON `json:"public_endpoints" example:"scan,create" swaggertype:"array,string"`
+type Endpoints struct {
+	Endpoints datatypes.JSON `json:"endpoints" swaggertype:"object,string"`
 }
 
 type ControlPureContent struct {

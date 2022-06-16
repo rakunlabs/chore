@@ -318,10 +318,6 @@ func (n *Request) ActiveInput(node string) {
 	}
 }
 
-func (n *Request) CheckData() string {
-	return ""
-}
-
 func (n *Request) Check() {
 	n.checked = true
 }

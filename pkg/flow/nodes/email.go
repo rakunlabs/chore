@@ -174,10 +174,6 @@ func (n *Email) NextCount() int {
 	return 0
 }
 
-func (n *Email) CheckData() string {
-	return ""
-}
-
 func (n *Email) Check() {
 	n.checked = true
 }

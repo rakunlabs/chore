@@ -29,6 +29,7 @@ type TokenDataByID struct {
 // @Router /tokens [get]
 // @Param limit query int false "set the limit, default is 20"
 // @Param offset query int false "set the offset, default is 0"
+// @Param search query string string "search item"
 // @Success 200 {object} apimodels.DataMeta{data=[]TokenDataByID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
@@ -49,6 +50,10 @@ func listTokens(c *fiber.Ctx) error {
 
 	query := reg.DB.WithContext(c.UserContext()).Model(&models.Token{}).Limit(meta.Limit).Offset(meta.Offset)
 
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
 	if result := query.Find(&tokens); result.Error != nil {
 		return c.Status(http.StatusInternalServerError).JSON(
 			apimodels.Error{
@@ -58,7 +63,12 @@ func listTokens(c *fiber.Ctx) error {
 	}
 
 	// get counts
-	reg.DB.WithContext(c.UserContext()).Model(&models.Token{}).Count(&meta.Count)
+	query = reg.DB.WithContext(c.UserContext()).Model(&models.Token{})
+	if meta.Search != "" {
+		query = query.Where("name LIKE ?", meta.Search+"%")
+	}
+
+	query.Count(&meta.Count)
 
 	return c.Status(http.StatusOK).JSON(
 		apimodels.DataMeta{
