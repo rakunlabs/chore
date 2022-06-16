@@ -22,14 +22,12 @@ import (
 	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"
 )
 
-var timeOut = 5 * time.Second
-
 func Serve(ctx context.Context, name string, db *gorm.DB) error {
 	app := fiber.New(fiber.Config{
 		AppName:               config.AppName,
 		DisableStartupMessage: true,
-		ReadTimeout:           timeOut,
-		WriteTimeout:          timeOut,
+		ReadBufferSize:        config.Application.Server.ReadBufferSize,
+		WriteBufferSize:       config.Application.Server.WriteBufferSize,
 	})
 
 	appStore := &registry.AppStore{

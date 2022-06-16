@@ -25,7 +25,7 @@ OUTPUT_FOLDER="${BASE_DIR}/_out"
 
 PLATFORMS="${PLATFORMS:-linux:amd64}"
 
-SWAG_VERSION="v1.8.1"
+SWAG_VERSION="$(grep github.com/swaggo/swag go.mod | xargs echo | cut -d" " -f2)"
 TOOLS_FOLDER="${BASE_DIR}/tools"
 
 # set docker
@@ -155,9 +155,6 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
         BUILD="Y"
         BUILD_FRONT="Y"
         ;;
-    --install)
-        AUTO_INSTALL="Y"
-        ;;
     --pack)
         PACK="Y"
         ;;
@@ -233,9 +230,6 @@ fi
 if [[ "${SWAG}" == "Y" ]]; then
     echo "> Checking swag command"
     if [[ ! -e ${TOOLS_FOLDER}/swag ]] || [[ ! "$(${TOOLS_FOLDER}/swag -v 2> /dev/null | cut -d " " -f3)" == "${SWAG_VERSION}" ]]; then
-        # echo "> Command swag not found or different version!"
-        # [[ ! ${AUTO_INSTALL} == "Y" ]] && exit 1
-
         echo "> Installing swag"
         GOBIN=${TOOLS_FOLDER} go install github.com/swaggo/swag/cmd/swag@${SWAG_VERSION}
     fi

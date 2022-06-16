@@ -738,6 +738,23 @@ const docTemplate = `{
                 }
             }
         },
+        "/info": {
+            "get": {
+                "description": "Get information of the server",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.information"
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "get": {
                 "security": [
@@ -861,6 +878,20 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/apimodels.Error"
                         }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "Check server is active",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Ping server",
+                "responses": {
+                    "200": {
+                        "description": ""
                     }
                 }
             }
@@ -2358,6 +2389,23 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "example": "pass1234"
+                }
+            }
+        },
+        "api.information": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "serverDate": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },

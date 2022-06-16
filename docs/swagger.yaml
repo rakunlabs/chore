@@ -171,6 +171,17 @@ definitions:
         example: pass1234
         type: string
     type: object
+  api.information:
+    properties:
+      name:
+        type: string
+      serverDate:
+        type: string
+      startDate:
+        type: string
+      version:
+        type: string
+    type: object
   apimodels.Data:
     properties:
       data:
@@ -772,6 +783,17 @@ paths:
       summary: List controls
       tags:
       - control
+  /info:
+    get:
+      description: Get information of the server
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.information'
+      summary: Information
+      tags:
+      - public
   /login:
     get:
       description: Get JWT token for 1 hour
@@ -846,6 +868,15 @@ paths:
           schema:
             $ref: '#/definitions/apimodels.Error'
       summary: Login
+      tags:
+      - public
+  /ping:
+    get:
+      description: Check server is active
+      responses:
+        "200":
+          description: ""
+      summary: Ping server
       tags:
       - public
   /send:

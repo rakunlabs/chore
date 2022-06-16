@@ -1,10 +1,13 @@
 package config
 
+import "time"
+
 var (
 	AppName    = "chore"
 	AppVersion = "v0.0.0"
 	LoadName   = ""
 	Env        = "DEVELOPMENT"
+	StartDate  = time.Now()
 )
 
 var Application = struct {
@@ -16,6 +19,7 @@ var Application = struct {
 	BasePath string `cfg:"basePath"`
 	User     User   `cfg:"user"`
 	Store    Store  `cfg:"store"`
+	Server   Server `cfg:"server"`
 }{
 	Host:     "0.0.0.0",
 	LogLevel: "debug",
@@ -27,6 +31,10 @@ var Application = struct {
 	Store: Store{
 		Schema: AppName,
 		Type:   "postgres",
+	},
+	Server: Server{
+		ReadBufferSize:  1024 * 1024,
+		WriteBufferSize: 1024 * 1024,
 	},
 }
 
@@ -45,4 +53,9 @@ type Store struct {
 	User     string `cfg:"user"`
 	Password string `cfg:"password" loggable:"false"`
 	DBName   string `cfg:"dbName"`
+}
+
+type Server struct {
+	ReadBufferSize  int `cfg:"readBufferSize"`
+	WriteBufferSize int `cfg:"writeBufferSize"`
 }
