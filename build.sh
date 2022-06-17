@@ -239,6 +239,8 @@ fi
 
 # Build frontend
 if [[ "${BUILD_FRONT}" == "Y" ]]; then
+    # set version
+    echo VITE_CHORE_VERSION=${VERSION} > _web/.env
     # under subshell
     (
         cd _web

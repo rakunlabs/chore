@@ -128,10 +128,9 @@ cd _web
 pnpm run dev -- --host
 ```
 
-After this step just go to the `localhost:8080` or `localhost:3000` address.
+After this step just go to the `localhost:3000` address.
 
-__NOTE__ in development mode, backend(`localhost:8080`) redirect request to frontend(`localhost:3000`)  
-Directly connect to frontend much better for development.
+__NOTE__ frontend(`localhost:3000`) has proxy and `/api` path request goes to the server.
 
 ### Build
 

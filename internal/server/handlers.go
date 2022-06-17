@@ -34,6 +34,7 @@ func setHandlers(app fiber.Router) {
 	api.Token(v1Router)
 	api.Control(v1Router)
 	api.Settings(v1Router)
+	api.Info(v1Router)
 
 	// testing
 	// apitest.Test(v1Router)

@@ -4,6 +4,7 @@
   import { login } from "@/helper/login";
   import { pushRedirect } from "@/helper/push";
   import { tokenSet } from "@/helper/token";
+  import { choreVersion } from "@/helper/version";
   import axios from "axios";
   import { querystring } from "svelte-spa-router";
 
@@ -46,7 +47,7 @@
   class="w-full min-h-screen bg-gray-50 flex flex-col items-center pt-6 sm:pt-0"
 >
   <div class="w-full sm:max-w-md p-5 mx-auto">
-    <h2 class="mb-12 text-center text-sm font-extrabold [line-height:1.2]">
+    <h2 class="mb-8 text-center text-sm font-extrabold [line-height:1.2]">
       {banner}
     </h2>
     <!-- <div>
@@ -57,7 +58,8 @@
         on:click={() => setSelected("chore")}>chore</button
       >
     </div> -->
-    <div class="border p-4 bg-yellow-50">
+    <div class="border p-4 bg-yellow-50 relative">
+      <span class="absolute top-0 right-4">{choreVersion}</span>
       <form on:submit|preventDefault|stopPropagation={signin}>
         <div class="mb-4">
           <label class="block mb-1" for="login">

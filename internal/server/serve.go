@@ -9,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -67,16 +66,7 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 
 	setHandlers(appRouter)
 
-	// share file or proxy other server (for development purpose)
-	if config.Env == "DEVELOPMENT" {
-		appRouter.Use("/", proxy.Balancer(proxy.Config{
-			Servers: []string{
-				"localhost:3000",
-			},
-		}))
-	} else {
-		setFileHandler(appRouter)
-	}
+	setFileHandler(appRouter)
 
 	// 404 if not found any handler
 	app.Use(func(c *fiber.Ctx) error {
