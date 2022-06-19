@@ -69,23 +69,15 @@ const request = {
         <textarea df-headers placeholder="json/yaml key:value"></textarea>
       </details>
       <details><summary>Retry with status codes</summary>
-        <p>Status Codes</p>
+        <p>Enabled Status Codes</p>
         <input type="text" placeholder="Ex: 401, 403" name="retry_codes" df-retry_codes>
-        <p>Retry Time (seconds)</p>
-        <input type="text" placeholder="1" name="retry_time" df-retry_time>
-        <p>Retry Count</p>
-        <input type="text" placeholder="5" name="retry_count" df-retry_count>
-        <label>
-          <span>Increase Retry Time</span>
-          <input type="checkbox" data-parent="6" name="retry_increase" data-action="checkbox" df-retry_increase>
-        </label>
+        <p>Disabled Status Codes</p>
+        <input type="text" placeholder="Ex: 500" name="retry_decodes" df-retry_decodes>
       </details>
     </div>
   </div>
   `,
-  data: {
-    retry_increase: "false",
-  },
+  data: {},
   input: 2,
   output: 3,
   class: "node-request",

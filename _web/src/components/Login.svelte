@@ -59,7 +59,9 @@
       >
     </div> -->
     <div class="border p-4 bg-yellow-50 relative">
-      <span class="absolute top-0 right-4">{choreVersion}</span>
+      <span class="absolute top-0 right-0 bg-slate-100 px-1"
+        >{choreVersion}</span
+      >
       <form on:submit|preventDefault|stopPropagation={signin}>
         <div class="mb-4">
           <label class="block mb-1" for="login">

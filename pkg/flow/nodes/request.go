@@ -49,10 +49,8 @@ var (
 )
 
 type retryRaw struct {
-	Codes    string
-	Time     string
-	Count    string
-	Increase string
+	Codes   string
+	DeCodes string
 }
 
 // Request node has one input and one output.
@@ -121,7 +119,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		// render url
 		payload, err := reg.Template.Ext(requestValues, n.url)
 		if err != nil {
-			return nil, fmt.Errorf("template cannot render: %v", err)
+			return nil, fmt.Errorf("template url cannot render: %v", err)
 		}
 
 		n.url = string(payload)
@@ -129,7 +127,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		// render method
 		payload, err = reg.Template.Ext(requestValues, n.method)
 		if err != nil {
-			return nil, fmt.Errorf("template cannot render: %v", err)
+			return nil, fmt.Errorf("template method cannot render: %v", err)
 		}
 
 		n.method = string(payload)
@@ -137,7 +135,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		// render headers
 		payload, err = reg.Template.Ext(requestValues, n.addHeadersRaw)
 		if err != nil {
-			return nil, fmt.Errorf("template cannot render: %v", err)
+			return nil, fmt.Errorf("template headers cannot render: %v", err)
 		}
 
 		n.addHeadersRaw = string(payload)
@@ -165,7 +163,7 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		return &RequestRet{
 			respond: flow.Respond{
 				Header: nil,
-				Data:   []byte(fmt.Sprintf("failed to send request: %v", err)),
+				Data:   []byte(fmt.Sprint(err)),
 				Status: http.StatusServiceUnavailable,
 			},
 			selection: []int{0, 2},
@@ -245,50 +243,19 @@ func (n *Request) Validate() error {
 	}
 
 	// fill retry values
-	if rCodes := strings.ReplaceAll(n.retryRaw.Codes, " ", ""); rCodes != "" {
-		var retryCodes []int
+	retryCodes, err := getCodes(n.retryRaw.Codes)
+	if err != nil {
+		return err
+	}
 
-		for _, rCode := range strings.Split(rCodes, ",") {
-			rCodeInt, err := strconv.Atoi(rCode)
-			if err != nil {
-				return fmt.Errorf("value %s cannot convert to integer", rCode)
-			}
+	retryDeCodes, err := getCodes(n.retryRaw.DeCodes)
+	if err != nil {
+		return err
+	}
 
-			retryCodes = append(retryCodes, rCodeInt)
-		}
-
-		if retryCodes != nil {
-			retryCount := 5
-
-			if n.retryRaw.Count != "" {
-				var err error
-
-				retryCount, err = strconv.Atoi(n.retryRaw.Count)
-				if err != nil {
-					return fmt.Errorf("count %q cannot convert to integer", n.retryRaw.Count)
-				}
-			}
-
-			retryTime := 1
-
-			if n.retryRaw.Time != "" {
-				var err error
-
-				retryTime, err = strconv.Atoi(n.retryRaw.Time)
-				if err != nil {
-					return fmt.Errorf("time %q cannot convert to integer", n.retryRaw.Time)
-				}
-			}
-
-			increase, _ := strconv.ParseBool(n.retryRaw.Increase)
-
-			n.retry = &request.Retry{
-				Codes:    retryCodes,
-				Time:     time.Duration(retryTime) * time.Second,
-				Count:    retryCount,
-				Increase: increase,
-			}
-		}
+	n.retry = &request.Retry{
+		EnabledStatusCodes:  retryCodes,
+		DisabledStatusCodes: retryDeCodes,
 	}
 
 	return nil
@@ -338,9 +305,7 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 	addHeadersRaw, _ := data.Data["headers"].(string)
 
 	retryCodes, _ := data.Data["retry_codes"].(string)
-	retryTime, _ := data.Data["retry_time"].(string)
-	retryCount, _ := data.Data["retry_count"].(string)
-	retryIncrease, _ := data.Data["retry_increase"].(string)
+	retryDeCodes, _ := data.Data["retry_decodes"].(string)
 
 	return &Request{
 		inputs:        inputs,
@@ -350,10 +315,8 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 		url:           url,
 		addHeadersRaw: addHeadersRaw,
 		retryRaw: retryRaw{
-			Codes:    retryCodes,
-			Time:     retryTime,
-			Count:    retryCount,
-			Increase: retryIncrease,
+			Codes:   strings.ReplaceAll(retryCodes, " ", ""),
+			DeCodes: strings.ReplaceAll(retryDeCodes, " ", ""),
 		},
 	}
 }
@@ -361,4 +324,23 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 //nolint:gochecknoinits // moduler nodes
 func init() {
 	flow.NodeTypes[requestType] = NewRequest
+}
+
+func getCodes(codes string) ([]int, error) {
+	if codes == "" {
+		return nil, nil
+	}
+
+	var retryCodes []int
+
+	for _, code := range strings.Split(codes, ",") {
+		codeInt, err := strconv.Atoi(code)
+		if err != nil {
+			return nil, fmt.Errorf("value %s cannot convert to integer", code)
+		}
+
+		retryCodes = append(retryCodes, codeInt)
+	}
+
+	return retryCodes, nil
 }

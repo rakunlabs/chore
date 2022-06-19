@@ -6,8 +6,10 @@
     "dev": "vite",
     "depend": "pnpm install --unsafe-perm --prefer-offline ${NPM_PROXY:+--registry ${NPM_PROXY}}",
     "build": "vite build",
+    "set-version": "echo VITE_CHORE_VERSION=${IMAGE_TAG:-$(git describe --tags --first-parent --match 'v*' 2> /dev/null || echo v0.0.0)} > .env",
     "build-dev": "SOURCEMAP=true vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "build-front": "pnpm run set-version && pnpm run depend && pnpm build"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "1.0.0-next.37",

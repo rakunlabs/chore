@@ -12,8 +12,7 @@ COPY docs docs
 ARG NPM_PROXY
 
 RUN cd _web && \
-    pnpm run depend && \
-    pnpm build
+    pnpm build-front
 
 ######################### BUILDER BACKEND
 FROM $GO_IMAGE AS builder-backend
