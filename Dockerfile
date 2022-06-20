@@ -10,6 +10,7 @@ COPY _web _web
 COPY docs docs
 
 ARG NPM_PROXY
+ARG IMAGE_TAG
 
 RUN cd _web && \
     pnpm build-front
