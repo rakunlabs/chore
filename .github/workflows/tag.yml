@@ -19,10 +19,10 @@ jobs:
         uses: actions/setup-go@v3
         with:
           # stable: 'false' # Keep this line to be able to use rc and beta version of Go (ex: 1.18.0-rc1).
-          go-version-file: go.mod
+          go-version: 1.18.5
       - name: Unshallow
         run: git fetch --prune --unshallow
-      
+
       - name: Frontend build
         uses: addnab/docker-run-action@v3
         with:

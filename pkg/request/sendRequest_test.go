@@ -51,7 +51,7 @@ func TestClient_Send(t *testing.T) {
 						t.Errorf("Error appered %v", err)
 					}
 
-					if bytes.Compare(data, []byte(`{"name":"test"}`)) != 0 {
+					if !bytes.Equal(data, []byte(`{"name":"test"}`)) {
 						t.Errorf("data is %s, want %s", data, []byte(`{"name":"test"}`))
 					}
 				}))
