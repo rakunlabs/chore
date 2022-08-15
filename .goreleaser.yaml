@@ -9,7 +9,7 @@ release:
 before:
   hooks:
     # build web
-    - '{{ if index .Env "NOT_BUILD_FRONTEND" }}echo skipping build frontend{{else}}sh -c "./build.sh --build-front --copy"{{ end }}'
+    - '{{ if index .Env "NOT_BUILD_FRONTEND" }}./build.sh --copy{{else}}./build.sh --build-front --copy{{ end }}'
     # You may remove this if you don't use go modules.
     - go mod tidy
 builds:
