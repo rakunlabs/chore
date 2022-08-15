@@ -30,7 +30,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work
-            ./build.sh --build-front
+            IMAGE_TAG=${{ github.ref_name	}} ./build.sh --build-front
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2
