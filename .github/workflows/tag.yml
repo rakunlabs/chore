@@ -26,9 +26,10 @@ jobs:
       - name: Frontend build
         uses: addnab/docker-run-action@v3
         with:
-          image: rytsh/frontend-pnpm:v0.0.3
+          image: rytsh/frontend-pnpm:v0.0.4
           options: -v ${{ github.workspace }}:/work
           run: |
+            cd /work
             ./build.sh --build-front
 
       - name: Log in to the Container registry

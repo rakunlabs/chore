@@ -12,3 +12,6 @@
 !/data/templates/.gitkeep
 
 /dist
+.pnpm-store/
+semicolon_delimited_script
+

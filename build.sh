@@ -9,7 +9,6 @@ BASE_DIR="$(realpath $(dirname "$0"))"
 cd $BASE_DIR
 
 APPNAME="chore"
-echo ${IMAGE_TAG} > xx
 VERSION="${IMAGE_TAG:-$(git describe --tags --first-parent --match "v*" 2> /dev/null || echo v0.0.0)}"
 
 MAINGO="cmd/${APPNAME}/main.go"
@@ -35,7 +34,7 @@ export GO_IMAGE=${GO_IMAGE:-golang:1.17.8-alpine}
 export FRONTEND_IMAGE=${FRONTEND_IMAGE:-rytsh/frontend-pnpm:v0.0.3}
 export BASE_IMAGE=${BASE_IMAGE:-scratch}
 export IMAGE_TAG=${VERSION}
-export NPM_PROXY=${NPM_PROXY:-http://localhost:4873}
+# export NPM_PROXY=${NPM_PROXY:-http://localhost:4873}
 
 function usage() {
     cat - <<EOF
