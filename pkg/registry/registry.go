@@ -6,9 +6,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"
+	"github.com/worldline-go/chore/pkg/request"
+	"github.com/worldline-go/chore/pkg/sec"
+	"github.com/worldline-go/chore/pkg/translate"
 )
 
 type AppStore struct {

@@ -3,8 +3,8 @@ package nodes
 import (
 	"context"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/registry"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

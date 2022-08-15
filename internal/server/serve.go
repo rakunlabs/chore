@@ -13,12 +13,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/translate"
+	"github.com/worldline-go/chore/internal/config"
+	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/request"
+	"github.com/worldline-go/chore/pkg/sec"
+	"github.com/worldline-go/chore/pkg/translate"
 )
 
 func Serve(ctx context.Context, name string, db *gorm.DB) error {

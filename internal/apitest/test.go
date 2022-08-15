@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/rs/zerolog/log"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/registry"
 )
 
 // @Summary New Test

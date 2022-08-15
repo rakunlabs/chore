@@ -11,10 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/email"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/pkg/email"
+	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/registry"
 )
 
 var emailType = "email"

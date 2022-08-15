@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/request"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/request"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"

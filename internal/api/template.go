@@ -13,12 +13,12 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/parser"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/utils"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/internal/parser"
+	"github.com/worldline-go/chore/internal/server/middleware"
+	"github.com/worldline-go/chore/internal/utils"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/registry"
 )
 
 type TemplatePureID struct {

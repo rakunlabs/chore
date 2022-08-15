@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/store/db"
+	"github.com/worldline-go/chore/internal/store/db"
 )
 
 func OpenConnection(typeDB string, cfg map[string]interface{}) (*gorm.DB, error) {

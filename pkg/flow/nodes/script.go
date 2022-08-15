@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/registry"
 
 	"github.com/dop251/goja"
 	"gopkg.in/yaml.v3"

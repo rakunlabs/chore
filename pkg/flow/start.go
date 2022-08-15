@@ -3,7 +3,7 @@ package flow
 import (
 	"context"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/registry"
 )
 
 func StartFlow(

@@ -1,4 +1,4 @@
-package cmd
+package args
 
 import (
 	"context"
@@ -9,18 +9,19 @@ import (
 	"sync"
 	"syscall"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/store"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2"
-	"gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2/loader"
+	"github.com/worldline-go/chore/internal/config"
+	"github.com/worldline-go/chore/internal/server"
+	"github.com/worldline-go/chore/internal/store"
 
 	// Add flow nodes to register in control flow algorithm.
-	_ "gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow/nodes"
+	_ "github.com/worldline-go/chore/pkg/flow/nodes"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/worldline-go/igconfig"
+	"github.com/worldline-go/igconfig/loader"
+	"github.com/worldline-go/logz"
 )
 
 type overrideHold struct {
@@ -30,11 +31,11 @@ type overrideHold struct {
 
 var rootCmd = &cobra.Command{
 	Use:     "chore",
-	Short:   "custom request sender",
+	Short:   "control flow runner",
 	Long:    config.Banner("request with templates"),
 	Version: config.AppVersion,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := config.SetLogLevel(config.Application.LogLevel); err != nil {
+		if err := logz.SetLogLevel(config.Application.LogLevel); err != nil {
 			return err //nolint:wrapcheck // no need
 		}
 
@@ -88,7 +89,19 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 		&loader.Env{},
 	}
 
-	if err := igconfig.LoadWithLoadersWithContext(ctxConfig, config.GetLoadName(), &config.Application, loaders...); err != nil {
+	loader.VaultSecretAdditionalPaths = append(loader.VaultSecretAdditionalPaths,
+		loader.AdditionalPath{Map: "migrate", Name: "migrate"},
+		loader.AdditionalPath{Map: "migrate", Name: "migrations"},
+	)
+
+	if err := igconfig.LoadWithLoadersWithContext(ctxConfig, "", &config.LoadConfig, loaders[3]); err != nil {
+		return fmt.Errorf("unable to load prefix settings: %v", err)
+	}
+
+	loader.ConsulConfigPathPrefix = config.LoadConfig.Prefix.Consul
+	loader.VaultSecretBasePath = config.LoadConfig.Prefix.Vault
+
+	if err := igconfig.LoadWithLoadersWithContext(ctxConfig, config.LoadConfig.AppName, &config.Application, loaders...); err != nil {
 		return fmt.Errorf("unable to load configuration settings: %v", err)
 	}
 
@@ -100,7 +113,7 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 	})
 
 	// set log again to get changes
-	if err := config.SetLogLevel(config.Application.LogLevel); err != nil {
+	if err := logz.SetLogLevel(config.Application.LogLevel); err != nil {
 		return err //nolint:wrapcheck // no need
 	}
 
@@ -155,6 +168,8 @@ func runRoot(ctxParent context.Context) (err error) {
 		"user":     config.Application.Store.User,
 		"dbName":   config.Application.Store.DBName,
 		"schema":   config.Application.Store.Schema,
+		"timeZone": config.Application.Store.TimeZone,
+		"dsn":      config.Application.Store.DBDataSource,
 	})
 	if err != nil {
 		return fmt.Errorf("cannot open db: %v", err)

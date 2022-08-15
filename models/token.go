@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"github.com/worldline-go/chore/models/apimodels"
 )
 
 var (

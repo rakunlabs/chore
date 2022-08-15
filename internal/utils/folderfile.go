@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/models/apimodels"
 )
 
 func FolderFile(fileName string) []models.Folder {

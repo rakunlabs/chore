@@ -10,11 +10,11 @@ import (
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/server/middleware"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/sec"
+	"github.com/worldline-go/chore/internal/server/middleware"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/sec"
 )
 
 type UserDataID struct {

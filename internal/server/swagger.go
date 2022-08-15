@@ -7,8 +7,8 @@ import (
 
 	"github.com/gofiber/swagger"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/docs"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
+	"github.com/worldline-go/chore/docs"
+	"github.com/worldline-go/chore/internal/config"
 )
 
 func routerSwagger(f fiber.Router) {

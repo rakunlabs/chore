@@ -9,10 +9,11 @@ BASE_DIR="$(realpath $(dirname "$0"))"
 cd $BASE_DIR
 
 APPNAME="chore"
+echo ${IMAGE_TAG} > xx
 VERSION="${IMAGE_TAG:-$(git describe --tags --first-parent --match "v*" 2> /dev/null || echo v0.0.0)}"
 
 MAINGO="cmd/${APPNAME}/main.go"
-PKG=$(head -n 1 go.mod | cut -d " " -f2)
+PKG=$(go list -m)
 
 FLAG=(
 "${PKG}/internal/config.AppName=${APPNAME}"

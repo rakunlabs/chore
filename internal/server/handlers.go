@@ -1,7 +1,7 @@
 package server
 
 import (
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/api"
+	"github.com/worldline-go/chore/internal/api"
 
 	"github.com/gofiber/fiber/v2"
 )

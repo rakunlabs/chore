@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
+	"github.com/worldline-go/chore/internal/config"
 )
 
 type information struct {

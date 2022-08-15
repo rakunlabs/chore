@@ -5,15 +5,15 @@ import (
 	"os"
 
 	"github.com/rs/zerolog/log"
+	"github.com/worldline-go/logz"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/cmd/chore/cmd"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/config"
+	"github.com/worldline-go/chore/cmd/chore/args"
 )
 
 func main() {
-	config.InitializeLogger()
+	logz.InitializeLog(nil)
 
-	if err := cmd.Execute(context.Background()); err != nil {
+	if err := args.Execute(context.Background()); err != nil {
 		log.Error().Err(err).Msg("failed to execute command")
 		os.Exit(1)
 	}

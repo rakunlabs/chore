@@ -4,9 +4,11 @@ Chore tool help to send request with templates and customizable flow diagram.
 
 __-__ [info page of ui](docs/info/intro.md)
 
-## Usages
+Template playground go to [repeatit.io](https://repeatit.io)
 
-Connect to the chore UI with browser and add template, authentication and design own control flow.
+If you need any feature, find a bug or fixing something send pull request or open issue we will handle it.
+
+## Usages
 
 Chore uses PostgreSQL database.
 
@@ -25,7 +27,22 @@ store:
   host: "127.0.0.1"
   port: "5432"
   user: postgres
+  # password: test
   dbName: postgres
+  timeZone: UTC
+  # also you can set with DSN name, if DSN name exists other values not using
+  # dbDataSource: "postgres://postgres@127.0.0.1:5432/postgres?application_name=testdb"
+
+# migrate same as store and copy undefined part in store value
+migrate:
+  password: formigration
+  user: migration
+
+# BasePath just required for swagger ui, this tool use relative paths at all
+# basePath: /chore/ # to set mywebsite.com/chore/
+# host: 0.0.0.0 # default
+# port: 8080 # default
+# logLevel: info # default
 ```
 
 Secret is important for tokens, to generate own token, use one of this commands:
@@ -41,6 +58,18 @@ dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d -- '\n' | tr -- '+
 ```
 
 __WARN__ when secret changed, all previous tokens not usable after that.
+
+Set config file path to `CONFIG_FILE` environment variable.
+
+Chore can get your configurations from vault, consul, file or with environments values.
+
+To work with vault and consul set `PREFIX_VAULT` and `PREFIX_CONSUL` to show the path of the config file and `APP_NAME` default is __chore__. Details check [igconfig](https://github.com/worldline-go/igconfig) library to see how it works.
+
+And run chore on container or binary.
+
+Connect to the chore UI with browser and add template, authentication and design own control flow.
+
+<details><summary>Template, Auth, Control information</summary>
 
 ### Template
 
@@ -93,12 +122,7 @@ Or send file directly, (when sending yaml format always use binary format due to
 curl -X POST -H "Authorization: Bearer ${TOKEN}" --data-binary @values.yml "http://localhost:8080/api/v1/send?control=try&endpoint=test"
 ```
 
-## Informations
-
-__-__ [JIRA](docs/template/jira.md)
-__-__ [Confluence](docs/template/confluence.md)
-__-__ [MYITSM](docs/template/myitsm.md)
-__-__ [Link Issues](docs/template/issuelink.md)
+</details>
 
 ## Development
 
@@ -118,6 +142,7 @@ docker-compose up
 Run command
 ```sh
 # ./build.sh --run
+# config file can be TOML, YAML or JSON
 export CONFIG_FILE=_example/config/config.yml
 go run cmd/chore/main.go
 ```
@@ -133,6 +158,14 @@ After this step just go to the `localhost:3000` address.
 __NOTE__ frontend(`localhost:3000`) has proxy and `/api` path request goes to the server.
 
 ### Build
+
+#### Build with goreleaser
+
+```sh
+goreleaser release --snapshot --rm-dist
+```
+
+### Build with script
 
 Generate swagger (don't need if you didn't change related codes)
 ```sh
@@ -181,28 +214,36 @@ Change `-h` (help) parameter to any arguments of the shell script.
 
 ```sh
 export JWT_KEY=""
-curl -fksSL https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh | bash -s -- -h
+curl -fksSL https://github.com/worldline-go/chore/-/raw/main/data/record.sh | bash -s -- -h
 ```
 
 Or first download it and after run.
 
 ```sh
-curl -O -fksSL https://gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/-/raw/main/data/record.sh && chmod +x record.sh
+curl -O -fksSL https://github.com/worldline-go/chore/-/raw/main/data/record.sh && chmod +x record.sh
 ```
 
 Example arguments
 ```sh
-# download just jira auth
---url http://localhost:8080 --mode download --auth jira
-
+# download just one item
+--url http://am2vm2289.test.igdcs.com/chore --mode download --auth jira
+# update all auths, controls and templates files
+--url http://am2vm2289.test.igdcs.com/chore --mode download --auths --controls --templates
 # upload all auths folder
---url http://localhost:8080 --mode upload --auths
+--url http://am2vm2289.test.igdcs.com/chore --mode upload --auths
+# upload just one item
+--url http://am2vm2289.test.igdcs.com/chore --mode upload --template confluence/ter
 ```
 
 Get temporary JWT key with username and password
 
 ```sh
-export JWT_KEY="$(curl -ksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
+export JWT_KEY="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
 ```
 
 </details>
+
+## Todo
+
+- [ ] Activate group information
+- [ ] Support custom method entries

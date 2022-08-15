@@ -32,6 +32,10 @@ Directly send to bytes to other nodes.
  │ ┌────────────────────┐ └┼┘
  │ │                    │  │
  │ └────────────────────┘  │
+ │ Methods                 │
+ │ ┌────────────────────┐  │
+ │ │                    │  │
+ │ └────────────────────┘  │
  │ Public              │ │ │
  └─────────────────────────┘
 ```
@@ -67,9 +71,14 @@ Rendered bytes.
 
 Send http request. Set URL, method and headers with previously declared an auth header.
 
-In URL, method and headers can be usuable with go template. Values should be send on V input as json/yaml.
+In URL, method and headers can be usuable with go template. Values should be send on V input as json/yaml ([]byte).
 
 POST method is default when not set any method.
+
+If `V` is connected and a request comes, it first wait `V` value to come to the request node.  
+When V value is set, you can use that one for multiple requests.
+
+Chore tries to set all nodes as pure and usable again.
 
 #### INPUT
 
@@ -118,6 +127,13 @@ If function throw an error (`throw data`), script continue flow on false path.
 `toString` convert byte to string  
 `sleep` parameter such as "300ms", "-1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
+A json/yaml entries automatically converting to the object not need to convert and not need to convert back to string.  
+Functions just for corner cases not need to use.
+
+Input entry could be more than one, that mean you can connect more than one node to script node and it run on last entry comes.
+
+Use defination as `function main(input1, input2, input3)` to get more entry values.
+
 #### INPUT
 
 Bytes from previous nodes. Input count can be set when adding to flow.
@@ -157,6 +173,8 @@ Bytes from previous nodes. Input count can be set when adding to flow.
 
 First input is first argument of the code.
 
+Respond include headers if you want to send as html just add header in there.
+
 #### OUTPUT
 
 Not exists.
@@ -165,6 +183,8 @@ Not exists.
  ┌┬┬─────────────────────────┐
  │ │Respond                  │
  └┴┴─────────────────────────┘
+
+ + headers and get respond data
 ```
 
 ### Log

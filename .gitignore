@@ -10,3 +10,5 @@
 !/data/controls/.gitkeep
 /data/templates/*
 !/data/templates/.gitkeep
+
+/dist

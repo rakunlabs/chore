@@ -11,9 +11,17 @@ import (
 )
 
 func PostgresDB(cfg map[string]interface{}) (*gorm.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		cfg["host"], cfg["user"], cfg["password"], cfg["dbName"], cfg["port"])
+	timeZone := cfg["timeZone"]
+	if timeZone == "" {
+		timeZone = "UTC"
+	}
+
+	dsn, _ := cfg["dsn"].(string)
+	if dsn == "" {
+		dsn = fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s",
+			cfg["host"], cfg["user"], cfg["password"], cfg["dbName"], cfg["port"], timeZone)
+	}
 
 	gLog := gorm_zerolog.NewWithLogger(log.With().Str("component", "postgres").Logger())
 	gLog.SkipErrRecordNotFound = true

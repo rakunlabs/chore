@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# JWT_KEY required
+# JWT_KEY required to authenticate server
+# export JWT_KEY="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
 
 BASE_DIR="$(realpath $(dirname "$0"))"
 cd $BASE_DIR
@@ -18,25 +19,25 @@ OPTIONS:
 
   --mode <upload,download>
     Set mode 'upload' or 'download'
-  --overwrite
-    If already exist update it
-    Works on upload mode
 
   --templates
     Templates operation
-    Work in upload mode to upload all templates folder
+    In upload mode to upload all templates folder
+    In download mode to update all existing templates
   --template <NAME>
     In upload, download mode this is template name
 
   --controls
     Controls operation
-    Work in upload mode
+    In upload mode to upload all
+    In download mode to update all existing
   --control <NAME>
     In upload, download mode this is control name
 
   --auths
     Auths operation
-    Work in upload mode
+    In upload mode to upload all
+    In download mode to update all existing
   --auth
     In upload, download mode this is auth name
 
@@ -64,9 +65,6 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
       exit 1
     fi
     shift
-    ;;
-  --overwrite)
-    OVERWRITE="Y"
     ;;
   --templates)
     TEMPLATES="Y"

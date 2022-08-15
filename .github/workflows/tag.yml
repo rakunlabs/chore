@@ -1,0 +1,48 @@
+name: "Release"
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          # stable: 'false' # Keep this line to be able to use rc and beta version of Go (ex: 1.18.0-rc1).
+          go-version-file: go.mod
+      - name: Unshallow
+        run: git fetch --prune --unshallow
+      
+      - name: Frontend build
+        uses: addnab/docker-run-action@v3
+        with:
+          image: rytsh/frontend-pnpm:v0.0.3
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            ./build.sh --build-front
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOT_BUILD_FRONTEND: true

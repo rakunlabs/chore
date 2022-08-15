@@ -1,6 +1,6 @@
 package store
 
-import "gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
+import "github.com/worldline-go/chore/models"
 
 var Models = []interface{}{
 	&models.Auth{},

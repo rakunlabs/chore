@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/flow"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/registry"
 
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"

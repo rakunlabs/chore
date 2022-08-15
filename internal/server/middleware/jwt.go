@@ -7,9 +7,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/internal/utils"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/models/apimodels"
-	"gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore/pkg/registry"
+	"github.com/worldline-go/chore/internal/utils"
+	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/registry"
 )
 
 // JWTCheck first control token and second control groups and getID.

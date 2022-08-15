@@ -1,6 +1,6 @@
-module gitlab.test.igdcs.com/finops/nextgen/apps/tools/chore
+module github.com/worldline-go/chore
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
@@ -13,13 +13,12 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/jackc/pgconn v1.12.0
 	github.com/jackc/pgx/v4 v4.16.0 // indirect
-	github.com/mattn/go-isatty v0.0.14
-	github.com/rs/zerolog v1.26.0
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/rs/zerolog v1.27.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/swaggo/swag v1.8.3
 	github.com/wei840222/gorm-zerolog v0.0.0-20210303025759-235c42bb33fa
-	gitlab.test.igdcs.com/finops/nextgen/utils/basics/igconfig.git/v2 v2.7.1
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
@@ -30,6 +29,13 @@ require (
 )
 
 require (
+	github.com/hashicorp/go-cleanhttp v0.5.1
+	github.com/worldline-go/igconfig v0.1.0
+	github.com/worldline-go/logz v0.1.0
+)
+
+require (
+	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
@@ -47,7 +53,6 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.16.1 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
@@ -72,7 +77,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
-	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
@@ -85,9 +90,9 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.37.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	gitlab.test.igdcs.com/finops/nextgen/utils/basics/reformat.git v1.1.1 // indirect
+	github.com/worldline-go/reformat v1.1.0 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
+	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	golang.org/x/tools v0.1.10 // indirect
