@@ -46,6 +46,10 @@ var Application = struct {
 	Store: Store{
 		Schema: AppName,
 		Type:   "postgres",
+		User:   "postgres",
+		DBName: "postgres",
+		Host:   "127.0.0.1",
+		Port:   "5432",
 	},
 	Server: Server{
 		ReadBufferSize:  1024 * 1024,

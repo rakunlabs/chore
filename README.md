@@ -8,6 +8,19 @@ Template playground go to [repeatit.io](https://repeatit.io)
 
 If you need any feature, find a bug or fixing something send pull request or open issue we will handle it.
 
+## Fast Start and Use
+
+```sh
+docker run -d --name postgres -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:14.5-alpine
+docker run -it --rm --name chore -p 8080:8080 -e STORE_HOST=172.17.0.1 -e STORE_SCHEMA=public ghcr.io/worldline-go/chore:latest
+```
+
+Open browser and go to http://localhost:8080
+
+Login with `admin:admin` and after that create your flow, template and run it.
+
+![chore](./docs/info/chore.gif)
+
 ## Usages
 
 Chore uses PostgreSQL database.
@@ -214,25 +227,25 @@ Change `-h` (help) parameter to any arguments of the shell script.
 
 ```sh
 export JWT_KEY=""
-curl -fksSL https://github.com/worldline-go/chore/-/raw/main/data/record.sh | bash -s -- -h
+curl -fksSL https://raw.githubusercontent.com/worldline-go/chore/main/data/record.sh | bash -s -- -h
 ```
 
 Or first download it and after run.
 
 ```sh
-curl -O -fksSL https://github.com/worldline-go/chore/-/raw/main/data/record.sh && chmod +x record.sh
+curl -O -fksSL https://raw.githubusercontent.com/worldline-go/chore/main/data/record.sh && chmod +x record.sh
 ```
 
 Example arguments
 ```sh
 # download just one item
---url http://am2vm2289.test.igdcs.com/chore --mode download --auth jira
+--url http://localhost:8080 --mode download --auth jira
 # update all auths, controls and templates files
---url http://am2vm2289.test.igdcs.com/chore --mode download --auths --controls --templates
+--url http://localhost:8080 --mode download --auths --controls --templates
 # upload all auths folder
---url http://am2vm2289.test.igdcs.com/chore --mode upload --auths
+--url http://localhost:8080 --mode upload --auths
 # upload just one item
---url http://am2vm2289.test.igdcs.com/chore --mode upload --template confluence/ter
+--url http://localhost:8080 --mode upload --template confluence/ter
 ```
 
 Get temporary JWT key with username and password

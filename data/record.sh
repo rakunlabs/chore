@@ -3,8 +3,8 @@
 # JWT_KEY required to authenticate server
 # export JWT_KEY="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
 
-BASE_DIR="$(realpath $(dirname "$0"))"
-cd $BASE_DIR
+BASE_DIR=$(dirname "$0")
+cd "${BASE_DIR}"
 
 function usage() {
   cat - <<EOF

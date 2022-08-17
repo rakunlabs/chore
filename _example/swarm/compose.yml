@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   postgres:
-    image: postgres:12.8-alpine
+    image: postgres:14.5-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       # POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -22,7 +22,7 @@ services:
     #   - "5432:5432"
 
   chore:
-    image: am2vm2258.test.igdcs.com:8083/finops/chore:test
+    image: ghcr.io/worldline-go/chore:latest
     environment:
       LOGLEVEL: info
       SECRET: thisissupersecretjustforthisapp

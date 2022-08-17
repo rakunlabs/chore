@@ -79,7 +79,7 @@ dockers:
   - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/worldline-go/chore/main/README.md"
   - "--label=io.artifacthub.package.maintainers=[{\"name\":\"Eray Ates\",\"email\":\"eates23@gmail.com\"}]"
   - "--label=io.artifacthub.package.license=Apache-2.0"
-  - "--label=org.opencontainers.image.description=Export socket to HTTP"
+  - "--label=org.opencontainers.image.description=Control flow API"
   - "--label=org.opencontainers.image.created={{.Date}}"
   - "--label=org.opencontainers.image.name={{.ProjectName}}"
   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -88,13 +88,14 @@ dockers:
   - "--platform=linux/amd64"
 - image_templates:
   - 'ghcr.io/worldline-go/chore:{{ .Tag }}-alpine3.16.2'
+  - 'ghcr.io/worldline-go/chore:latest'
   dockerfile: ci/alpine.Dockerfile
   build_flag_templates:
   - "--pull"
   - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/worldline-go/chore/main/README.md"
   - "--label=io.artifacthub.package.maintainers=[{\"name\":\"Eray Ates\",\"email\":\"eates23@gmail.com\"}]"
   - "--label=io.artifacthub.package.license=Apache-2.0"
-  - "--label=org.opencontainers.image.description=Export socket to HTTP"
+  - "--label=org.opencontainers.image.description=Control flow API"
   - "--label=org.opencontainers.image.created={{.Date}}"
   - "--label=org.opencontainers.image.name={{.ProjectName}}"
   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
