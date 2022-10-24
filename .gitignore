@@ -1,5 +1,6 @@
 /_out
-/tools
+/bin
+/.golangci.yml
 
 /internal/server/dist/*
 !/internal/server/dist/.gitkeep

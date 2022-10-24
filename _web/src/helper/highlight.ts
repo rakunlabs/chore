@@ -13,6 +13,7 @@ import "codemirror/addon/edit/trailingspace";
 import "codemirror/addon/selection/active-line";
 import "codemirror/addon/display/fullscreen";
 import "codemirror/addon/display/placeholder";
+import "codemirror/addon/comment/comment";
 
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("http", xml);

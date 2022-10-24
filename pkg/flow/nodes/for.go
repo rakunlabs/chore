@@ -2,15 +2,16 @@ package nodes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"sync"
 
-	"github.com/dop251/goja"
-	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
+	"github.com/rs/zerolog/log"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/script/js"
+	"github.com/worldline-go/chore/pkg/transfer"
 )
 
 var forLoopType = "forLoop"
@@ -21,6 +22,7 @@ type ForLoop struct {
 	expression string
 	outputs    [][]flow.Connection
 	checked    bool
+	nodeID     string
 }
 
 type ForRet struct {
@@ -37,46 +39,37 @@ func (r *ForRet) GetBinaryDatas() [][]byte {
 
 var _ flow.NodeRetDatas = &ForRet{}
 
-func (n *ForLoop) Run(_ context.Context, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
-	scriptRunner := goja.New()
+func (n *ForLoop) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+	transferValue := transfer.BytesToData(value.GetBinaryData())
 
-	var m interface{}
-	if value.GetBinaryData() != nil {
-		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
-			m = value.GetBinaryData()
-		}
-	}
+	runner := js.NewGoja()
 
-	if err := scriptRunner.Set("data", m); err != nil {
+	if err := runner.SetData(transferValue); err != nil {
 		return nil, fmt.Errorf("cannot set data in script: %v", err)
 	}
 
-	gojaV, err := scriptRunner.RunString(n.expression)
+	gojaV, err := runner.RunString(n.expression)
 	if err != nil {
 		return nil, fmt.Errorf("cannot run loop value: %v", err)
 	}
 
-	var v [][]byte
+	var forValues [][]byte
 
-	if _, ok := gojaV.Export().([]interface{}); ok {
-		for _, exportVal := range gojaV.Export().([]interface{}) {
-			switch exportValTyped := exportVal.(type) {
-			case map[string]interface{}, []interface{}:
-				exportValM, err := json.Marshal(exportValTyped)
-				if err != nil {
-					return nil, fmt.Errorf("cannot marshal exported value: %v", err)
-				}
+	vExported := gojaV.Export()
 
-				v = append(v, exportValM)
-			case []byte:
-				v = append(v, exportValTyped)
-			default:
-				v = append(v, []byte(fmt.Sprint(exportValTyped)))
-			}
+	if vSlice, ok := vExported.([]interface{}); ok {
+		for _, exportVal := range vSlice {
+			forValues = append(forValues, transfer.DataToBytes(exportVal))
 		}
+	} else {
+		log.Ctx(ctx).Warn().Msgf("for loop value is not a slice: %v", vExported)
 	}
 
-	return &ForRet{output: v}, nil
+	if len(forValues) == 0 {
+		return nil, flow.ErrStopGoroutine
+	}
+
+	return &ForRet{output: forValues}, nil
 }
 
 func (n *ForLoop) GetType() string {
@@ -117,7 +110,11 @@ func (n *ForLoop) IsChecked() bool {
 	return n.checked
 }
 
-func NewForLoop(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *ForLoop) NodeID() string {
+	return n.nodeID
+}
+
+func NewForLoop(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 
@@ -126,7 +123,8 @@ func NewForLoop(_ context.Context, data flow.NodeData) flow.Noder {
 	return &ForLoop{
 		outputs:    outputs,
 		expression: expression,
-	}
+		nodeID:     nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

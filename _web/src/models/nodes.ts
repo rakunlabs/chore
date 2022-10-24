@@ -65,6 +65,18 @@ const request = {
       <input type="text" placeholder="POST" name="method" df-method>
       <p>Enter auth</p>
       <input type="text" placeholder="myauth" name="auth" df-auth>
+      <label>
+        <span>Payload set to nil</span>
+        <input type="checkbox" name="payload_nil" data-action="checkbox" df-payload_nil>
+      </label>
+      <label>
+        <span>Skip verify certificate</span>
+        <input type="checkbox" name="skip_verify" data-action="checkbox" df-skip_verify>
+      </label>
+      <label>
+        <span>Use pooled client</span>
+        <input type="checkbox" name="pool_client" data-action="checkbox" df-pool_client>
+      </label>
       <details><summary>Enter additional headers</summary>
         <textarea df-headers placeholder="json/yaml key:value"></textarea>
       </details>
@@ -77,7 +89,11 @@ const request = {
     </div>
   </div>
   `,
-  data: {},
+  data: {
+    skip_verify: "false",
+    payload_nil: "false",
+    pool_client: "false",
+  },
   input: 2,
   output: 3,
   class: "node-request",
@@ -95,6 +111,7 @@ const script = {
   </div>
   `,
   data: {
+    "inputs": null,
     "script": `function main(data) {
   return data;
 }
@@ -171,8 +188,10 @@ const respond = {
   name: "respond",
   html: `
   <div>
-    <div class="title-box flex items-center gap-2">Respond <input class="mr-2" type="number" name="status" df-status></div>
+    <div class="title-box flex items-center gap-2">Respond</div>
     <div class="box">
+      <p>Enter respond status code</p>
+      <input class="mr-2" type="number" name="status" df-status>
       <p>Enter headers</p>
       <textarea df-headers placeholder="json/yaml key:value"></textarea>
       <hr>

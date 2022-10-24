@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Router, {
-    push,
-    ConditionsFailedEvent,
-    querystring,
-  } from "svelte-spa-router";
+  import Router, { push, querystring } from "svelte-spa-router";
+  import type { ConditionsFailedEvent } from "svelte-spa-router";
   import wrap from "svelte-spa-router/wrap";
   import { tokenCondition } from "@/helper/token";
   import Toast from "@/components/ui/Toast.svelte";
   import { pushRedirect } from "@/helper/push";
+  import { onMount } from "svelte";
+  import { requestSender } from "@/helper/api";
+  import { storeInfo } from "@/store/store";
 
   const routes = {
     "/login": wrap({
@@ -33,6 +33,11 @@
 
     push(`/login?back=${event.detail.location}`);
   };
+
+  onMount(async () => {
+    const response = await requestSender("/info", null, "GET");
+    storeInfo.set(response.data);
+  });
 </script>
 
 <Toast />

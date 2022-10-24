@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"context"
+	"sync"
 
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
@@ -28,10 +29,11 @@ type Log struct {
 	printData bool
 	logLevel  zerolog.Level
 	checked   bool
+	nodeID    string
 }
 
 // Run get values from everywhere no need to check active input.
-func (n *Log) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Log) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	var logEvent *zerolog.Event
 
 	switch n.logLevel {
@@ -98,7 +100,11 @@ func (n *Log) IsChecked() bool {
 
 func (n *Log) ActiveInput(string) {}
 
-func NewLog(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Log) NodeID() string {
+	return n.nodeID
+}
+
+func NewLog(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	// printData "true" or "false"
@@ -118,7 +124,8 @@ func NewLog(_ context.Context, data flow.NodeData) flow.Noder {
 		printData: printData == "true",
 		logLevel:  logLevel,
 		message:   message,
-	}
+		nodeID:    nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 
@@ -39,10 +40,11 @@ type Control struct {
 	inputs       []flow.Inputs
 	outputs      [][]flow.Connection
 	checked      bool
+	nodeID       string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Control) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Control) Run(ctx context.Context, wg *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	control := models.Control{}
 
 	query := reg.DB.WithContext(ctx).Where("name = ?", n.controlName)
@@ -63,7 +65,7 @@ func (n *Control) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 
 	log.Ctx(ctx).Info().Msgf("internal call control=[%s] endpoint=[%s]", control.Name, n.endpointName)
 
-	nodesReg, err := flow.StartFlow(ctx, control.Name, n.endpointName, n.methodName, content, reg, value.GetBinaryData())
+	nodesReg, err := flow.StartFlow(ctx, wg, control.Name, n.endpointName, n.methodName, content, reg, value.GetBinaryData())
 	if errors.Is(err, flow.ErrEndpointNotFound) {
 		return nil, fmt.Errorf("endpoint not found %s; %w", n.endpointName, err)
 	}
@@ -124,7 +126,11 @@ func (n *Control) IsChecked() bool {
 	return n.checked
 }
 
-func NewControl(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Control) NodeID() string {
+	return n.nodeID
+}
+
+func NewControl(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 	outputs := flow.PrepareOutputs(data.Outputs)
 
@@ -138,7 +144,8 @@ func NewControl(_ context.Context, data flow.NodeData) flow.Noder {
 		controlName:  controlName,
 		endpointName: endpointName,
 		methodName:   methodName,
-	}
+		nodeID:       nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

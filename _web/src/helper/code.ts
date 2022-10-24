@@ -5,6 +5,9 @@ const fullScreenKeys = {
   "Esc": (cm: CodeMirror.Editor) => {
     if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
   },
+  "Ctrl-/": (cm: CodeMirror.Editor) => {
+    cm.toggleComment();
+  }
 };
 
 export { fullScreenKeys };

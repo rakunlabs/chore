@@ -83,14 +83,19 @@
   });
 </script>
 
-<div class="layout h-full bg-gray-100" bind:this={layout}>
-  <Navbar class="[grid-area:top]" />
-  <Side class="[grid-area:sidebar]" links={sideLinks} />
-  <div class="[grid-area:content] h-full">
-    <div class="grid h-full grid-rows-[auto_minmax(0,_1fr)]">
-      <Head />
-      <div class="p-2 h-full min-h-full overflow-y-auto">
-        <Router {routes} />
+<div
+  class="h-full w-full bg-gray-100 grid grid-rows-[3rem,1fr]"
+  bind:this={layout}
+>
+  <Navbar />
+  <div class="grid grid-cols-[10rem,1fr] h-full w-full relative">
+    <Side links={sideLinks} />
+    <div class="h-full w-full">
+      <div class="grid h-full grid-rows-[auto_minmax(0,_1fr)]">
+        <Head />
+        <div class="p-2 h-full min-h-full overflow-y-auto">
+          <Router {routes} />
+        </div>
       </div>
     </div>
   </div>

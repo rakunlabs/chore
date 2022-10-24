@@ -43,6 +43,7 @@
     "**/*.config.js",
     "**/*.*rc.js",
     "**/*.html",
+    "*.cjs",
   ],
   "exclude": [
     "node_modules/*"

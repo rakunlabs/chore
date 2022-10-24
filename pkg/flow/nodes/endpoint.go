@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
@@ -28,12 +29,13 @@ type Endpoint struct {
 	methods  []string
 	checked  bool
 	public   bool
+	nodeID   string
 }
 
 var _ flow.NoderEndpoint = &Endpoint{}
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Endpoint) Run(_ context.Context, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Endpoint) Run(_ context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	return &EndpointRet{output: value.GetBinaryData()}, nil
 }
 
@@ -83,25 +85,29 @@ func (n *Endpoint) Methods() []string {
 	return n.methods
 }
 
-func NewEndpoint(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Endpoint) NodeID() string {
+	return n.nodeID
+}
+
+func NewEndpoint(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	endpoint, _ := data.Data["endpoint"].(string)
 	methodsRaw, _ := data.Data["methods"].(string)
 	publicRaw, _ := data.Data["public"].(string)
 
-	methodsRaw = strings.ReplaceAll(methodsRaw, " ", "")
-	publicRaw = strings.ReplaceAll(publicRaw, " ", "")
+	methodsRaw = strings.ReplaceAll(methodsRaw, ",", " ")
 
-	methods := strings.Split(methodsRaw, ",")
-	public, _ := strconv.ParseBool(publicRaw)
+	methods := strings.Fields(methodsRaw)
+	public, _ := strconv.ParseBool(strings.TrimSpace(publicRaw))
 
 	return &Endpoint{
 		outputs:  outputs,
 		endpoint: endpoint,
 		methods:  methods,
 		public:   public,
-	}
+		nodeID:   nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/email"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/transfer"
 )
 
 var emailType = "email"
@@ -34,6 +33,7 @@ func (r *EmailRet) GetBinaryData() []byte {
 
 // Email node has one input.
 type Email struct {
+	reg         *flow.NodesReg
 	lockCtx     context.Context
 	lockCancel  context.CancelFunc
 	values      map[string]string
@@ -43,10 +43,11 @@ type Email struct {
 	mutex       sync.Mutex
 	fetched     bool
 	checked     bool
+	nodeID      string
 }
 
 // Run get values from active input nodes.
-func (n *Email) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
 	if input == flow.Input1 {
 		// don't allow multiple inputs
@@ -68,46 +69,51 @@ func (n *Email) Run(ctx context.Context, reg *registry.AppStore, value flow.Node
 		return nil, flow.ErrStopGoroutine
 	}
 
-	if n.lockCtx != nil {
-		select {
-		case <-time.After(time.Hour * 1):
-			log.Ctx(ctx).Warn().Msg("timeline exceded, terminated request")
+	// check it has value
+	var useValues []byte
+	if vRet, ok := value.(flow.NodeRetValues); ok {
+		useValues = vRet.GetBinaryValues()
+	}
 
-			return nil, flow.ErrStopGoroutine
+	if useValues == nil && n.lockCtx != nil {
+		// increase count
+		n.reg.UpdateStuck(flow.CountStuckIncrease, false)
+
+		select {
+		case <-n.reg.GetStuckCtx().Done():
+			return nil, fmt.Errorf("stuck detected, terminated node request")
 		case <-ctx.Done():
-			log.Ctx(ctx).Warn().Msg("program closed, terminated request")
+			log.Ctx(ctx).Warn().Msg("program closed, terminated node request")
 
 			return nil, flow.ErrStopGoroutine
 		case <-n.lockCtx.Done():
+			// continue process
 		}
+
+		n.reg.UpdateStuck(flow.CountStuckDecrease, true)
 	}
 
+	// check value and render it
 	headers := make(map[string][]string)
 
-	inputValuesUse := false
-
-	var requestValues map[string]interface{}
-
-	// check value and render it
-	if n.inputHolder.value != nil {
-		if err := yaml.Unmarshal(n.inputHolder.value, &requestValues); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal: %v", err)
-		}
-
-		inputValuesUse = true
+	var requestValues interface{}
+	if useValues != nil {
+		requestValues = transfer.BytesToData(useValues)
+	} else {
+		requestValues = transfer.BytesToData(n.inputHolder.value)
 	}
 
 	for key, value := range n.values {
 		payload := value
 
-		if inputValuesUse && requestValues != nil {
+		if requestValues != nil {
 			// render
-			rendered, err := reg.Template.Ext(requestValues, value)
+			rendered, err := reg.Template.Execute(requestValues, value)
 			if err != nil {
 				return nil, fmt.Errorf("template cannot render: %v", err)
 			}
 
-			payload = string(rendered)
+			payload = rendered
 		}
 
 		if key == "Subject" {
@@ -116,9 +122,9 @@ func (n *Email) Run(ctx context.Context, reg *registry.AppStore, value flow.Node
 			continue
 		}
 
-		payload = strings.ReplaceAll(payload, " ", "")
-		if payload != "" {
-			headers[key] = strings.Split(payload, ",")
+		payloadSlice := strings.Fields(strings.ReplaceAll(payload, ",", " "))
+		if len(payloadSlice) > 0 {
+			headers[key] = payloadSlice
 		}
 	}
 
@@ -192,13 +198,15 @@ func (n *Email) ActiveInput(node string) {
 					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
 				}
 			}
-
-			break
 		}
 	}
 }
 
-func NewEmail(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Email) NodeID() string {
+	return n.nodeID
+}
+
+func NewEmail(_ context.Context, reg *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	values := make(map[string]string)
@@ -210,9 +218,11 @@ func NewEmail(_ context.Context, data flow.NodeData) flow.Noder {
 	values["Subject"], _ = data.Data["subject"].(string)
 
 	return &Email{
+		reg:    reg,
 		values: values,
 		inputs: inputs,
-	}
+		nodeID: nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

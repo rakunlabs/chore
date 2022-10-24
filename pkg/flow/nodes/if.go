@@ -3,14 +3,15 @@ package nodes
 import (
 	"context"
 	"fmt"
+	"sync"
 
-	"github.com/dop251/goja"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/script/js"
+	"github.com/worldline-go/chore/pkg/transfer"
 )
 
 var ifCaseType = "ifCase"
@@ -36,29 +37,23 @@ type IfCase struct {
 	expression string
 	outputs    [][]flow.Connection
 	checked    bool
+	nodeID     string
 }
 
 // selection 0 is false.
-func (n *IfCase) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
-	scriptRunner := goja.New()
-
-	var m interface{}
+func (n *IfCase) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+	var transferValue interface{}
 	if value.GetBinaryData() != nil {
-		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
-			m = value.GetBinaryData()
-		}
+		transferValue = transfer.BytesToData(value.GetBinaryData())
 	}
 
-	// set script special functions
-	if err := setScriptFuncs(scriptRunner); err != nil {
-		return nil, err
-	}
+	runner := js.NewGoja()
 
-	if err := scriptRunner.Set("data", m); err != nil {
+	if err := runner.SetData(transferValue); err != nil {
 		return nil, fmt.Errorf("cannot set data in script: %v", err)
 	}
 
-	gojaV, err := scriptRunner.RunString(n.expression)
+	gojaV, err := runner.RunString(n.expression)
 	if err != nil {
 		log.Ctx(ctx).Error().Err(err).Msgf("cannot run loop value, passing as false: %v", err)
 
@@ -119,7 +114,11 @@ func (n *IfCase) IsChecked() bool {
 	return n.checked
 }
 
-func NewIfCase(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *IfCase) NodeID() string {
+	return n.nodeID
+}
+
+func NewIfCase(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 
@@ -128,7 +127,8 @@ func NewIfCase(_ context.Context, data flow.NodeData) flow.Noder {
 	return &IfCase{
 		outputs:    outputs,
 		expression: expression,
-	}
+		nodeID:     nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

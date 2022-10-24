@@ -2,6 +2,7 @@ package args
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -16,6 +17,7 @@ import (
 	// Add flow nodes to register in control flow algorithm.
 	_ "github.com/worldline-go/chore/pkg/flow/nodes"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -23,6 +25,8 @@ import (
 	"github.com/worldline-go/igconfig/loader"
 	"github.com/worldline-go/logz"
 )
+
+var ErrShutdown = errors.New("shutting down signal received")
 
 type overrideHold struct {
 	Memory *string
@@ -126,38 +130,36 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 func runRoot(ctxParent context.Context) (err error) {
 	// appname and version
 	// config.Banner("custom send request with templates"),
-	log.Info().Msgf("%s [%s]", strings.ToTitle(config.AppName), config.AppVersion)
+	log.WithLevel(zerolog.NoLevel).Msgf("%s [%s] buildCommit=[%s] buildDate=[%s] %s", strings.ToTitle(config.AppName), config.AppVersion, config.AppBuildCommit, config.AppBuildDate, config.Application.Env)
 
 	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	ctx, ctxCancel := context.WithCancel(ctxParent)
 	defer ctxCancel()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-
 	wg.Add(1)
 
 	go func() {
-		v := <-c
+		defer wg.Done()
 
-		ctxCancel()
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
-		if v != nil {
-			log.Info().Msg("Gracefully shutting down...")
+		select {
+		case <-sig:
+			log.Warn().Msg("received shutdown signal")
+			ctxCancel()
+
+			if err != nil {
+				err = ErrShutdown
+			}
+		case <-ctx.Done():
 		}
 
-		if errShutdown := server.Shutdown(); errShutdown != nil {
-			// set error
-			err = errShutdown
+		if err := server.Shutdown(); err != nil {
+			log.Err(err).Msg("shutdown server")
 		}
-
-		wg.Done()
-	}()
-
-	defer func() {
-		close(c)
-		wg.Wait()
 	}()
 
 	// open db connection
@@ -189,7 +191,7 @@ func runRoot(ctxParent context.Context) (err error) {
 	}
 
 	// server wait
-	if err := server.Serve(ctx, "main", dbConn); err != nil {
+	if err := server.Serve(ctx, wg, "main", dbConn); err != nil {
 		return err //nolint:wrapcheck // no need
 	}
 

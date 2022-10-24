@@ -2,18 +2,14 @@ package nodes
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/script/js"
+	"github.com/worldline-go/chore/pkg/transfer"
 
-	"github.com/dop251/goja"
-	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
@@ -25,8 +21,9 @@ type inputHolderS struct {
 }
 
 type ScriptRet struct {
-	selection []int
-	output    []byte
+	selection    []int
+	output       []byte
+	outputValues []byte
 }
 
 func (r *ScriptRet) GetBinaryData() []byte {
@@ -37,71 +34,58 @@ func (r *ScriptRet) GetSelection() []int {
 	return r.selection
 }
 
-var _ flow.NodeRetSelection = &ScriptRet{}
+func (r *ScriptRet) GetBinaryValues() []byte {
+	return r.outputValues
+}
+
+var (
+	_ flow.NodeRetSelection = (*ScriptRet)(nil)
+	_ flow.NodeRetValues    = (*ScriptRet)(nil)
+)
 
 // Script node has many input and one output.
 type Script struct {
-	script      string
-	inputs      []flow.Inputs
-	inputHolder []inputHolderS
-	outputs     [][]flow.Connection
-	wait        int
-	lock        sync.Mutex
-	checked     bool
-	directRun   bool
+	script       string
+	inputs       []flow.Inputs
+	inputCounter map[string]struct{}
+	inputHolder  map[string]inputHolderS
+	outputs      [][]flow.Connection
+	lock         sync.Mutex
+	checked      bool
+	nodeID       string
 }
 
 // selection 0 is false.
-func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
-	var inputValues []inputHolderS
-
-	var m interface{}
+//
+//nolint:lll // false positive
+func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+	var transferValue interface{}
 	if value.GetBinaryData() != nil {
-		if err := yaml.Unmarshal(value.GetBinaryData(), &m); err != nil {
-			m = value.GetBinaryData()
-		}
+		transferValue = transfer.BytesToData(value.GetBinaryData())
 	}
 
-	if !n.directRun {
-		n.lock.Lock()
-		n.wait--
+	var inputValues []inputHolderS
 
-		if n.wait < 0 {
+	if len(n.inputCounter) > 1 {
+		n.lock.Lock()
+
+		// replace input value, multiple call on same input will replace value
+		n.inputHolder[input] = inputHolderS{value: transferValue, input: input}
+
+		if len(n.inputCounter) > len(n.inputHolder) {
 			n.lock.Unlock()
 
 			return nil, flow.ErrStopGoroutine
 		}
 
-		// this block should be stay here in locking area
-		// save value if wait is zero and more
-		n.inputHolder = append(n.inputHolder, inputHolderS{value: m, input: input})
-
-		if n.wait != 0 {
-			n.lock.Unlock()
-
-			return nil, flow.ErrStopGoroutine
+		inputValues = make([]inputHolderS, 0, len(n.inputHolder))
+		for _, v := range n.inputHolder {
+			inputValues = append(inputValues, v)
 		}
 
 		n.lock.Unlock()
-		inputValues = n.inputHolder
 	} else {
-		inputValues = []inputHolderS{{value: m, input: input}}
-	}
-
-	scriptRunner := goja.New()
-
-	// set script special functions
-	if err := setScriptFuncs(scriptRunner); err != nil {
-		return nil, err
-	}
-
-	if _, err := scriptRunner.RunString(n.script); err != nil {
-		return nil, fmt.Errorf("script cannot read: %v", err)
-	}
-
-	mainScript, ok := goja.AssertFunction(scriptRunner.Get("main"))
-	if !ok {
-		return nil, fmt.Errorf("main function not found")
+		inputValues = []inputHolderS{{value: transferValue, input: input}}
 	}
 
 	// sort inputholder by input name, it effects to function arguments order
@@ -109,57 +93,34 @@ func (n *Script) Run(ctx context.Context, reg *registry.AppStore, value flow.Nod
 		return inputValues[i].input < inputValues[j].input
 	})
 
-	passValues := []goja.Value{}
-	for i := range inputValues {
-		passValues = append(passValues, scriptRunner.ToValue(inputValues[i].value))
+	// create script runner
+	runner := js.NewGoja()
+
+	var valueToPass interface{}
+	// value for some nodes
+	setValue := func(v interface{}) {
+		valueToPass = v
 	}
 
-	var retVal interface{}
+	runner.SetFunction("setValue", setValue)
 
-	returnToFalse := false
+	inputValuesInterface := make([]interface{}, len(inputValues))
+	for i, v := range inputValues {
+		inputValuesInterface[i] = v.value
+	}
 
-	res, err := mainScript(goja.Undefined(), passValues...)
+	result, err := runner.RunScript(ctx, n.script, inputValuesInterface)
 	if err != nil {
-		var jserr *goja.Exception
-
-		if errors.As(err, &jserr) {
-			retVal = jserr.Value().Export()
-			returnToFalse = true
-		} else {
-			return nil, fmt.Errorf("main function run: %v", err)
-		}
-	} else {
-		retVal = res.Export()
-	}
-
-	var returnRes []byte
-
-	if retVal != nil {
-		switch exportValTyped := retVal.(type) {
-		case map[string]interface{}, []interface{}:
-			exportValM, err := json.Marshal(exportValTyped)
-			if err != nil {
-				return nil, fmt.Errorf("cannot marshal exported value: %v", err)
-			}
-
-			returnRes = exportValM
-		case []byte:
-			returnRes = exportValTyped
-		default:
-			returnRes = []byte(fmt.Sprint(exportValTyped))
-		}
-	}
-
-	if returnToFalse {
-		return &ScriptRet{
+		return &ScriptRet{ //nolint:nilerr // different kind of error
 			selection: []int{0, 2},
-			output:    returnRes,
+			output:    result,
 		}, nil
 	}
 
 	return &ScriptRet{
-		selection: []int{1, 2},
-		output:    returnRes,
+		selection:    []int{1, 2},
+		output:       result,
+		outputValues: transfer.DataToBytes(valueToPass),
 	}, nil
 }
 
@@ -196,11 +157,8 @@ func (n *Script) ActiveInput(node string) {
 		if n.inputs[i].Node == node {
 			if !n.inputs[i].Active {
 				n.inputs[i].Active = true
-				n.wait++
-				n.directRun = n.wait == 1
+				n.inputCounter[n.inputs[i].InputName] = struct{}{}
 			}
-
-			break
 		}
 	}
 }
@@ -213,7 +171,11 @@ func (n *Script) IsChecked() bool {
 	return n.checked
 }
 
-func NewScript(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Script) NodeID() string {
+	return n.nodeID
+}
+
+func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order
@@ -222,67 +184,16 @@ func NewScript(_ context.Context, data flow.NodeData) flow.Noder {
 	script, _ := data.Data["script"].(string)
 
 	return &Script{
-		inputs:  inputs,
-		outputs: outputs,
-		script:  script,
-	}
+		inputs:       inputs,
+		outputs:      outputs,
+		script:       script,
+		nodeID:       nodeID,
+		inputCounter: make(map[string]struct{}),
+		inputHolder:  make(map[string]inputHolderS),
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes
 func init() {
 	flow.NodeTypes[scriptType] = NewScript
-}
-
-// ///////////////////////////////////
-
-func toObject(v []byte) interface{} {
-	var m interface{}
-
-	_ = yaml.Unmarshal(v, &m)
-
-	return m
-}
-
-func toString(v []byte) string {
-	return string(v)
-}
-
-func sleep(length string) {
-	duration, err := time.ParseDuration(length)
-	if err != nil {
-		panic(err)
-	}
-
-	time.Sleep(duration)
-}
-
-type commands struct {
-	fn   interface{}
-	name string
-}
-
-var commandList = []commands{
-	{
-		fn:   toObject,
-		name: "toObject",
-	},
-	{
-		fn:   toString,
-		name: "toString",
-	},
-	{
-		fn:   sleep,
-		name: "sleep",
-	},
-}
-
-func setScriptFuncs(runner *goja.Runtime) error {
-	for _, v := range commandList {
-		// custom functions set
-		if err := runner.Set(v.name, v.fn); err != nil {
-			return fmt.Errorf("%s command cannot set: %w", v.name, err)
-		}
-	}
-
-	return nil
 }

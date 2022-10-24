@@ -3,6 +3,7 @@ package request
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type ClientResponse struct {
@@ -21,7 +22,12 @@ type ClientResponse struct {
 
 type Client struct {
 	HTTPClient *http.Client
-	Request    func(context.Context, string, string, map[string]interface{}, []byte) (*http.Request, error)
+}
+
+type Config struct {
+	SkipVerify bool
+	Pooled     bool
+	Log        *zerolog.Logger
 }
 
 var (
@@ -30,10 +36,37 @@ var (
 	defaultRetryMax     = 4
 )
 
-func NewClient() *Client {
+func NewClient(cfg Config) *Client {
+	var logger interface{}
+	if cfg.Log != nil {
+		logger = LogZ{Log: *cfg.Log}
+	}
+
+	var httpClient *http.Client
+	if cfg.Pooled {
+		httpClient = cleanhttp.DefaultPooledClient()
+	} else {
+		httpClient = cleanhttp.DefaultClient()
+	}
+
+	if cfg.SkipVerify {
+		//nolint:forcetypeassert // clear
+		tlsClientConfig := httpClient.Transport.(*http.Transport).TLSClientConfig
+		if tlsClientConfig == nil {
+			tlsClientConfig = &tls.Config{
+				//nolint:gosec // user defined
+				InsecureSkipVerify: true,
+			}
+		} else {
+			tlsClientConfig.InsecureSkipVerify = true
+		}
+		//nolint:forcetypeassert // clear
+		httpClient.Transport.(*http.Transport).TLSClientConfig = tlsClientConfig
+	}
+
 	client := &retryablehttp.Client{
-		HTTPClient:   cleanhttp.DefaultClient(),
-		Logger:       LogZ{log.With().Str("component", "request").Logger()},
+		HTTPClient:   httpClient,
+		Logger:       logger,
 		RetryWaitMin: defaultRetryWaitMin,
 		RetryWaitMax: defaultRetryWaitMax,
 		RetryMax:     defaultRetryMax,
@@ -43,16 +76,16 @@ func NewClient() *Client {
 
 	return &Client{
 		HTTPClient: client.StandardClient(),
-		Request:    NewRequest,
 	}
 }
 
 func (c *Client) Send(
 	ctx context.Context,
-	URL, method string,
+	url, method string,
 	headers map[string]interface{},
 	payload []byte,
 	retry *Retry,
+	skipVerify bool,
 ) (*ClientResponse, error) {
 	var resp *http.Response
 
@@ -60,14 +93,14 @@ func (c *Client) Send(
 		ctx = context.WithValue(ctx, RetryCodesValue, retry)
 	}
 
-	req, err := c.Request(ctx, URL, method, headers, payload)
+	req, err := c.NewRequest(ctx, url, method, headers, payload)
 	if err != nil {
-		return nil, err //nolint:wrapcheck // not need here
+		return nil, err
 	}
 
 	resp, err = c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request [%s]: %w", URL, err)
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -80,16 +113,19 @@ func (c *Client) Send(
 	}, err
 }
 
-func NewRequest(ctx context.Context, URL, method string, headers map[string]interface{}, payload []byte) (*http.Request, error) {
+// NewRequest creates a new HTTP request with the given method, URL, and optional body.
+//
+//nolint:lll // clear
+func (c *Client) NewRequest(ctx context.Context, url, method string, headers map[string]interface{}, payload []byte) (*http.Request, error) {
 	var body io.Reader
 
 	if payload != nil {
 		body = bytes.NewBuffer(payload)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, URL, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request for [%s]: %w", URL, err)
+		return nil, fmt.Errorf("failed to create request for [%s]: %w", url, err)
 	}
 
 	for k, v := range headers {

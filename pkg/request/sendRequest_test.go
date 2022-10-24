@@ -10,7 +10,7 @@ import (
 )
 
 func TestClient_Send(t *testing.T) {
-	c := NewClient()
+	c := NewClient(Config{})
 
 	type args struct {
 		URL     string
@@ -66,7 +66,7 @@ func TestClient_Send(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := tt.server(t)
-			if _, err := c.Send(context.TODO(), srv.URL, tt.args.method, nil, tt.args.payload, nil); (err != nil) != tt.wantErr {
+			if _, err := c.Send(context.TODO(), srv.URL, tt.args.method, nil, tt.args.payload, nil, false); (err != nil) != tt.wantErr {
 				t.Errorf("Client.Send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"sync"
 
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/transfer"
 
-	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
@@ -31,16 +32,14 @@ type Template struct {
 	content      []byte
 	fetched      bool
 	checked      bool
+	nodeID       string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Template) Run(_ context.Context, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
-	var v map[string]interface{}
-	if err := yaml.Unmarshal(value.GetBinaryData(), &v); err != nil {
-		return nil, fmt.Errorf("template cannot unmarhal: %v", err)
-	}
+func (n *Template) Run(_ context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+	v := transfer.BytesToData(value.GetBinaryData())
 
-	payload, err := reg.Template.Ext(v, string(n.content))
+	payload, err := reg.Template.ExecuteBytes(v, string(n.content))
 	if err != nil {
 		err = fmt.Errorf("template cannot render: %v", err)
 	}
@@ -112,7 +111,11 @@ func (n *Template) IsChecked() bool {
 	return n.checked
 }
 
-func NewTemplate(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Template) NodeID() string {
+	return n.nodeID
+}
+
+func NewTemplate(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order
@@ -124,7 +127,8 @@ func NewTemplate(_ context.Context, data flow.NodeData) flow.Noder {
 		inputs:       inputs,
 		outputs:      outputs,
 		templateName: templateName,
-	}
+		nodeID:       nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

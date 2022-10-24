@@ -1,6 +1,6 @@
 <script lang="ts">
   import TokenRenew from "@/components/ui/TokenRenew.svelte";
-  import { choreVersion } from "@/helper/version";
+  import { storeInfo } from "@/store/store";
 
   let className = "";
 
@@ -15,7 +15,10 @@
     class="font-sans font-bold text-3xl text-gray-100 hover:text-yellow-200"
   >
     chore
-    <span class="text-base">{choreVersion}</span>
+    <span class="text-base"
+      >{$storeInfo.version +
+        ($storeInfo.environment ? " - " + $storeInfo.environment : "")}</span
+    >
   </a>
   <div class="flex items-center gap-2">
     <TokenRenew />

@@ -3,11 +3,12 @@ package config
 import "time"
 
 var (
-	AppName    = "chore"
-	AppVersion = "v0.0.0"
-	LoadName   = ""
-	Env        = "DEVELOPMENT"
-	StartDate  = time.Now()
+	AppName        = "chore"
+	AppVersion     = "v0.0.0"
+	AppBuildCommit = "0000000"
+	AppBuildDate   = "1970-01-01T00:00:00Z"
+	LoadName       = ""
+	StartDate      = time.Now()
 )
 
 type Prefix struct {
@@ -25,6 +26,7 @@ var LoadConfig = Load{
 }
 
 var Application = struct {
+	Env      string `cfg:"env"`
 	Host     string `cfg:"host"`
 	Port     string `cfg:"port"`
 	LogLevel string `cfg:"logLevel"`

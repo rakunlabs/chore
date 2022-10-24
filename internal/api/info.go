@@ -9,10 +9,13 @@ import (
 )
 
 type information struct {
-	Name       string    `json:"name"`
-	Version    string    `json:"version"`
-	StartDate  time.Time `json:"startDate"`
-	ServerDate time.Time `json:"serverDate"`
+	Name        string    `json:"name"`
+	Version     string    `json:"version"`
+	Environment string    `json:"environment"`
+	BuildDate   string    `json:"buildDate"`
+	BuildCommit string    `json:"buildCommit"`
+	StartDate   time.Time `json:"startDate"`
+	ServerDate  time.Time `json:"serverDate"`
 }
 
 // @Summary Information
@@ -23,10 +26,13 @@ type information struct {
 func getInfo(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(
 		information{
-			Name:       config.AppName,
-			Version:    config.AppVersion,
-			StartDate:  config.StartDate,
-			ServerDate: time.Now(),
+			Name:        config.AppName,
+			Version:     config.AppVersion,
+			Environment: config.Application.Env,
+			BuildDate:   config.AppBuildDate,
+			BuildCommit: config.AppBuildCommit,
+			StartDate:   config.StartDate,
+			ServerDate:  time.Now(),
 		},
 	)
 }

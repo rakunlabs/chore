@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	"sync"
 
 	"github.com/worldline-go/chore/pkg/registry"
 
@@ -9,7 +10,7 @@ import (
 )
 
 // NodeTypes hold new function of releated node.
-var NodeTypes = make(map[string]func(context.Context, NodeData) Noder)
+var NodeTypes = make(map[string]func(context.Context, *NodesReg, NodeData, string) (Noder, error))
 
 type NodeData struct {
 	Data    map[string]interface{} `json:"data"`
@@ -27,6 +28,7 @@ type Connections = struct {
 type Connection = struct {
 	Node   string `json:"node"`
 	Output string `json:"output"`
+	// input from which output information not needed
 }
 
 // NodesData is content's represent.
@@ -41,6 +43,10 @@ type Inputs struct {
 // NodeRet simple return.
 type NodeRet interface {
 	GetBinaryData() []byte
+}
+
+type NodeRetValues interface {
+	GetBinaryValues() []byte
 }
 
 // NodeRetDatas usuful for-loop operation.
@@ -67,7 +73,7 @@ type NodeRetSelection interface {
 // Noder for nodes like script, endpoint.
 type Noder interface {
 	GetType() string
-	Run(context.Context, *registry.AppStore, NodeRet, string) (NodeRet, error)
+	Run(context.Context, *sync.WaitGroup, *registry.AppStore, NodeRet, string) (NodeRet, error)
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
 	Validate() error
@@ -77,6 +83,7 @@ type Noder interface {
 	IsRespond() bool
 	Check()
 	IsChecked() bool
+	NodeID() string
 }
 
 type NoderEndpoint interface {

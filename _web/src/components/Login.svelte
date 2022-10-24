@@ -4,7 +4,7 @@
   import { login } from "@/helper/login";
   import { pushRedirect } from "@/helper/push";
   import { tokenSet } from "@/helper/token";
-  import { choreVersion } from "@/helper/version";
+  import { storeInfo } from "@/store/store";
   import axios from "axios";
   import { querystring } from "svelte-spa-router";
 
@@ -60,7 +60,8 @@
     </div> -->
     <div class="border p-4 bg-yellow-50 relative">
       <span class="absolute top-0 right-0 bg-slate-100 px-1"
-        >{choreVersion}</span
+        >{$storeInfo.version +
+          ($storeInfo.environment ? " - " + $storeInfo.environment : "")}</span
       >
       <form on:submit|preventDefault|stopPropagation={signin}>
         <div class="mb-4">

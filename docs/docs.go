@@ -766,7 +766,7 @@ const docTemplate = `{
                 "tags": [
                     "public"
                 ],
-                "summary": "Login",
+                "summary": "Login with basic auth",
                 "parameters": [
                     {
                         "type": "boolean",
@@ -891,7 +891,121 @@ const docTemplate = `{
                 "summary": "Ping server",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/run/js": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Run JS script with scripts and input values",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "run"
+                ],
+                "summary": "Run JS script",
+                "parameters": [
+                    {
+                        "description": "Script and inputs, scriptB64 has priority over script",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/run.runModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "result of the script",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/run/template": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Render template with input values",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "run"
+                ],
+                "summary": "Render template",
+                "parameters": [
+                    {
+                        "description": "send key values",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string",
+                            "example": ""
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.Data"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/apimodels.ID"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
                     }
                 }
             }
@@ -907,7 +1021,10 @@ const docTemplate = `{
                 "consumes": [
                     "text/plain"
                 ],
-                "summary": "Send request",
+                "tags": [
+                    "run"
+                ],
+                "summary": "Send run the control; methods depending in control",
                 "parameters": [
                     {
                         "type": "string",
@@ -976,7 +1093,10 @@ const docTemplate = `{
                 "consumes": [
                     "text/plain"
                 ],
-                "summary": "Send request",
+                "tags": [
+                    "run"
+                ],
+                "summary": "Send run the control; methods depending in control",
                 "parameters": [
                     {
                         "type": "string",
@@ -2395,6 +2515,15 @@ const docTemplate = `{
         "api.information": {
             "type": "object",
             "properties": {
+                "buildCommit": {
+                    "type": "string"
+                },
+                "buildDate": {
+                    "type": "string"
+                },
+                "environment": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2641,6 +2770,32 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "example": "pass1234"
+                }
+            }
+        },
+        "run.runModel": {
+            "type": "object",
+            "properties": {
+                "inputs": {
+                    "type": "array",
+                    "items": {}
+                },
+                "script": {
+                    "type": "string"
+                },
+                "scriptB64": {
+                    "type": "string"
+                },
+                "settings": {
+                    "$ref": "#/definitions/run.settings"
+                }
+            }
+        },
+        "run.settings": {
+            "type": "object",
+            "properties": {
+                "timeout": {
+                    "type": "string"
                 }
             }
         }

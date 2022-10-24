@@ -19,9 +19,10 @@ import (
 	"github.com/worldline-go/chore/pkg/registry"
 )
 
-// @Summary Send request
+// @Summary Send run the control; methods depending in control
 // @Description Send request with bind id or name
 // @Security ApiKeyAuth
+// @Tags run
 // @Router /send [post]
 // @Router /send [get]
 // @Param endpoint query string true "set endpoint"
@@ -39,7 +40,8 @@ func send(c *fiber.Ctx) error {
 
 	control := models.Control{}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
+	regGeneral := registry.Reg()
+	reg := regGeneral.Get(c.Locals("registry").(string))
 	query := reg.DB.WithContext(c.UserContext()).Where("name = ?", name)
 	result := query.First(&control)
 
@@ -77,9 +79,18 @@ func send(c *fiber.Ctx) error {
 		)
 	}
 
-	log.Ctx(c.UserContext()).Info().Msgf("call control=[%s] endpoint=[%s]", control.Name, endpoint)
+	// update logCtx
+	logControl := log.Ctx(c.UserContext()).With().
+		Str("control", control.Name).
+		Str("endpoint", endpoint).
+		Str("method", c.Method()).
+		Logger()
+	// replace context.Background() with own context
+	ctx := logControl.WithContext(c.UserContext())
 
-	nodesReg, err := flow.StartFlow(c.UserContext(), control.Name, endpoint, c.Method(), content, reg, c.Body())
+	logControl.Info().Msg("new call")
+
+	nodesReg, err := flow.StartFlow(ctx, regGeneral.WG, control.Name, endpoint, c.Method(), content, reg, c.Body())
 	if errors.Is(err, flow.ErrEndpointNotFound) {
 		return c.Status(http.StatusNotFound).JSON(
 			apimodels.Error{
@@ -89,7 +100,7 @@ func send(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
+		return c.Status(http.StatusPreconditionFailed).JSON(
 			apimodels.Error{
 				Error: err.Error(),
 			},
@@ -101,13 +112,28 @@ func send(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusAccepted)
 	}
 
-	valueChan := <-respondChan
+	// caller context cancelled, process is still running in background
+	select {
+	case <-c.Context().Done():
+		nodesReg.SetChanInactive()
 
-	for k, v := range valueChan.Header {
-		c.Response().Header.Set(k, fmt.Sprint(v))
+		return c.SendStatus(http.StatusRequestTimeout)
+	case valueChan := <-respondChan:
+		for k, v := range valueChan.Header {
+			c.Response().Header.Set(k, fmt.Sprint(v))
+		}
+
+		if valueChan.IsError {
+			return c.Status(http.StatusPreconditionFailed).JSON(
+				apimodels.Error{
+					// prevent to marshal base64
+					Error: string(valueChan.Data),
+				},
+			)
+		}
+
+		return c.Status(valueChan.Status).Send(valueChan.Data)
 	}
-
-	return c.Status(valueChan.Status).Send(valueChan.Data)
 }
 
 // EndpointCheck middleware is checking endpoint.

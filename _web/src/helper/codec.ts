@@ -1,11 +1,3 @@
-const utf8ToB64 = ( s: string ) => {
-  return btoa(unescape(encodeURIComponent( s )));
-};
-
-const b64ToUtf8 = ( s: string ) => {
-  return decodeURIComponent(escape(atob( s )));
-};
-
 const formToObject = (form: HTMLFormElement) => {
   const formData = new FormData(form);
   const data: Record<string, any> = {};
@@ -25,11 +17,11 @@ const formToObjectMulti = (form: HTMLFormElement) => {
     const [key, value] = field;
 
     if (key.startsWith("headers-key")) {
-      if (! data["headers"]) {
+      if (!data["headers"]) {
         data["headers"] = {} as Record<string, any>;
       }
       data["headers"][value.toString()] = "",
-      remember[key.slice(11)] = value;
+        remember[key.slice(11)] = value;
       continue;
     }
 
@@ -45,4 +37,4 @@ const formToObjectMulti = (form: HTMLFormElement) => {
   return data;
 };
 
-export { utf8ToB64, b64ToUtf8, formToObject, formToObjectMulti };
+export { formToObject, formToObjectMulti };

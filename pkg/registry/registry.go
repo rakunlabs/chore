@@ -6,14 +6,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	"github.com/worldline-go/chore/pkg/request"
+	"github.com/rytsh/liz/utils/templatex"
 	"github.com/worldline-go/chore/pkg/sec"
-	"github.com/worldline-go/chore/pkg/translate"
 )
 
 type AppStore struct {
-	Template *translate.Template
-	Client   *request.Client
+	Template *templatex.Template
 	App      *fiber.App
 	DB       *gorm.DB
 	JWT      *sec.JWT
@@ -21,6 +19,7 @@ type AppStore struct {
 
 type Registry struct {
 	apps  map[string]*AppStore
+	WG    *sync.WaitGroup
 	mutex sync.RWMutex
 }
 
@@ -52,11 +51,19 @@ var (
 	registry *Registry
 )
 
-func Reg() *Registry {
+// Reg get the registry or create it if not exists.
+// Options can be used just once.
+func Reg(options ...Option) *Registry {
 	regOnce.Do(func() {
-		registry = &Registry{
+		reg := &Registry{
 			apps: make(map[string]*AppStore),
 		}
+
+		for _, opt := range options {
+			opt(reg)
+		}
+
+		registry = reg
 	})
 
 	return registry

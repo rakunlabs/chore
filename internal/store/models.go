@@ -2,6 +2,7 @@ package store
 
 import "github.com/worldline-go/chore/models"
 
+// Models using for migrate database tables.
 var Models = []interface{}{
 	&models.Auth{},
 	&models.Template{},

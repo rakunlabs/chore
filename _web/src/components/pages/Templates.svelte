@@ -3,10 +3,10 @@
   import List from "@/components/ui/List.svelte";
   import Editor from "@/components/ui/Editor.svelte";
   import Loading from "@/components/ui/Loading.svelte";
-  import { b64ToUtf8 } from "@/helper/codec";
   import { requestSender } from "@/helper/api";
   import type { itemType } from "@/models/template";
   import { storeHead } from "@/store/store";
+  import { Base64 } from "js-base64";
 
   export let params = {} as Record<string, string>;
 
@@ -57,7 +57,7 @@
     } else {
       try {
         title = v;
-        data = b64ToUtf8(
+        data = Base64.decode(
           (await requestSender("template", { name: v }, "GET", null, true)).data
             .data.content
         );

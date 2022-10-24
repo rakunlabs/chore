@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
-# JWT_KEY required to authenticate server
-# export JWT_KEY="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
+# TOKEN required to authenticate server
+# export TOKEN="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
+
+# JWT_KEY deprecated, use TOKEN instead
+TOKEN=${TOKEN:-${JWT_KEY}}
 
 BASE_DIR=$(dirname "$0")
 cd "${BASE_DIR}"
@@ -105,8 +108,8 @@ done
 if [[ "$1" == '--' ]]; then shift; fi
 
 if [[ -z ${TEST} ]]; then
-  if [[ -z ${JWT_KEY} ]]; then
-    echo "> JWT_KEY must be set"
+  if [[ -z ${TOKEN} ]]; then
+    echo "> TOKEN must be set"
     exit 1
   fi
 
@@ -123,7 +126,7 @@ function requestUpload() {
   local CONVERTED_NAME=$(echo ${2} | sed s@/@%2F@g)
   curl -fksSL -X 'PUT' --data-binary @${3} \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${JWT_KEY}" \
+    -H "Authorization: Bearer ${TOKEN}" \
     "${URL}/${1}?name=${CONVERTED_NAME}"
   echo "Uploaded ${3} to ${1}"
 }
@@ -134,7 +137,7 @@ function requestUpload() {
 function requestDownload() {
   local CONVERTED_NAME=$(echo ${2} | sed s@/@%2F@g)
   curl -fksSL -X 'GET' --create-dirs -o "${3}" \
-    -H "Authorization: Bearer ${JWT_KEY}" \
+    -H "Authorization: Bearer ${TOKEN}" \
     "${URL}/${1}?name=${CONVERTED_NAME}&dump=true&pretty=true"
   echo "Dowloaded ${3} from ${1}"
 }

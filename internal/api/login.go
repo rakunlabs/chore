@@ -54,7 +54,7 @@ func postLogin(c *fiber.Ctx) error {
 	return loginAndGetToken(c, *body, false)
 }
 
-// @Summary Login
+// @Summary Login with basic auth
 // @Description Get JWT token for 1 hour
 // @Tags public
 // @Router /login [get]

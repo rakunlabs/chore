@@ -1,19 +1,39 @@
+on: [push]
+
 name: Test
-
-on: [push, pull_request]
-
 jobs:
-  test:
+  sonarcloud:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.18.5
-
-      - name: Run coverage
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-      - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
+    - name: get epository name
+      run: echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+    - uses: actions/checkout@v2
+      with:
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
+    - uses: actions/setup-go@v3
+      with:
+        go-version: '1.19.4' # The Go version to download (if necessary) and use.
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+    - name: Run tests
+      run: |
+        [[ ! -f ".golangci.yml" ]] && curl -kfsSL -O https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml || true
+        GOPATH="$(dirname ${PWD})" golangci-lint run --out-format checkstyle ./... > golangci-lint-report.out || true
+        go test -coverprofile=coverage.out -json ./... > test-report.out
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
+      with:
+        args: >
+          -Dsonar.organization=${{ github.repository_owner }}
+          -Dsonar.projectKey=${{ github.repository_owner }}_${{ env.REPOSITORY_NAME }}
+          -Dsonar.go.coverage.reportPaths=coverage.out
+          -Dsonar.go.tests.reportPaths=test-report.out
+          -Dsonar.go.golangci-lint.reportPaths=golangci-lint-report.out
+          -Dsonar.sources=.
+          -Dsonar.exclusions=**/vendor/**,**/*_test.go
+          -Dsonar.tests=.
+          -Dsonar.test.inclusions=**/*_test.go
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -8,10 +8,10 @@ release:
 
 before:
   hooks:
-    # build web
-    - '{{ if index .Env "NOT_BUILD_FRONTEND" }}./build.sh --copy{{else}}./build.sh --build-front --copy{{ end }}'
+    # copy builded web content
+    - make copy-front
     # You may remove this if you don't use go modules.
-    - go mod tidy
+    # - go mod tidy
 builds:
   - env:
       - CGO_ENABLED=0
@@ -24,7 +24,7 @@ builds:
       - arm64
     main: ./cmd/chore
     ldflags:
-      - -s -w -X {{.ModulePath}}/internal/config.AppVersion={{.Version}} -X {{.ModulePath}}/internal/config.Env=PRODUCTION
+      - -s -w -X {{.ModulePath}}/internal/config.AppVersion={{.Version}} -X {{.ModulePath}}/internal/config.AppBuildCommit={{.Commit}} -X {{.ModulePath}}/internal/config.AppBuildDate={{.Date}}
     flags:
       - -trimpath
 archives:
@@ -87,7 +87,7 @@ dockers:
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
 - image_templates:
-  - 'ghcr.io/worldline-go/chore:{{ .Tag }}-alpine3.16.2'
+  - 'ghcr.io/worldline-go/chore:{{ .Tag }}-alpine3.17.0'
   - 'ghcr.io/worldline-go/chore:latest'
   dockerfile: ci/alpine.Dockerfile
   build_flag_templates:
@@ -102,4 +102,4 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
-  - "--build-arg=ALPINE=alpine:3.16.2"
+  - "--build-arg=ALPINE=alpine:3.17.0"

@@ -9,6 +9,8 @@ Create a control flow with declaring templates and authentications and call it w
 Flow always run with an __endpoint__ and stop until no run node left.
 It is continue to run even return a respond.
 
+If you use more than one respond node in flow, it will return in first message.
+
 ### Endpoint
 
 Endpoint is starting point of the control flow.  
@@ -42,11 +44,12 @@ Directly send to bytes to other nodes.
 
 ### Template
 
-Go template with swag functionality. Usually this is a json with some values.
+Go template with sprig functionality and some extra functions.  
+Usually this is a json with some values.
 
-Template name needs to set before trigger to control flow.
+Template name needs to set before trigger to control flow. If not it just respond error.
 
-For testing goto __[repeatit.io](https://repeatit.io)__
+For go template playground try this: __[repeatit.io](https://repeatit.io)__
 
 #### INPUT
 
@@ -71,14 +74,15 @@ Rendered bytes.
 
 Send http request. Set URL, method and headers with previously declared an auth header.
 
-In URL, method and headers can be usuable with go template. Values should be send on V input as json/yaml ([]byte).
+In URL, method and headers can be usuable with go template. We use `interface{}` in template, so it could be any type.
 
 POST method is default when not set any method.
 
 If `V` is connected and a request comes, it first wait `V` value to come to the request node.  
 When V value is set, you can use that one for multiple requests.
 
-Chore tries to set all nodes as pure and usable again.
+Chore tries to set all nodes as pure and usable again.  
+So if you want to pure function call just call `setValue` function in the main function it will use that value to render go templates.
 
 #### INPUT
 
@@ -88,6 +92,8 @@ Chore tries to set all nodes as pure and usable again.
 
 `F-` Returned body as bytes but when status code not between [100-399].  
 `_-` Returned body as bytes.  
+
+Request can be used with respond node to return response directly of request's result.
 
 ```
  ┌───────────────────────────┐
@@ -126,13 +132,18 @@ If function throw an error (`throw data`), script continue flow on false path.
 `toObject` convert byte to object  
 `toString` convert byte to string  
 `sleep` parameter such as "300ms", "-1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+`setValue` set value for use in future go template.
 
-A json/yaml entries automatically converting to the object not need to convert and not need to convert back to string.  
+A json/yaml entries automatically converting to the object/array not need to convert and not need to convert back to string.  
 Functions just for corner cases not need to use.
 
 Input entry could be more than one, that mean you can connect more than one node to script node and it run on last entry comes.
 
-Use defination as `function main(input1, input2, input3)` to get more entry values.
+Use defination as `function main(input1, input2, input3)` to get more entry values.  
+It will wait all entry values to come and last one will trigger the script.  
+Usually use this when you want to combine request results.
+
+Script-Editor also has playground to test your code.
 
 #### INPUT
 
@@ -191,7 +202,7 @@ Not exists.
 
 Print message in chore server. It helps to record something and debugging.
 
-Log node don't modify input just send to output.
+Log node don't modify input just send to output but type is changing so not usable with special nodes.
 
 Select print data for printing input data in log message.
 
@@ -224,7 +235,7 @@ Input value.
 
 Send email with a playload data.
 
-_to_, _cc_, _bcc_ values should be comma seperated like (user1@example.com, user2@example.com)
+_to_, _cc_, _bcc_ values should be comma or space seperated like (user1@example.com, user2@example.com)
 
 Email server and authentication should be set with an admin account in chore.
 
@@ -266,7 +277,9 @@ Not exists.
 
 ### IF
 
-If case want a statement and input value defined as `data` object.
+If case want a statement and input value defined as `data` value.
+
+`data` is a special name to represent input value. It can be any type what you give.
 
 #### INPUT
 

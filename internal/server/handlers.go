@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/worldline-go/chore/internal/api"
+	"github.com/worldline-go/chore/internal/api/run"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -35,6 +36,7 @@ func setHandlers(app fiber.Router) {
 	api.Control(v1Router)
 	api.Settings(v1Router)
 	api.Info(v1Router)
+	run.API(v1Router)
 
 	// testing
 	// apitest.Test(v1Router)

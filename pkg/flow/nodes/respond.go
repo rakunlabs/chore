@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -35,10 +36,11 @@ type Respond struct {
 	headersRaw    string
 	getData       bool
 	checked       bool
+	nodeID        string
 }
 
 // Run get values from active input nodes.
-func (n *Respond) Run(ctx context.Context, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Respond) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	var headers map[string]interface{}
 	if err := yaml.Unmarshal([]byte(n.headersRaw), &headers); err != nil {
 		return nil, fmt.Errorf("faild unmarshal headers in request: %v", err)
@@ -116,7 +118,11 @@ func (n *Respond) IsChecked() bool {
 
 func (n *Respond) ActiveInput(string) {}
 
-func NewRespond(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Respond) NodeID() string {
+	return n.nodeID
+}
+
+func NewRespond(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	headersRaw, _ := data.Data["headers"].(string)
 
 	statusCodeRaw, _ := data.Data["status"].(string)
@@ -128,7 +134,8 @@ func NewRespond(_ context.Context, data flow.NodeData) flow.Noder {
 		statusCodeRaw: statusCodeRaw,
 		headersRaw:    headersRaw,
 		getData:       getData == "true",
-	}
+		nodeID:        nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes

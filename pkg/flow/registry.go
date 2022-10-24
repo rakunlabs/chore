@@ -5,20 +5,27 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/worldline-go/chore/pkg/registry"
 )
 
 type Respond struct {
-	Header map[string]interface{} `json:"header"`
-	Data   []byte                 `json:"data"`
-	Status int                    `json:"status"`
+	Header  map[string]interface{} `json:"header"`
+	Data    []byte                 `json:"data"`
+	Status  int                    `json:"status"`
+	IsError bool                   `json:"-"`
 }
+
+type CountStucker uint
+
+const (
+	CountTotalIncrease CountStucker = iota + 1
+	CountTotalDecrease
+	CountStuckIncrease
+	CountStuckDecrease
+)
 
 // NodesReg hold concreate information of nodes and start points.
 type NodesReg struct {
-	ctx               context.Context
 	appStore          *registry.AppStore
 	reg               map[string]Noder
 	respondChan       chan Respond
@@ -27,22 +34,25 @@ type NodesReg struct {
 	method            string
 	starts            []Connection
 	mutex             sync.RWMutex
-	wg                sync.WaitGroup
 	wgx               sync.WaitGroup
 	respondChanActive bool
+	errors            []error
+	mutexErr          sync.RWMutex
+	// prevent stuck operation
+	totalCount int64
+	stuckCount int64
+	mutexCount sync.Mutex
+	stuckCtx   context.Context
+	stuckChan  chan bool
 }
 
 func NewNodesReg(ctx context.Context, controlName, startName, method string, appStore *registry.AppStore) *NodesReg {
-	// set new logger for reg and set it in ctx
-	logReg := log.Ctx(ctx).With().Str("control", controlName).Str("endpoint", startName).Logger()
-
 	return &NodesReg{
 		controlName: controlName,
 		startName:   startName,
 		method:      method,
 		reg:         make(map[string]Noder),
 		appStore:    appStore,
-		ctx:         logReg.WithContext(ctx),
 	}
 }
 
@@ -54,8 +64,45 @@ func (r *NodesReg) GetChan() <-chan Respond {
 	return nil
 }
 
-func (r *NodesReg) Wait() {
-	r.wg.Wait()
+// GetStuckChan return nil if not started.
+func (r *NodesReg) GetStuckCtx() context.Context {
+	return r.stuckCtx
+}
+
+func (r *NodesReg) UpdateStuck(typeCount CountStucker, trigger bool) {
+	r.mutexCount.Lock()
+	defer r.mutexCount.Unlock()
+
+	switch typeCount {
+	case CountTotalIncrease:
+		r.totalCount++
+	case CountTotalDecrease:
+		r.totalCount--
+	case CountStuckIncrease:
+		r.stuckCount++
+	case CountStuckDecrease:
+		r.stuckCount--
+	}
+
+	// log.Debug().Msgf("total: %d, stuck: %d", r.totalCount, r.stuckCount)
+
+	if trigger {
+		r.stuckChan <- r.totalCount-r.stuckCount == 0
+	}
+}
+
+func (r *NodesReg) SetChanInactive() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	r.respondChanActive = false
+}
+
+func (r *NodesReg) AddError(err error) {
+	r.mutexErr.Lock()
+	defer r.mutexErr.Unlock()
+
+	r.errors = append(r.errors, err)
 }
 
 func (r *NodesReg) Get(number string) (Noder, bool) {
@@ -78,7 +125,7 @@ func (r *NodesReg) Set(number string, node Noder) {
 	if nodeEndpoint, ok := node.(NoderEndpoint); ok {
 		if nodeEndpoint.Endpoint() == r.startName {
 			for _, v := range nodeEndpoint.Methods() {
-				if strings.ToUpper(v) == r.method {
+				if strings.ToUpper(strings.TrimSpace(v)) == r.method {
 					r.starts = append(r.starts, Connection{
 						Node: number,
 					})

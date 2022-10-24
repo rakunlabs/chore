@@ -1,5 +1,6 @@
 import { addToast } from "@/store/toast";
-import axios, { CancelToken, Method } from "axios";
+import axios from "axios";
+import type { CancelToken, Method } from "axios";
 import path from "path-browserify";
 import { tokenGet } from "./token";
 
@@ -12,7 +13,7 @@ const optionsDefault = {
 };
 
 const requestSender = async (area: string, params: object, method: Method, data: any = undefined, useToken = false, options: Partial<typeof optionsDefault> = optionsDefault) => {
-  let headers:Record<string, any> = {};
+  let headers: Record<string, any> = {};
 
   if (useToken) {
     try {
@@ -31,7 +32,7 @@ const requestSender = async (area: string, params: object, method: Method, data:
       data: data,
       headers: headers,
       timeout: options.timeout == null || options.timeout == undefined ? 2000 : options.timeout,
-      transformResponse: options.notTransformResponse ? null: undefined,
+      transformResponse: options.notTransformResponse ? null : undefined,
       cancelToken: options.cancelToken,
     });
 

@@ -146,24 +146,20 @@ curl -X POST -H "Authorization: Bearer ${TOKEN}" --data-binary @values.yml "http
 Required services (PostgreSQL) before to run.
 
 ```sh
-cd _example/chore
-docker-compose up
-# for close run
-# docker-compose down
+make env
+# for drop
+# make env-down
 ```
 
-Run command
+Run project
+
 ```sh
-# ./build.sh --run
-# config file can be TOML, YAML or JSON
-export CONFIG_FILE=_example/config/config.yml
-go run cmd/chore/main.go
+make run
 ```
 
 Frontend
 ```sh
-cd _web
-pnpm run dev -- --host
+make run-front
 ```
 
 After this step just go to the `localhost:3000` address.
@@ -172,22 +168,14 @@ __NOTE__ frontend(`localhost:3000`) has proxy and `/api` path request goes to th
 
 ### Build
 
-#### Build with goreleaser
-
-```sh
-goreleaser release --snapshot --rm-dist
-```
-
-### Build with script
-
 Generate swagger (don't need if you didn't change related codes)
 ```sh
-./build.sh --swag
+make docs
 ```
 
 Build project to generate binary
 ```sh
-./build.sh --build-all
+make build
 ```
 
 Build docker
@@ -221,12 +209,12 @@ docker run --rm -it --name="whoami" -p 9090:80 traefik/whoami
 
 Use chore's record script to download/opload operation
 
-Before to run script export __JWT_KEY__ variable with own chore token.
+Before to run script export __TOKEN__ variable with own chore token.
 
 Change `-h` (help) parameter to any arguments of the shell script.
 
 ```sh
-export JWT_KEY=""
+export TOKEN=""
 curl -fksSL https://raw.githubusercontent.com/worldline-go/chore/main/data/record.sh | bash -s -- -h
 ```
 
@@ -248,10 +236,10 @@ Example arguments
 --url http://localhost:8080 --mode upload --template confluence/ter
 ```
 
-Get temporary JWT key with username and password
+Get temporary(1 hour) token with username and password
 
 ```sh
-export JWT_KEY="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
+export TOKEN="$(curl -fksSL -u admin:admin http://localhost:8080/api/v1/login?raw=true)"
 ```
 
 </details>

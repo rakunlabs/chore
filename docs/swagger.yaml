@@ -173,6 +173,12 @@ definitions:
     type: object
   api.information:
     properties:
+      buildCommit:
+        type: string
+      buildDate:
+        type: string
+      environment:
+        type: string
       name:
         type: string
       serverDate:
@@ -341,6 +347,23 @@ definitions:
         type: string
       password:
         example: pass1234
+        type: string
+    type: object
+  run.runModel:
+    properties:
+      inputs:
+        items: {}
+        type: array
+      script:
+        type: string
+      scriptB64:
+        type: string
+      settings:
+        $ref: '#/definitions/run.settings'
+    type: object
+  run.settings:
+    properties:
+      timeout:
         type: string
     type: object
 info:
@@ -830,7 +853,7 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - BasicAuth: []
-      summary: Login
+      summary: Login with basic auth
       tags:
       - public
     post:
@@ -875,10 +898,79 @@ paths:
       description: Check server is active
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Ping server
       tags:
       - public
+  /run/js:
+    post:
+      consumes:
+      - text/plain
+      description: Run JS script with scripts and input values
+      parameters:
+      - description: Script and inputs, scriptB64 has priority over script
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/run.runModel'
+      responses:
+        "200":
+          description: result of the script
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Run JS script
+      tags:
+      - run
+  /run/template:
+    post:
+      consumes:
+      - text/plain
+      description: Render template with input values
+      parameters:
+      - description: send key values
+        in: body
+        name: payload
+        schema:
+          example: ""
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Render template
+      tags:
+      - run
   /send:
     get:
       consumes:
@@ -924,7 +1016,9 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - ApiKeyAuth: []
-      summary: Send request
+      summary: Send run the control; methods depending in control
+      tags:
+      - run
     post:
       consumes:
       - text/plain
@@ -969,7 +1063,9 @@ paths:
             $ref: '#/definitions/apimodels.Error'
       security:
       - ApiKeyAuth: []
-      summary: Send request
+      summary: Send run the control; methods depending in control
+      tags:
+      - run
   /settings:
     get:
       description: Get whole settings

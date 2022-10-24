@@ -31,7 +31,11 @@ func DataToNode(
 			continue
 		}
 
-		node := createFunc(ctx, datas[nodeNumber])
+		node, err := createFunc(ctx, reg, datas[nodeNumber], nodeNumber)
+		if err != nil {
+			return nil, err
+		}
+
 		reg.Set(nodeNumber, node)
 	}
 

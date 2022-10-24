@@ -3,7 +3,8 @@
 
   import { formToObject } from "@/helper/codec";
   import { storeHead } from "@/store/store";
-  import axios, { CancelTokenSource, Method } from "axios";
+  import axios from "axios";
+  import type { CancelTokenSource, Method } from "axios";
   import CodeMirror from "codemirror";
   import { onMount } from "svelte";
   import Code from "@/components/ui/Code.svelte";

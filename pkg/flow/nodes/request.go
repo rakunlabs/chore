@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/request"
+	"github.com/worldline-go/chore/pkg/transfer"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
@@ -53,8 +54,16 @@ type retryRaw struct {
 	DeCodes string
 }
 
+type renderedValues struct {
+	url           string
+	addHeadersRaw string
+	method        string
+}
+
 // Request node has one input and one output.
 type Request struct {
+	reg           *flow.NodesReg
+	nodeID        string
 	lockCtx       context.Context
 	lockCancel    context.CancelFunc
 	headers       map[string]interface{}
@@ -70,10 +79,15 @@ type Request struct {
 	mutex         sync.Mutex
 	fetched       bool
 	checked       bool
+	payloadNil    bool
+	skipVerify    bool
+	poolClient    bool
+	log           *zerolog.Logger
+	client        *request.Client
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
 	if input == flow.Input1 {
 		// don't allow multiple inputs
@@ -95,68 +109,97 @@ func (n *Request) Run(ctx context.Context, reg *registry.AppStore, value flow.No
 		return nil, flow.ErrStopGoroutine
 	}
 
-	if n.lockCtx != nil {
-		select {
-		case <-time.After(time.Hour * 1):
-			log.Ctx(ctx).Warn().Msg("timeline exceded, terminated request")
+	// check it has value
+	var useValues []byte
+	if vRet, ok := value.(flow.NodeRetValues); ok {
+		useValues = vRet.GetBinaryValues()
+	}
 
-			return nil, flow.ErrStopGoroutine
+	if useValues == nil && n.lockCtx != nil {
+		// increase count
+		n.reg.UpdateStuck(flow.CountStuckIncrease, false)
+
+		select {
+		case <-n.reg.GetStuckCtx().Done():
+			return nil, fmt.Errorf("stuck detected, terminated node request")
 		case <-ctx.Done():
-			log.Ctx(ctx).Warn().Msg("program closed, terminated request")
+			log.Ctx(ctx).Warn().Msg("program closed, terminated node request")
 
 			return nil, flow.ErrStopGoroutine
 		case <-n.lockCtx.Done():
+			// continue process
 		}
+
+		n.reg.UpdateStuck(flow.CountStuckDecrease, true)
 	}
 
 	// check value and render it
-	if n.inputHolder.value != nil {
-		var requestValues map[string]interface{}
-		if err := yaml.Unmarshal(n.inputHolder.value, &requestValues); err != nil {
-			return nil, fmt.Errorf("failed to hnmarshal request values: %v", err)
-		}
+	rendered := renderedValues{}
 
+	var requestValues interface{}
+	if useValues != nil {
+		requestValues = transfer.BytesToData(useValues)
+	} else {
+		requestValues = transfer.BytesToData(n.inputHolder.value)
+	}
+
+	if requestValues != nil {
 		// render url
-		payload, err := reg.Template.Ext(requestValues, n.url)
+		payload, err := reg.Template.Execute(requestValues, n.url)
 		if err != nil {
 			return nil, fmt.Errorf("template url cannot render: %v", err)
 		}
 
-		n.url = string(payload)
+		rendered.url = payload
 
 		// render method
-		payload, err = reg.Template.Ext(requestValues, n.method)
+		payload, err = reg.Template.Execute(requestValues, n.method)
 		if err != nil {
 			return nil, fmt.Errorf("template method cannot render: %v", err)
 		}
 
-		n.method = string(payload)
+		rendered.method = payload
 
 		// render headers
-		payload, err = reg.Template.Ext(requestValues, n.addHeadersRaw)
+		payload, err = reg.Template.Execute(requestValues, n.addHeadersRaw)
 		if err != nil {
 			return nil, fmt.Errorf("template headers cannot render: %v", err)
 		}
 
-		n.addHeadersRaw = string(payload)
+		rendered.addHeadersRaw = payload
 	}
 
 	var addHeaders map[string]interface{}
-	if err := yaml.Unmarshal([]byte(n.addHeadersRaw), &addHeaders); err != nil {
+	if err := yaml.Unmarshal([]byte(rendered.addHeadersRaw), &addHeaders); err != nil {
 		return nil, fmt.Errorf("faild unmarshal headers in request: %v", err)
 	}
 
-	for k := range addHeaders {
-		n.headers[k] = addHeaders[k]
+	headers := make(map[string]interface{})
+	for k := range n.headers {
+		headers[k] = n.headers[k]
 	}
 
-	response, err := reg.Client.Send(
+	for k := range addHeaders {
+		headers[k] = addHeaders[k]
+	}
+
+	var payload []byte
+	if !n.payloadNil {
+		payload = value.GetBinaryData()
+	}
+
+	if n.client == nil {
+		return nil, fmt.Errorf("http client not set")
+	}
+
+	response, err := n.client.Send(
 		ctx,
-		n.url,
-		n.method,
-		n.headers,
-		value.GetBinaryData(),
+		rendered.url,
+		rendered.method,
+		headers,
+		payload,
 		n.retry,
+		n.skipVerify,
 	)
 	if err != nil {
 		// return nil, fmt.Errorf("failed to send request: %v", err)
@@ -203,7 +246,6 @@ func (n *Request) GetType() string {
 func (n *Request) Fetch(ctx context.Context, db *gorm.DB) error {
 	if n.auth == "" {
 		n.fetched = true
-		n.headers = make(map[string]interface{})
 
 		return nil
 	}
@@ -258,6 +300,12 @@ func (n *Request) Validate() error {
 		DisabledStatusCodes: retryDeCodes,
 	}
 
+	n.client = request.NewClient(request.Config{
+		SkipVerify: n.skipVerify,
+		Pooled:     n.poolClient,
+		Log:        n.log,
+	})
+
 	return nil
 }
 
@@ -279,8 +327,6 @@ func (n *Request) ActiveInput(node string) {
 					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
 				}
 			}
-
-			break
 		}
 	}
 }
@@ -293,7 +339,11 @@ func (n *Request) IsChecked() bool {
 	return n.checked
 }
 
-func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
+func (n *Request) NodeID() string {
+	return n.nodeID
+}
+
+func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order
@@ -307,7 +357,14 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 	retryCodes, _ := data.Data["retry_codes"].(string)
 	retryDeCodes, _ := data.Data["retry_decodes"].(string)
 
+	skipVerify, _ := data.Data["skip_verify"].(string)
+	payloadNil, _ := data.Data["payload_nil"].(string)
+	poolClient, _ := data.Data["pool_client"].(string)
+
+	l := log.Ctx(ctx).With().Str("component", requestType).Logger()
+
 	return &Request{
+		reg:           reg,
 		inputs:        inputs,
 		outputs:       outputs,
 		auth:          auth,
@@ -315,10 +372,15 @@ func NewRequest(_ context.Context, data flow.NodeData) flow.Noder {
 		url:           url,
 		addHeadersRaw: addHeadersRaw,
 		retryRaw: retryRaw{
-			Codes:   strings.ReplaceAll(retryCodes, " ", ""),
-			DeCodes: strings.ReplaceAll(retryDeCodes, " ", ""),
+			Codes:   strings.ReplaceAll(retryCodes, ",", " "),
+			DeCodes: strings.ReplaceAll(retryDeCodes, ",", " "),
 		},
-	}
+		skipVerify: skipVerify == "true",
+		payloadNil: payloadNil == "true",
+		poolClient: poolClient == "true",
+		log:        &l,
+		nodeID:     nodeID,
+	}, nil
 }
 
 //nolint:gochecknoinits // moduler nodes
@@ -333,7 +395,7 @@ func getCodes(codes string) ([]int, error) {
 
 	var retryCodes []int
 
-	for _, code := range strings.Split(codes, ",") {
+	for _, code := range strings.Fields(codes) {
 		codeInt, err := strconv.Atoi(code)
 		if err != nil {
 			return nil, fmt.Errorf("value %s cannot convert to integer", code)

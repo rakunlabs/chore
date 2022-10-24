@@ -4,19 +4,19 @@
   import { moveElement } from "@/helper/drag";
   import { storeHead } from "@/store/store";
   import { addToast } from "@/store/toast";
-  import { b64ToUtf8, formToObject, utf8ToB64 } from "@/helper/codec";
+  import { formToObject } from "@/helper/codec";
   import { nodes } from "@/models/nodes";
   import type { node } from "@/models/nodes";
   import Pagination from "@/components/ui/Pagination.svelte";
   import Icon from "@/components/ui/Icon.svelte";
   import NoData from "@/components/ui/NoData.svelte";
 
+  import { Base64 } from "js-base64";
   import axios from "axios";
   import Drawflow from "drawflow";
-  import CodeMirror from "codemirror";
-  import { fullScreenKeys } from "@/helper/code";
   import { getEndpoints } from "@/helper/nodes";
   import Search from "@/components/ui/Search.svelte";
+  import CodeEditor from "@/components/ui/CodeEditor.svelte";
 
   storeHead.set("ControlFlow");
 
@@ -35,9 +35,15 @@
 
   let inputCount = 1;
   let showEditor = false;
-  let codeElement: HTMLElement;
-  let codeEditor: CodeMirror.Editor;
-  let codeChanged = false;
+  let codeEditorSave: (script: string, inputs: string) => void;
+  let setCodeEditorValue: (
+    script: string,
+    inputs: string,
+    info: string
+  ) => void;
+  let showEditorChange = (v: boolean) => {
+    showEditor = v;
+  };
 
   let currentGroups = "";
   let currentName = "";
@@ -139,7 +145,7 @@
 
     const exportedData = editor.export().drawflow.Home.data;
     const content = JSON.stringify(exportedData);
-    data["content"] = utf8ToB64(content);
+    data["content"] = Base64.encode(content);
 
     data["endpoints"] = getEndpoints(exportedData);
 
@@ -196,8 +202,6 @@
     }
   };
 
-  let codeEditorSave: (value: string) => void;
-
   const clickListenDraw = (e: Event) => {
     const action = (e.target as HTMLElement).dataset["action"];
 
@@ -205,17 +209,22 @@
       const modifyElement = (e.target as HTMLElement)
         .nextElementSibling as HTMLTextAreaElement;
 
-      codeEditor.setValue(modifyElement.value);
       const nodeName = (e.target as HTMLElement).parentElement.parentElement
         .parentElement.parentElement.id;
-      codeEditorSave = (value) => {
-        modifyElement.value = value;
+
+      const id = nodeName.slice(nodeName.indexOf("-") + 1);
+      const data = editor.getNodeFromId(id).data;
+
+      const info = `Control=${currentName} NodeID=${id}`;
+      setCodeEditorValue(data.script, data.inputs, info);
+      codeEditorSave = (script, inputs) => {
+        modifyElement.value = script;
         editor.updateNodeDataFromId(nodeName.slice(nodeName.indexOf("-") + 1), {
-          script: value,
+          script: script,
+          inputs: inputs,
         });
       };
 
-      codeChanged = false;
       showEditor = true;
     }
 
@@ -284,7 +293,7 @@
             true
           );
 
-          const rawContent = b64ToUtf8(responseGet.data.data.content);
+          const rawContent = Base64.decode(responseGet.data.data.content);
           const content = JSON.parse(rawContent);
 
           // console.log(content);
@@ -312,6 +321,17 @@
             if (input.getAttribute("value") == "true") {
               input.checked = true;
             }
+          });
+
+        // add id number to html
+        drawDiv
+          .querySelectorAll(".drawflow-node")
+          .forEach((node: HTMLDivElement) => {
+            // get id number
+            let id = node.id.slice(node.id.indexOf("-") + 1);
+
+            // add id number to title-box
+            node.querySelector(".title-box").innerHTML += ` (${id})`;
           });
       })();
     }
@@ -382,6 +402,8 @@
     editor.reroute_fix_curvature = true;
     editor.force_first_input = false;
 
+    editor.zoom_min = 0.4;
+
     // editor.curvature = 0;
     // editor.reroute_curvature = 0;
     // editor.reroute_curvature_start_end = 0;
@@ -415,22 +437,10 @@
 
     drawDiv.addEventListener("click", clickListenDraw);
 
-    // set code editor
-    codeEditor = CodeMirror(codeElement, {
-      mode: "javascript",
-      lineNumbers: true,
-      tabSize: 2,
-      lineWrapping: true,
-      styleActiveLine: true,
-      matchBrackets: true,
-      showTrailingSpace: true,
-      placeholder: "javascript\n\nF11 full-screen",
-      extraKeys: fullScreenKeys,
-    });
-    codeEditor.setSize("100%", "100%");
-
-    codeEditor.on("change", () => {
-      codeChanged = true;
+    editor.on("nodeCreated", (id: number) => {
+      drawDiv
+        .querySelector(`#node-${id}`)
+        .querySelector(".title-box").innerHTML += ` (${id})`;
     });
   });
 
@@ -440,34 +450,12 @@
   });
 </script>
 
-<div
-  class={`block fixed h-screen w-full z-40 left-0 top-0 bg-slate-500 bg-opacity-40 ${
-    showEditor ? "" : "invisible"
-  }`}
->
-  <div
-    class="w-3/5 m-auto h-full grid grid-rows-[auto_1fr] border-t border-b border-black"
-  >
-    <div
-      class={`flex justify-end border-b border-black ${
-        codeChanged ? "bg-yellow-200" : "bg-green-200"
-      }`}
-    >
-      <button
-        class="w-40 bg-gray-100 hover:bg-red-500 hover:text-white border-l border-black"
-        on:click|stopPropagation={() => {
-          codeEditorSave(codeEditor.getValue());
-          codeChanged = false;
-        }}>Save</button
-      >
-      <button
-        class="w-40 bg-gray-100 hover:bg-red-500 hover:text-white border-l border-black"
-        on:click|stopPropagation={() => (showEditor = false)}>Close</button
-      >
-    </div>
-    <code bind:this={codeElement} class="h-full min-h-full" />
-  </div>
-</div>
+<CodeEditor
+  bind:setCodeEditorValue
+  {codeEditorSave}
+  {showEditor}
+  {showEditorChange}
+/>
 
 <div class="grid h-full grid-rows-[auto_1fr]">
   <div class="bg-slate-50 p-5 mb-3">

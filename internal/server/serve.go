@@ -4,24 +4,25 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/rs/zerolog/log"
+	"github.com/rytsh/liz/utils/templatex"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/internal/config"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
-	"github.com/worldline-go/chore/pkg/request"
 	"github.com/worldline-go/chore/pkg/sec"
-	"github.com/worldline-go/chore/pkg/translate"
 )
 
-func Serve(ctx context.Context, name string, db *gorm.DB) error {
+func Serve(ctx context.Context, wg *sync.WaitGroup, name string, db *gorm.DB) error {
 	app := fiber.New(fiber.Config{
 		AppName:               config.AppName,
 		DisableStartupMessage: true,
@@ -31,8 +32,7 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 
 	appStore := &registry.AppStore{
 		DB:       db,
-		Template: translate.NewTemplate(),
-		Client:   request.NewClient(),
+		Template: templatex.New(),
 		App:      app,
 		JWT: sec.NewJWT(
 			[]byte(config.Application.Secret),
@@ -42,7 +42,7 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 		),
 	}
 
-	registry.Reg().Set(name, appStore)
+	registry.Reg(registry.WithWaitGroup(wg)).Set(name, appStore)
 
 	// middlewares
 	app.Use(recover.New(recover.Config{
@@ -56,12 +56,25 @@ func Serve(ctx context.Context, name string, db *gorm.DB) error {
 
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("registry", name)
-		c.SetUserContext(ctx)
 
 		return c.Next() //nolint:wrapcheck // not need
 	})
 
-	log.Info().Msgf("Application BasePath: %s", config.Application.BasePath)
+	app.Use(requestid.New(), func(c *fiber.Ctx) error {
+		// set request id to logger context
+		requestID := c.Locals("requestid").(string)
+		logRequest := log.With().Str("requestid", requestID).Logger()
+		logCtx := logRequest.WithContext(ctx)
+
+		c.SetUserContext(logCtx)
+
+		return c.Next() //nolint:wrapcheck // not need
+	})
+
+	if config.Application.BasePath != "" {
+		log.Info().Msgf("application BasePath: %s", config.Application.BasePath)
+	}
+
 	appRouter := app.Group(config.Application.BasePath)
 
 	setHandlers(appRouter)
