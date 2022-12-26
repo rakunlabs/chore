@@ -27,8 +27,8 @@ jobs:
           image: rytsh/frontend-pnpm:v0.0.4
           options: -v ${{ github.workspace }}:/work
           run: |
-            cd /work
-            make build-front
+            cd /work/_web
+            pnpm build-front
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2

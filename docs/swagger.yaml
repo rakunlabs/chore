@@ -352,17 +352,20 @@ definitions:
   run.runModel:
     properties:
       inputs:
-        items: {}
+        items:
+          type: integer
         type: array
       script:
-        type: string
-      scriptB64:
-        type: string
+        items:
+          type: integer
+        type: array
       settings:
         $ref: '#/definitions/run.settings'
     type: object
   run.settings:
     properties:
+      async:
+        type: boolean
       timeout:
         type: string
     type: object
@@ -908,7 +911,7 @@ paths:
       - text/plain
       description: Run JS script with scripts and input values
       parameters:
-      - description: Script and inputs, scriptB64 has priority over script
+      - description: Script and inputs
         in: body
         name: payload
         required: true

@@ -913,7 +913,7 @@ const docTemplate = `{
                 "summary": "Run JS script",
                 "parameters": [
                     {
-                        "description": "Script and inputs, scriptB64 has priority over script",
+                        "description": "Script and inputs",
                         "name": "payload",
                         "in": "body",
                         "required": true,
@@ -2778,13 +2778,15 @@ const docTemplate = `{
             "properties": {
                 "inputs": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "script": {
-                    "type": "string"
-                },
-                "scriptB64": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "settings": {
                     "$ref": "#/definitions/run.settings"
@@ -2794,6 +2796,9 @@ const docTemplate = `{
         "run.settings": {
             "type": "object",
             "properties": {
+                "async": {
+                    "type": "boolean"
+                },
                 "timeout": {
                     "type": "string"
                 }
