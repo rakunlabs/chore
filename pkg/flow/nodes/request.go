@@ -134,7 +134,11 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 	}
 
 	// check value and render it
-	rendered := renderedValues{}
+	rendered := renderedValues{
+		url:           n.url,
+		addHeadersRaw: n.addHeadersRaw,
+		method:        n.method,
+	}
 
 	var requestValues interface{}
 	if useValues != nil {
@@ -145,28 +149,28 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 
 	if requestValues != nil {
 		// render url
-		payload, err := reg.Template.Execute(requestValues, n.url)
+		renderedValue, err := reg.Template.Execute(requestValues, n.url)
 		if err != nil {
 			return nil, fmt.Errorf("template url cannot render: %v", err)
 		}
 
-		rendered.url = payload
+		rendered.url = renderedValue
 
 		// render method
-		payload, err = reg.Template.Execute(requestValues, n.method)
+		renderedValue, err = reg.Template.Execute(requestValues, n.method)
 		if err != nil {
 			return nil, fmt.Errorf("template method cannot render: %v", err)
 		}
 
-		rendered.method = payload
+		rendered.method = renderedValue
 
 		// render headers
-		payload, err = reg.Template.Execute(requestValues, n.addHeadersRaw)
+		renderedValue, err = reg.Template.Execute(requestValues, n.addHeadersRaw)
 		if err != nil {
 			return nil, fmt.Errorf("template headers cannot render: %v", err)
 		}
 
-		rendered.addHeadersRaw = payload
+		rendered.addHeadersRaw = renderedValue
 	}
 
 	var addHeaders map[string]interface{}

@@ -90,7 +90,15 @@ func send(c *fiber.Ctx) error {
 
 	logControl.Info().Msg("new call")
 
-	nodesReg, err := flow.StartFlow(ctx, regGeneral.WG, control.Name, endpoint, c.Method(), content, reg, c.Body())
+	body := c.Body()
+
+	var bodyCopy []byte
+	if len(body) > 0 {
+		bodyCopy = make([]byte, len(body))
+		copy(bodyCopy, body)
+	}
+
+	nodesReg, err := flow.StartFlow(ctx, regGeneral.WG, control.Name, endpoint, c.Method(), content, reg, bodyCopy)
 	if errors.Is(err, flow.ErrEndpointNotFound) {
 		return c.Status(http.StatusNotFound).JSON(
 			apimodels.Error{
