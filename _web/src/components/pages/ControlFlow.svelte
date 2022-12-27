@@ -63,15 +63,18 @@
     drawMousePos.y = e.clientY;
   };
 
-  const sanitizeMove = () => {
+  const sanitizeMove = (
+    clientX: null | number = null,
+    clientY: null | number = null
+  ) => {
+    const posX = clientX ?? drawMousePos.x;
+    const posY = clientY ?? drawMousePos.y;
     const x =
-      drawMousePos.x *
-        (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom)) -
+      posX * (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom)) -
       (drawDiv.firstChild as HTMLDivElement).getBoundingClientRect().x *
         (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom));
     const y =
-      drawMousePos.y *
-        (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom)) -
+      posY * (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom)) -
       (drawDiv.firstChild as HTMLDivElement).getBoundingClientRect().y *
         (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom));
 
@@ -389,14 +392,7 @@
       return false;
     }
 
-    posX =
-      posX * (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom)) -
-      (drawDiv.firstChild as HTMLDivElement).getBoundingClientRect().x *
-        (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom));
-    posY =
-      posY * (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom)) -
-      (drawDiv.firstChild as HTMLDivElement).getBoundingClientRect().y *
-        (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom));
+    [posX, posY] = sanitizeMove(posX, posY);
 
     const node = JSON.parse(JSON.stringify(nodes[name])) as node;
     if (node.optionalInput) {
@@ -418,46 +414,65 @@
     }
   };
 
-  const listenKeys = async (event: KeyboardEvent) => {
-    if (event.ctrlKey || event.metaKey) {
+  const listenKeys = (event: KeyboardEvent) => {
+    if (event.altKey) {
       switch (event.key) {
-        // log editor output to console
-        case "l":
-          console.log(editor.export().drawflow.Home.data);
-          break;
-        case "k":
-          console.log(editor.getNodeFromId(lastSelectedID));
-          break;
         case "c":
           navigator.clipboard.writeText(
             JSON.stringify(editor.getNodeFromId(lastSelectedID))
           );
           break;
         case "v":
-          let readNode = await navigator.clipboard.readText();
-          let readNodeObj: any;
-          try {
-            readNodeObj = JSON.parse(readNode);
-          } catch {}
+          (async () => {
+            let readNode = await navigator.clipboard.readText();
+            let readNodeObj: any;
+            try {
+              readNodeObj = JSON.parse(readNode);
+            } catch {}
 
-          if (
-            typeof readNodeObj === "object" &&
-            typeof readNodeObj.inputs === "object" &&
-            typeof readNodeObj.outputs === "object"
-          ) {
-            const [x, y] = sanitizeMove();
-            editor.addNode(
-              readNodeObj.name,
-              readNodeObj.inputs.length,
-              readNodeObj.outputs.length,
-              x,
-              y,
-              readNodeObj.class,
-              readNodeObj.data,
-              readNodeObj.html,
-              readNodeObj.typenode
-            );
-          }
+            if (
+              typeof readNodeObj === "object" &&
+              typeof readNodeObj.inputs === "object" &&
+              typeof readNodeObj.outputs === "object"
+            ) {
+              const [x, y] = sanitizeMove();
+              const id = editor.addNode(
+                readNodeObj.name,
+                Object.keys(readNodeObj.inputs).length,
+                Object.keys(readNodeObj.outputs).length,
+                x,
+                y,
+                readNodeObj.class,
+                readNodeObj.data,
+                readNodeObj.html,
+                readNodeObj.typenode
+              );
+
+              let nodeAdded = drawDiv.querySelector(`#node-${id}`);
+
+              nodeAdded
+                ?.querySelectorAll('input[type="checkbox"]')
+                .forEach((input: HTMLInputElement) => {
+                  if (input.getAttribute("value") == "true") {
+                    input.checked = true;
+                  }
+                });
+            }
+          })();
+
+          break;
+      }
+    }
+
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key) {
+        // log editor output to console
+        case "l":
+          console.log(editor.export().drawflow.Home.data);
+          event.preventDefault();
+          break;
+        case "k":
+          console.log(editor.getNodeFromId(lastSelectedID));
           break;
       }
     }
@@ -541,7 +556,7 @@
     <div class="flex flex-row flex-wrap justify-between gap-4 items-start">
       <div class="flex-1">
         <div class={selected == "table" ? "hidden" : ""}>
-          <details class="border">
+          <details class="border" open={!!!currentName}>
             <summary class="fill-slate-300 p-1">{currentName}</summary>
             <form bind:this={formEdit} class="px-1">
               <label class="mb-1 flex">
@@ -664,7 +679,7 @@
       class={`h-full border border-gray-600 relative ${
         selected == "table" ? "hidden" : ""
       } ${fullScreen ? "fullscreen" : ""}`}
-      on:keydown|preventDefault|stopPropagation={listenKeys}
+      on:keydown={listenKeys}
     >
       <div
         class="absolute z-30 bg-slate-200 flex items-center border-b border-r border-gray-600"
