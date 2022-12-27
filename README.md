@@ -178,23 +178,6 @@ Build project to generate binary
 make build
 ```
 
-Build docker
-
-```sh
-./build.sh --docker-build
-```
-
-Run image
-```sh
-# run postgres before to start
-# to get latest build image name
-IMAGE_NAME=$(./build.sh --docker-name)
-docker run -it --rm --name="chore" -p 8080:8080 \
-  --add-host=postgres:$(docker network inspect bridge | grep Gateway | tr -d '" ' | cut -d ":" -f2) \
-  -v ${PWD}/_example/config/docker.yml:/etc/chore.yml \
-  ${IMAGE_NAME}
-```
-
 </details>
 
 <details><summary>Dummy-Whoami Server for Test</summary>

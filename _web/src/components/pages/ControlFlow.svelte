@@ -32,6 +32,7 @@
   let editID = "";
 
   let nodeSelected = "endpoint";
+  let lastSelectedID = 0;
 
   let inputCount = 1;
   let showEditor = false;
@@ -51,6 +52,31 @@
   let fullScreen = false;
 
   let search = "";
+
+  let drawMousePos = {
+    x: 0,
+    y: 0,
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    drawMousePos.x = e.clientX;
+    drawMousePos.y = e.clientY;
+  };
+
+  const sanitizeMove = () => {
+    const x =
+      drawMousePos.x *
+        (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom)) -
+      (drawDiv.firstChild as HTMLDivElement).getBoundingClientRect().x *
+        (drawDiv.clientWidth / (drawDiv.clientWidth * editor.zoom));
+    const y =
+      drawMousePos.y *
+        (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom)) -
+      (drawDiv.firstChild as HTMLDivElement).getBoundingClientRect().y *
+        (drawDiv.clientHeight / (drawDiv.clientHeight * editor.zoom));
+
+    return [x, y];
+  };
 
   const setSelected = (v: string) => {
     formEdit.reset();
@@ -316,23 +342,35 @@
         }
 
         drawDiv
-          .querySelectorAll('input[type="checkbox"]')
+          ?.querySelectorAll('input[type="checkbox"]')
           .forEach((input: HTMLInputElement) => {
             if (input.getAttribute("value") == "true") {
               input.checked = true;
             }
           });
 
+        let lastId = 1;
+
         // add id number to html
         drawDiv
-          .querySelectorAll(".drawflow-node")
+          ?.querySelectorAll(".drawflow-node")
           .forEach((node: HTMLDivElement) => {
             // get id number
             let id = node.id.slice(node.id.indexOf("-") + 1);
 
+            if (+id > lastId) {
+              lastId = +id;
+            }
+
             // add id number to title-box
-            node.querySelector(".title-box").innerHTML += ` (${id})`;
+            let selectedTitle = node.querySelector(".title-box");
+            if (selectedTitle) {
+              selectedTitle.innerHTML += ` (${id})`;
+            }
           });
+
+        // set lastId
+        (editor as any).nodeId = lastId + 1;
       })();
     }
   };
@@ -380,13 +418,46 @@
     }
   };
 
-  const listenKeys = (event: KeyboardEvent) => {
+  const listenKeys = async (event: KeyboardEvent) => {
     if (event.ctrlKey || event.metaKey) {
       switch (event.key) {
         // log editor output to console
         case "l":
           console.log(editor.export().drawflow.Home.data);
-          event.preventDefault();
+          break;
+        case "k":
+          console.log(editor.getNodeFromId(lastSelectedID));
+          break;
+        case "c":
+          navigator.clipboard.writeText(
+            JSON.stringify(editor.getNodeFromId(lastSelectedID))
+          );
+          break;
+        case "v":
+          let readNode = await navigator.clipboard.readText();
+          let readNodeObj: any;
+          try {
+            readNodeObj = JSON.parse(readNode);
+          } catch {}
+
+          if (
+            typeof readNodeObj === "object" &&
+            typeof readNodeObj.inputs === "object" &&
+            typeof readNodeObj.outputs === "object"
+          ) {
+            const [x, y] = sanitizeMove();
+            editor.addNode(
+              readNodeObj.name,
+              readNodeObj.inputs.length,
+              readNodeObj.outputs.length,
+              x,
+              y,
+              readNodeObj.class,
+              readNodeObj.data,
+              readNodeObj.html,
+              readNodeObj.typenode
+            );
+          }
           break;
       }
     }
@@ -438,9 +509,17 @@
     drawDiv.addEventListener("click", clickListenDraw);
 
     editor.on("nodeCreated", (id: number) => {
-      drawDiv
-        .querySelector(`#node-${id}`)
-        .querySelector(".title-box").innerHTML += ` (${id})`;
+      let nodeSelectedQuery = drawDiv.querySelector(`#node-${id}`);
+      if (nodeSelectedQuery) {
+        let selectedTitle = nodeSelectedQuery.querySelector(".title-box");
+        if (selectedTitle) {
+          selectedTitle.innerHTML += ` (${id})`;
+        }
+      }
+    });
+
+    editor.on("nodeSelected", (id: number) => {
+      lastSelectedID = id;
     });
   });
 
@@ -458,43 +537,49 @@
 />
 
 <div class="grid h-full grid-rows-[auto_1fr]">
-  <div class="bg-slate-50 p-5 mb-3">
+  <div class="bg-slate-50 p-2 mb-3">
     <div class="flex flex-row flex-wrap justify-between gap-4 items-start">
       <div class="flex-1">
-        <form class={selected == "table" ? "hidden" : ""} bind:this={formEdit}>
-          <label class="mb-1 flex">
-            <span class="w-20 inline-block">ID</span>
-            <input
-              type="text"
-              name="id"
-              placeholder="----"
-              disabled={selected == "create"}
-              value={editID}
-              class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
-            />
-          </label>
-          <label class="mb-1 flex">
-            <span class="w-20 inline-block">Name</span>
-            <input
-              type="text"
-              name="name"
-              placeholder="uniquename"
-              autocomplete="off"
-              class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
-            />
-            <span class="w-40 pl-1">{currentName}</span>
-          </label>
-          <label class="mb-1 flex">
-            <span class="w-20 inline-block">Groups</span>
-            <input
-              type="text"
-              name="groups"
-              placeholder="admin, deepcore"
-              class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
-            />
-            <span class="w-40 pl-1">{currentGroups ?? ""}</span>
-          </label>
-        </form>
+        <div class={selected == "table" ? "hidden" : ""}>
+          <details class="border">
+            <summary class="fill-slate-300 p-1">{currentName}</summary>
+            <form bind:this={formEdit} class="px-1">
+              <label class="mb-1 flex">
+                <span class="w-20 inline-block">ID</span>
+                <input
+                  type="text"
+                  name="id"
+                  placeholder="----"
+                  disabled={selected == "create"}
+                  value={editID}
+                  readonly
+                  class="bg-gray-100 flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
+                />
+              </label>
+              <label class="mb-1 flex">
+                <span class="w-20 inline-block">Name</span>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="uniquename"
+                  autocomplete="off"
+                  class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
+                />
+                <span class="w-40 pl-1">{currentName}</span>
+              </label>
+              <label class="mb-1 flex">
+                <span class="w-20 inline-block">Groups</span>
+                <input
+                  type="text"
+                  name="groups"
+                  placeholder="admin, deepcore"
+                  class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
+                />
+                <span class="w-40 pl-1">{currentGroups ?? ""}</span>
+              </label>
+            </form>
+          </details>
+        </div>
       </div>
       <div class="flex-1">
         <div class="flex justify-end gap-2">
@@ -514,7 +599,7 @@
           >
         </div>
         <div
-          class={`mt-2 bg-red-200 w-full ${error != "" ? "" : "invisible"} ${
+          class={`bg-red-200 px-1 w-full ${!!error ? "mt-2" : "invisible"} ${
             selected == "table" ? "hidden" : ""
           }`}
         >
@@ -579,7 +664,7 @@
       class={`h-full border border-gray-600 relative ${
         selected == "table" ? "hidden" : ""
       } ${fullScreen ? "fullscreen" : ""}`}
-      on:keydown={listenKeys}
+      on:keydown|preventDefault|stopPropagation={listenKeys}
     >
       <div
         class="absolute z-30 bg-slate-200 flex items-center border-b border-r border-gray-600"
@@ -645,6 +730,7 @@
         bind:this={drawDiv}
         on:drop|preventDefault={dropNode}
         on:dragover|preventDefault={() => void {}}
+        on:mousemove={handleMouseMove}
         class="h-full parent-drawflow-style"
       />
     </div>
