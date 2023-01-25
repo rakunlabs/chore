@@ -137,3 +137,19 @@
     @apply bg-yellow-100;
   }
 }
+
+.node-wait {
+  border-radius: unset !important;
+
+  .inputs .input_2 {
+    @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
+
+    &:hover {
+      @apply text-white;
+    }
+
+    &::before {
+      content: 'P';
+    }
+  }
+}

@@ -82,6 +82,7 @@ type Request struct {
 	payloadNil    bool
 	skipVerify    bool
 	poolClient    bool
+	stuckContext  context.Context
 	log           *zerolog.Logger
 	client        *request.Client
 }
@@ -120,14 +121,20 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 		n.reg.UpdateStuck(flow.CountStuckIncrease, false)
 
 		select {
-		case <-n.reg.GetStuckCtx().Done():
-			return nil, fmt.Errorf("stuck detected, terminated node request")
-		case <-ctx.Done():
-			log.Ctx(ctx).Warn().Msg("program closed, terminated node request")
-
-			return nil, flow.ErrStopGoroutine
 		case <-n.lockCtx.Done():
 			// continue process
+		default:
+			// these events not happen at same time mostly
+			select {
+			case <-n.stuckContext.Done():
+				return nil, fmt.Errorf("stuck detected, terminated node wait")
+			case <-ctx.Done():
+				log.Ctx(ctx).Warn().Msg("program closed, terminated node wait")
+
+				return nil, flow.ErrStopGoroutine
+			case <-n.lockCtx.Done():
+				// continue process
+			}
 		}
 
 		n.reg.UpdateStuck(flow.CountStuckDecrease, true)
@@ -278,7 +285,7 @@ func (n *Request) IsRespond() bool {
 	return false
 }
 
-func (n *Request) Validate() error {
+func (n *Request) Validate(ctx context.Context) error {
 	// correction
 	if n.method == "" {
 		n.method = "POST"
@@ -310,6 +317,8 @@ func (n *Request) Validate() error {
 		Log:        n.log,
 	})
 
+	n.stuckContext = n.reg.GetStuctCancel(ctx)
+
 	return nil
 }
 
@@ -329,6 +338,7 @@ func (n *Request) ActiveInput(node string) {
 				// input_1 for dynamic variable
 				if n.inputs[i].InputName == flow.Input1 {
 					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
+					n.reg.AddCleanup(n.lockCancel)
 				}
 			}
 		}

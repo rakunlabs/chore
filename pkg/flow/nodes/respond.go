@@ -96,7 +96,7 @@ func (n *Respond) IsRespond() bool {
 	return true
 }
 
-func (n *Respond) Validate() error {
+func (n *Respond) Validate(_ context.Context) error {
 	return nil
 }
 

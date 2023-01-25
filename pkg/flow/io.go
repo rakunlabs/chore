@@ -4,7 +4,10 @@ import (
 	"sort"
 )
 
-var Input1 = "input_1"
+var (
+	Input1 = "input_1"
+	Input2 = "input_2"
+)
 
 func PrepareOutputs(outputs NodeConnection) [][]Connection {
 	orderKey := make([]string, 0, len(outputs))

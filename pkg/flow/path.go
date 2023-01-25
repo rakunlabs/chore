@@ -50,7 +50,7 @@ func validateFetch(ctx context.Context, current string, outputs []Connection, re
 
 		// fetch and validation
 
-		if err := node.Validate(); err != nil {
+		if err := node.Validate(ctx); err != nil {
 			return fmt.Errorf("ID %s, %s validate failed: %v", output, node.GetType(), err)
 		}
 
@@ -59,7 +59,7 @@ func validateFetch(ctx context.Context, current string, outputs []Connection, re
 		}
 
 		// respond channel activate
-		if node.IsRespond() {
+		if node.IsRespond() && !reg.respondChanActive {
 			reg.respondChan = make(chan Respond, 1)
 			reg.respondChanActive = true
 		}
@@ -82,23 +82,26 @@ func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue
 	starts := reg.GetStarts()
 
 	// stuct count check
-	var stuckCtxCancel context.CancelFunc
-	reg.stuckCtx, stuckCtxCancel = context.WithCancel(ctx)
+
 	reg.stuckChan = make(chan bool, 1)
 
-	reg.wgx.Add(1)
+	stuckCheckCtx, stuckCheckCtxCancel := context.WithCancel(ctx)
+
+	wg.Add(1)
 	go func() {
-		defer reg.wgx.Done()
+		defer wg.Done()
 
 		for {
 			select {
-			case check := <-reg.stuckChan:
-				if check {
+			// everytime a job is finished
+			case cancel := <-reg.stuckChan:
+				if cancel {
 					// all job is finished
-					stuckCtxCancel()
 
-					return
+					reg.CancelStucks()
 				}
+			case <-stuckCheckCtx.Done():
+				return
 			case <-ctx.Done():
 				return
 			}
@@ -109,6 +112,9 @@ func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue
 	branch(ctx, starts, reg, &nodeRetOutput{firstValue})
 
 	reg.wgx.Wait()
+
+	// cancel stuck check
+	stuckCheckCtxCancel()
 
 	if reg.respondChan != nil {
 		if reg.respondChanActive {
@@ -128,6 +134,8 @@ func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue
 
 		close(reg.respondChan)
 	}
+
+	log.Ctx(ctx).Info().Msgf("completed control flow")
 }
 
 // branch values already designed to same length of nexts.
@@ -178,6 +186,13 @@ func branchRun(ctx context.Context, start Connection, reg *NodesReg, value NodeR
 	}
 
 	log.Ctx(ctx).Debug().Msgf("complete [%s]", node.GetType())
+
+	// direct go to output
+	if outputDatasRespond, ok := outputDatas.(NodeDirectGo); ok {
+		branch(ctx, node.Next(0), reg, outputDatasRespond.IsDirectGo())
+
+		return
+	}
 
 	// check there is a respond interface
 	if outputDatasRespond, ok := outputDatas.(NodeRetRespond); ok {

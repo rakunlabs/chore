@@ -33,17 +33,18 @@ func (r *EmailRet) GetBinaryData() []byte {
 
 // Email node has one input.
 type Email struct {
-	reg         *flow.NodesReg
-	lockCtx     context.Context
-	lockCancel  context.CancelFunc
-	values      map[string]string
-	client      email.Client
-	inputs      []flow.Inputs
-	inputHolder inputHolderEmail
-	mutex       sync.Mutex
-	fetched     bool
-	checked     bool
-	nodeID      string
+	reg          *flow.NodesReg
+	stuckContext context.Context
+	lockCtx      context.Context
+	lockCancel   context.CancelFunc
+	values       map[string]string
+	client       email.Client
+	inputs       []flow.Inputs
+	inputHolder  inputHolderEmail
+	mutex        sync.Mutex
+	fetched      bool
+	checked      bool
+	nodeID       string
 }
 
 // Run get values from active input nodes.
@@ -80,14 +81,20 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 		n.reg.UpdateStuck(flow.CountStuckIncrease, false)
 
 		select {
-		case <-n.reg.GetStuckCtx().Done():
-			return nil, fmt.Errorf("stuck detected, terminated node request")
-		case <-ctx.Done():
-			log.Ctx(ctx).Warn().Msg("program closed, terminated node request")
-
-			return nil, flow.ErrStopGoroutine
 		case <-n.lockCtx.Done():
 			// continue process
+		default:
+			// these events not happen at same time mostly
+			select {
+			case <-n.stuckContext.Done():
+				return nil, fmt.Errorf("stuck detected, terminated node wait")
+			case <-ctx.Done():
+				log.Ctx(ctx).Warn().Msg("program closed, terminated node wait")
+
+				return nil, flow.ErrStopGoroutine
+			case <-n.lockCtx.Done():
+				// continue process
+			}
 		}
 
 		n.reg.UpdateStuck(flow.CountStuckDecrease, true)
@@ -168,7 +175,9 @@ func (n *Email) IsRespond() bool {
 	return false
 }
 
-func (n *Email) Validate() error {
+func (n *Email) Validate(ctx context.Context) error {
+	n.stuckContext = n.reg.GetStuctCancel(ctx)
+
 	return nil
 }
 
@@ -196,6 +205,7 @@ func (n *Email) ActiveInput(node string) {
 				// input_1 for dynamic variable
 				if n.inputs[i].InputName == flow.Input1 {
 					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
+					n.reg.AddCleanup(n.lockCancel)
 				}
 			}
 		}

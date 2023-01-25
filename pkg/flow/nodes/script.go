@@ -140,7 +140,7 @@ func (n *Script) IsRespond() bool {
 	return false
 }
 
-func (n *Script) Validate() error {
+func (n *Script) Validate(_ context.Context) error {
 	return nil
 }
 

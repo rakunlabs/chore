@@ -89,7 +89,7 @@ func (n *Template) IsRespond() bool {
 	return false
 }
 
-func (n *Template) Validate() error {
+func (n *Template) Validate(_ context.Context) error {
 	return nil
 }
 

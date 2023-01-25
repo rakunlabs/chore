@@ -135,6 +135,10 @@ func runRoot(ctxParent context.Context) (err error) {
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
+	defer func() {
+		log.Info().Msg("application shutdown complete")
+	}()
+
 	ctx, ctxCancel := context.WithCancel(ctxParent)
 	defer ctxCancel()
 
@@ -160,6 +164,8 @@ func runRoot(ctxParent context.Context) (err error) {
 		if err := server.Shutdown(); err != nil {
 			log.Err(err).Msg("shutdown server")
 		}
+
+		log.Info().Msg("server shutdown complete")
 	}()
 
 	// open db connection

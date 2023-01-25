@@ -682,7 +682,7 @@
       on:keydown={listenKeys}
     >
       <div
-        class="absolute z-30 bg-slate-200 flex items-center border-b border-r border-gray-600"
+        class="absolute z-20 bg-slate-200 flex items-center border-b border-r border-gray-600"
       >
         <span
           class="hover:bg-yellow-200 hover:cursor-move select-none inline-block px-2 py-1"

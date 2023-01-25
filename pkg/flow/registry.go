@@ -37,13 +37,13 @@ type NodesReg struct {
 	wgx               sync.WaitGroup
 	respondChanActive bool
 	errors            []error
-	mutexErr          sync.RWMutex
 	// prevent stuck operation
-	totalCount int64
-	stuckCount int64
-	mutexCount sync.Mutex
-	stuckCtx   context.Context
-	stuckChan  chan bool
+	totalCount      int64
+	stuckCount      int64
+	mutexCount      sync.Mutex
+	stuckCtxCancels []context.CancelFunc
+	cleanup         []func()
+	stuckChan       chan bool
 }
 
 func NewNodesReg(ctx context.Context, controlName, startName, method string, appStore *registry.AppStore) *NodesReg {
@@ -64,9 +64,48 @@ func (r *NodesReg) GetChan() <-chan Respond {
 	return nil
 }
 
-// GetStuckChan return nil if not started.
-func (r *NodesReg) GetStuckCtx() context.Context {
-	return r.stuckCtx
+// CancelStucks cancel all stuck context of nodes and clear stuck context list.
+func (r *NodesReg) CancelStucks() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	for _, cancel := range r.stuckCtxCancels {
+		cancel()
+	}
+
+	r.stuckCtxCancels = nil
+}
+
+func (r *NodesReg) AddStuctCancel(v context.CancelFunc) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	r.stuckCtxCancels = append(r.stuckCtxCancels, v)
+}
+
+func (r *NodesReg) GetStuctCancel(ctx context.Context) context.Context {
+	ctxStuct, ctxCancel := context.WithCancel(ctx)
+	r.AddStuctCancel(ctxCancel)
+
+	return ctxStuct
+}
+
+// Clear clear all context.
+func (r *NodesReg) Clear() {
+	for _, cancel := range r.stuckCtxCancels {
+		cancel()
+	}
+
+	for _, v := range r.cleanup {
+		v()
+	}
+}
+
+func (r *NodesReg) AddCleanup(v func()) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	r.cleanup = append(r.cleanup, v)
 }
 
 func (r *NodesReg) UpdateStuck(typeCount CountStucker, trigger bool) {
@@ -84,7 +123,7 @@ func (r *NodesReg) UpdateStuck(typeCount CountStucker, trigger bool) {
 		r.stuckCount--
 	}
 
-	// log.Debug().Msgf("total: %d, stuck: %d", r.totalCount, r.stuckCount)
+	// log.Info().Msgf("total: %d, stuck: %d, trigger: %v", r.totalCount, r.stuckCount, trigger)
 
 	if trigger {
 		r.stuckChan <- r.totalCount-r.stuckCount == 0
@@ -99,8 +138,8 @@ func (r *NodesReg) SetChanInactive() {
 }
 
 func (r *NodesReg) AddError(err error) {
-	r.mutexErr.Lock()
-	defer r.mutexErr.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	r.errors = append(r.errors, err)
 }

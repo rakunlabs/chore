@@ -88,7 +88,7 @@ func (n *ForLoop) IsRespond() bool {
 	return false
 }
 
-func (n *ForLoop) Validate() error {
+func (n *ForLoop) Validate(_ context.Context) error {
 	return nil
 }
 

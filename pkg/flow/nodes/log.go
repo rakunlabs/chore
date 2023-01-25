@@ -78,7 +78,7 @@ func (n *Log) IsRespond() bool {
 	return false
 }
 
-func (n *Log) Validate() error {
+func (n *Log) Validate(_ context.Context) error {
 	return nil
 }
 

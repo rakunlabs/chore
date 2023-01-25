@@ -104,7 +104,7 @@ func (n *Control) IsRespond() bool {
 	return false
 }
 
-func (n *Control) Validate() error {
+func (n *Control) Validate(_ context.Context) error {
 	return nil
 }
 

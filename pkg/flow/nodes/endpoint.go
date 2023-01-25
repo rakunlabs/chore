@@ -55,7 +55,7 @@ func (n *Endpoint) IsRespond() bool {
 	return false
 }
 
-func (n *Endpoint) Validate() error {
+func (n *Endpoint) Validate(_ context.Context) error {
 	return nil
 }
 

@@ -70,13 +70,18 @@ type NodeRetSelection interface {
 	GetSelection() []int
 }
 
+// NodeDirectGo for direct go.
+type NodeDirectGo interface {
+	IsDirectGo() NodeRet
+}
+
 // Noder for nodes like script, endpoint.
 type Noder interface {
 	GetType() string
 	Run(context.Context, *sync.WaitGroup, *registry.AppStore, NodeRet, string) (NodeRet, error)
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
-	Validate() error
+	Validate(context.Context) error
 	ActiveInput(string)
 	Next(int) []Connection
 	NextCount() int

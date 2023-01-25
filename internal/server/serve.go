@@ -22,6 +22,8 @@ import (
 	"github.com/worldline-go/chore/pkg/sec"
 )
 
+var shutdownTimeout = 5 * time.Second
+
 func Serve(ctx context.Context, wg *sync.WaitGroup, name string, db *gorm.DB) error {
 	app := fiber.New(fiber.Config{
 		AppName:               config.AppName,
@@ -105,7 +107,7 @@ func Shutdown() error {
 
 	// check registry exist and server running
 	if reg != nil && reg.App.Server() != nil {
-		if err := reg.App.Shutdown(); err != nil {
+		if err := reg.App.ShutdownWithTimeout(shutdownTimeout); err != nil {
 			return fmt.Errorf("failed to shutdown app: %v", err)
 		}
 	}

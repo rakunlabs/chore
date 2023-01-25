@@ -289,4 +289,17 @@ const note = {
   class: "node-note",
 };
 
-export const nodes = { endpoint, template, request, script, forLoop, ifCase, control, respond, log, email, note } as Record<string, node>;
+const wait = {
+  name: "wait",
+  html: `
+  <div>
+    <div class="title-box">Wait</div>
+  </div>
+  `,
+  data: {},
+  input: 2,
+  output: 1,
+  class: "node-wait",
+};
+
+export const nodes = { endpoint, template, request, script, forLoop, ifCase, control, respond, log, email, note, wait } as Record<string, node>;
