@@ -46,12 +46,15 @@ var Application = struct {
 		Password: "admin",
 	},
 	Store: Store{
-		Schema: AppName,
-		Type:   "postgres",
-		User:   "postgres",
-		DBName: "postgres",
-		Host:   "127.0.0.1",
-		Port:   "5432",
+		Schema:          AppName,
+		Type:            "postgres",
+		User:            "postgres",
+		DBName:          "postgres",
+		Host:            "127.0.0.1",
+		Port:            "5432",
+		ConnMaxLifetime: 15 * time.Minute,
+		MaxIdleConns:    5,
+		MaxOpenConns:    7,
 	},
 	Server: Server{
 		ReadBufferSize:  1024 * 1024,
@@ -66,16 +69,20 @@ type User struct {
 }
 
 type Store struct {
-	Type         string `cfg:"type"`
-	FileName     string `cfg:"fileName"`
-	Schema       string `cfg:"schema"`
-	Host         string `cfg:"host"`
-	Port         string `cfg:"port"`
-	User         string `cfg:"user"`
-	Password     string `cfg:"password" loggable:"false"`
-	DBName       string `cfg:"dbName"`
-	TimeZone     string `cfg:"timeZone" default:"UTC"`
-	DBDataSource string `cfg:"dbDataSource" loggable:"false"`
+	Type            string        `cfg:"type"`
+	FileName        string        `cfg:"fileName"`
+	Schema          string        `cfg:"schema"`
+	Host            string        `cfg:"host"`
+	Port            string        `cfg:"port"`
+	User            string        `cfg:"user"`
+	Password        string        `cfg:"password" loggable:"false"`
+	DBName          string        `cfg:"dbName"`
+	TimeZone        string        `cfg:"timeZone" default:"UTC"`
+	DBDataSource    string        `cfg:"dbDataSource" loggable:"false"`
+	ConnMaxIdleTime time.Duration `cfg:"connMaxIdleTime"`
+	ConnMaxLifetime time.Duration `cfg:"connMaxLifetime"`
+	MaxIdleConns    int           `cfg:"maxIdleConns"`
+	MaxOpenConns    int           `cfg:"maxOpenConns"`
 }
 
 type Server struct {

@@ -45,6 +45,11 @@ store:
   timeZone: UTC
   # also you can set with DSN name, if DSN name exists other values not using
   # dbDataSource: "postgres://postgres@127.0.0.1:5432/postgres?application_name=testdb"
+  # default database connection values
+  connMaxIdleTime: 0
+  connMaxLifetime: "15m"
+  maxIdleConns: 5
+  maxOpenConns: 7
 
 # migrate same as store and copy undefined part in store value
 migrate:

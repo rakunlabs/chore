@@ -189,6 +189,16 @@ func runRoot(ctxParent context.Context) (err error) {
 		return fmt.Errorf("cannot get generic interface of gorm: %v", err)
 	}
 
+	// set generic db settings
+	if config.Application.Store.MaxIdleConns > config.Application.Store.MaxOpenConns {
+		config.Application.Store.MaxIdleConns = config.Application.Store.MaxOpenConns
+	}
+
+	dbGeneric.SetConnMaxIdleTime(config.Application.Store.ConnMaxIdleTime)
+	dbGeneric.SetConnMaxLifetime(config.Application.Store.ConnMaxLifetime)
+	dbGeneric.SetMaxIdleConns(config.Application.Store.MaxIdleConns)
+	dbGeneric.SetMaxOpenConns(config.Application.Store.MaxOpenConns)
+
 	defer dbGeneric.Close()
 
 	// migrate database
