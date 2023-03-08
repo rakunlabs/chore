@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 
 	"github.com/rs/zerolog/log"
@@ -41,6 +42,8 @@ type Wait struct {
 	mutex        sync.Mutex
 	stuckContext context.Context
 	checked      bool
+	disabled     bool
+	tags         []string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
@@ -125,7 +128,17 @@ func (n *Wait) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Wait) ActiveInput(node string) {
+func (n *Wait) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Wait) ActiveInput(node string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
 			if !n.inputs[i].Active {
@@ -153,17 +166,24 @@ func (n *Wait) NodeID() string {
 	return n.nodeID
 }
 
+func (n *Wait) Tags() []string {
+	return n.tags
+}
+
 func NewWait(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 
+	tags := convert.GetList(data.Data["tags"])
+
 	return &Wait{
 		reg:     reg,
 		inputs:  inputs,
 		outputs: outputs,
 		nodeID:  nodeID,
+		tags:    tags,
 	}, nil
 }
 

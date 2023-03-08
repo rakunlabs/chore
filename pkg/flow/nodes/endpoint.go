@@ -2,11 +2,11 @@ package nodes
 
 import (
 	"context"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 
 	"gorm.io/gorm"
@@ -28,8 +28,10 @@ type Endpoint struct {
 	outputs  [][]flow.Connection
 	methods  []string
 	checked  bool
+	disabled bool
 	public   bool
 	nodeID   string
+	tags     []string
 }
 
 var _ flow.NoderEndpoint = &Endpoint{}
@@ -75,7 +77,11 @@ func (n *Endpoint) IsChecked() bool {
 	return n.checked
 }
 
-func (n *Endpoint) ActiveInput(string) {}
+func (n *Endpoint) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Endpoint) ActiveInput(string, map[string]struct{}) {}
 
 func (n *Endpoint) Endpoint() string {
 	return n.endpoint
@@ -83,6 +89,10 @@ func (n *Endpoint) Endpoint() string {
 
 func (n *Endpoint) Methods() []string {
 	return n.methods
+}
+
+func (n *Endpoint) Tags() []string {
+	return n.tags
 }
 
 func (n *Endpoint) NodeID() string {
@@ -94,12 +104,12 @@ func NewEndpoint(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID
 
 	endpoint, _ := data.Data["endpoint"].(string)
 	methodsRaw, _ := data.Data["methods"].(string)
-	publicRaw, _ := data.Data["public"].(string)
+	public := convert.GetBoolean(data.Data["public"])
 
 	methodsRaw = strings.ReplaceAll(methodsRaw, ",", " ")
-
 	methods := strings.Fields(methodsRaw)
-	public, _ := strconv.ParseBool(strings.TrimSpace(publicRaw))
+
+	tags := convert.GetList(data.Data["tags"])
 
 	return &Endpoint{
 		outputs:  outputs,
@@ -107,6 +117,7 @@ func NewEndpoint(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID
 		methods:  methods,
 		public:   public,
 		nodeID:   nodeID,
+		tags:     tags,
 	}, nil
 }
 

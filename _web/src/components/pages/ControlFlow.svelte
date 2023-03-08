@@ -1,12 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { requestSender } from "@/helper/api";
-  import { moveElement } from "@/helper/drag";
-  import { storeHead } from "@/store/store";
+  import { storeViewReload, storeHead, storeView } from "@/store/store";
   import { addToast } from "@/store/toast";
   import { formToObject } from "@/helper/codec";
-  import { nodes } from "@/models/nodes";
-  import type { node } from "@/models/nodes";
+  import { nodes } from "@/models/node";
+  import type { node } from "@/models/node";
   import Pagination from "@/components/ui/Pagination.svelte";
   import Icon from "@/components/ui/Icon.svelte";
   import NoData from "@/components/ui/NoData.svelte";
@@ -14,14 +13,19 @@
   import { Base64 } from "js-base64";
   import axios from "axios";
   import Drawflow from "drawflow";
+  import type { DrawflowNode } from "drawflow";
   import { getEndpoints } from "@/helper/nodes";
   import Search from "@/components/ui/Search.svelte";
   import CodeEditor from "@/components/ui/CodeEditor.svelte";
+  import Nodes from "../ui/Nodes.svelte";
+  import type { noteData } from "@/models/nodes/note";
+  import { viewEndpoint, viewEndpointClear } from "@/helper/view";
 
   storeHead.set("ControlFlow");
 
   let drawDiv: HTMLDivElement;
   let listenElement: HTMLDivElement;
+  let listenNodes: HTMLDivElement;
   let formEdit: HTMLFormElement;
   let editor: Drawflow;
 
@@ -33,6 +37,7 @@
 
   let nodeSelected = "endpoint";
   let lastSelectedID = 0;
+  let lastSelectedNode: DrawflowNode | null = null;
 
   let inputCount = 1;
   let showEditor = false;
@@ -82,6 +87,8 @@
   };
 
   const setSelected = (v: string) => {
+    storeView.view = "";
+
     formEdit.reset();
     currentGroups = "";
     currentName = "";
@@ -234,51 +241,62 @@
   const clickListenDraw = (e: Event) => {
     const action = (e.target as HTMLElement).dataset["action"];
 
-    if (action == "editor") {
-      const modifyElement = (e.target as HTMLElement)
-        .nextElementSibling as HTMLTextAreaElement;
+    switch (action) {
+      case "editor":
+        {
+          const modifyElement = (e.target as HTMLElement)
+            .nextElementSibling as HTMLTextAreaElement;
 
-      const nodeName = (e.target as HTMLElement).parentElement.parentElement
-        .parentElement.parentElement.id;
+          const nodeName = (e.target as HTMLElement).parentElement.parentElement
+            .parentElement.parentElement.id;
 
-      const id = nodeName.slice(nodeName.indexOf("-") + 1);
-      const data = editor.getNodeFromId(id).data;
+          const id = nodeName.slice(nodeName.indexOf("-") + 1);
+          const data = editor.getNodeFromId(id).data;
 
-      const info = `Control=${currentName} NodeID=${id}`;
-      setCodeEditorValue(data.script, data.inputs, info);
-      codeEditorSave = (script, inputs) => {
-        modifyElement.value = script;
-        editor.updateNodeDataFromId(nodeName.slice(nodeName.indexOf("-") + 1), {
-          script: script,
-          inputs: inputs,
-        });
-      };
+          const info = `Control=${currentName} NodeID=${id}`;
+          setCodeEditorValue(data.script, data.inputs, info);
+          codeEditorSave = (script, inputs) => {
+            modifyElement.value = script;
+            editor.updateNodeDataFromId(
+              nodeName.slice(nodeName.indexOf("-") + 1),
+              {
+                script: script,
+                inputs: inputs,
+              }
+            );
+          };
 
-      showEditor = true;
-    }
-
-    if (action == "checkbox") {
-      const modifyElement = e.target as HTMLInputElement;
-
-      let nodeName = "";
-      if (modifyElement.dataset["parent"]) {
-        const count = parseInt(modifyElement.dataset["parent"]);
-        let e = modifyElement as HTMLElement;
-        for (let i = 0; i < count; i++) {
-          e = e.parentElement;
+          showEditor = true;
         }
-        nodeName = e.id;
-      } else {
-        nodeName =
-          modifyElement.parentElement.parentElement.parentElement.parentElement
-            .parentElement.id;
-      }
+        break;
+      case "checkbox":
+        {
+          const modifyElement = e.target as HTMLInputElement;
 
-      const nodeId = nodeName.slice(nodeName.indexOf("-") + 1);
-      editor.updateNodeDataFromId(nodeId, {
-        ...editor.getNodeFromId(nodeId).data,
-        [modifyElement.name]: modifyElement.checked,
-      });
+          let nodeName = "";
+          if (modifyElement.dataset["parent"]) {
+            const count = parseInt(modifyElement.dataset["parent"]);
+            let e = modifyElement as HTMLElement;
+            for (let i = 0; i < count; i++) {
+              e = e.parentElement;
+            }
+            nodeName = e.id;
+          } else {
+            nodeName =
+              modifyElement.parentElement.parentElement.parentElement
+                .parentElement.parentElement.id;
+          }
+
+          const nodeId = nodeName.slice(nodeName.indexOf("-") + 1);
+          editor.updateNodeDataFromId(nodeId, {
+            ...editor.getNodeFromId(nodeId).data,
+            [modifyElement.name]: modifyElement.checked,
+          });
+        }
+        break;
+
+      default:
+        break;
     }
   };
 
@@ -344,14 +362,6 @@
           return;
         }
 
-        drawDiv
-          ?.querySelectorAll('input[type="checkbox"]')
-          .forEach((input: HTMLInputElement) => {
-            if (input.getAttribute("value") == "true") {
-              input.checked = true;
-            }
-          });
-
         let lastId = 1;
 
         // add id number to html
@@ -375,6 +385,28 @@
         // set lastId
         (editor as any).nodeId = lastId + 1;
       })();
+    }
+  };
+
+  const nodeUpdatedListener = (e: CustomEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    nodeUpdated(e.detail);
+  };
+
+  const nodeUpdated = (id: number) => {
+    const node = editor.getNodeFromId(id);
+    if (node == null) {
+      return;
+    }
+
+    switch (node.name) {
+      case "note":
+        updateNote(id, node.data);
+        break;
+      default:
+        break;
     }
   };
 
@@ -436,7 +468,7 @@
               typeof readNodeObj.outputs === "object"
             ) {
               const [x, y] = sanitizeMove();
-              const id = editor.addNode(
+              editor.addNode(
                 readNodeObj.name,
                 Object.keys(readNodeObj.inputs).length,
                 Object.keys(readNodeObj.outputs).length,
@@ -447,16 +479,6 @@
                 readNodeObj.html,
                 readNodeObj.typenode
               );
-
-              let nodeAdded = drawDiv.querySelector(`#node-${id}`);
-
-              nodeAdded
-                ?.querySelectorAll('input[type="checkbox"]')
-                .forEach((input: HTMLInputElement) => {
-                  if (input.getAttribute("value") == "true") {
-                    input.checked = true;
-                  }
-                });
             }
           })();
 
@@ -468,11 +490,14 @@
       switch (event.key) {
         // log editor output to console
         case "l":
-          console.log(editor.export().drawflow.Home.data);
           event.preventDefault();
-          break;
-        case "k":
-          console.log(editor.getNodeFromId(lastSelectedID));
+
+          if (lastSelectedID != 0) {
+            console.log(editor.getNodeFromId(lastSelectedID));
+            break;
+          }
+
+          console.log(editor.export().drawflow.Home.data);
           break;
       }
     }
@@ -481,6 +506,64 @@
   const searchFn = (s: string) => {
     listControlsSearch(s, 0);
   };
+
+  // const updateCheckbox = (id: number) => {
+  //   let nodeSelectedQuery = drawDiv.querySelector(`#node-${id}`);
+  //   updateCheckboxAll(nodeSelectedQuery);
+  // };
+
+  const updateCheckboxAll = (e: Element | null = null) => {
+    if (e == null) {
+      e = drawDiv;
+    }
+    e.querySelectorAll('input[type="checkbox"]').forEach(
+      (input: HTMLInputElement) => {
+        if (input.getAttribute("value") == "true") {
+          input.checked = true;
+        }
+      }
+    );
+  };
+
+  const updateNote = (id: number, data: noteData) => {
+    let nodeSelectedQuery = drawDiv.querySelector(`#node-${id}`);
+    nodeSelectedQuery
+      .querySelectorAll("textarea")
+      .forEach((textArea: HTMLTextAreaElement) => {
+        textArea.style.backgroundColor = data.backgroundColor;
+        textArea.style.color = data.textColor;
+        textArea.style.width = `${data.width}px`;
+        textArea.style.height = `${data.height}px`;
+      });
+  };
+
+  const updateNoteAll = (e: Element | null = null) => {
+    if (e == null) {
+      e = drawDiv;
+    }
+
+    // query selector all for class 'drawflow-node' and 'node-note'
+    e.querySelectorAll(".node-note").forEach((node: HTMLDivElement) => {
+      let id = node.id.slice(node.id.indexOf("-") + 1);
+      let nodeData = editor.getNodeFromId(+id).data;
+      updateNote(+id, nodeData);
+    });
+  };
+
+  const viewEndpointCaller = (_: boolean) => {
+    if (drawDiv == null) {
+      return;
+    }
+
+    if (storeView.view == "") {
+      viewEndpointClear(drawDiv);
+    } else {
+      viewEndpointClear(drawDiv);
+      viewEndpoint(storeView.view, drawDiv, editor);
+    }
+  };
+
+  $: viewEndpointCaller($storeViewReload);
 
   onMount(() => {
     editor = new Drawflow(drawDiv, null);
@@ -496,27 +579,6 @@
 
     editor.start();
 
-    // move element when click outside of the scaled element
-    const editorDiv = drawDiv.firstChild as HTMLDivElement;
-    moveElement(drawDiv, true, true, (x, y) => {
-      editor.canvas_x -= x;
-      editor.canvas_y -= y;
-      const transform = editorDiv.style.transform;
-      if (!transform) {
-        editorDiv.style.transform = `translate(${x}px, ${y}px) scale(1)`;
-        return;
-      }
-
-      const indexofClose = transform.indexOf(")");
-      const indexofOpen = transform.indexOf("(");
-      const [xpx, ypx] = transform
-        .slice(indexofOpen + 1, indexofClose)
-        .split(",");
-      editorDiv.style.transform = `translate(${parseInt(xpx) - x}px, ${
-        parseInt(ypx) - y
-      }px) ${transform.slice(indexofClose + 1)}`;
-    });
-
     // listen buttons
     listenElement.addEventListener("click", clickListen);
     listControls(0);
@@ -531,16 +593,33 @@
           selectedTitle.innerHTML += ` (${id})`;
         }
       }
+
+      nodeUpdated(id);
+      // updateCheckbox(id);
     });
 
     editor.on("nodeSelected", (id: number) => {
       lastSelectedID = id;
+      const node = editor.getNodeFromId(id);
+      lastSelectedNode = node;
     });
+    editor.on("import", (e) => {
+      updateNoteAll();
+      updateCheckboxAll();
+    });
+
+    editor.on("nodeUnselected", () => {
+      lastSelectedID = 0;
+      lastSelectedNode = null;
+    });
+
+    listenNodes.addEventListener("nodeUpdated", nodeUpdatedListener);
   });
 
   onDestroy(() => {
     listenElement.removeEventListener("click", clickListen);
     drawDiv.removeEventListener("click", clickListenDraw);
+    listenNodes.addEventListener("nodeUpdated", nodeUpdatedListener);
   });
 </script>
 
@@ -682,7 +761,7 @@
       on:keydown={listenKeys}
     >
       <div
-        class="absolute z-20 bg-slate-200 flex items-center border-b border-r border-gray-600"
+        class="absolute z-10 bg-slate-200 flex items-stretch border-b border-r border-gray-600"
       >
         <span
           class="hover:bg-yellow-200 hover:cursor-move select-none inline-block px-2 py-1"
@@ -692,7 +771,7 @@
         <select
           name="nodes"
           bind:value={nodeSelected}
-          class="py-1 border-l border-gray-600"
+          class="px-1 border-l border-gray-600 bg-white"
         >
           {#each Object.entries(nodes) as n (n)}
             <option value={n[0]}>{n[1].name}</option>
@@ -701,7 +780,7 @@
         {#if nodes[nodeSelected].optionalInput}
           <input
             type="number"
-            class="py-1 px-2 border-l border-gray-600"
+            class="py-1 px-2 border-l border-gray-600 max-w-[4rem]"
             min="1"
             max="99"
             bind:value={inputCount}
@@ -742,12 +821,22 @@
         </button> -->
       </div>
       <div
-        bind:this={drawDiv}
-        on:drop|preventDefault={dropNode}
-        on:dragover|preventDefault={() => void {}}
-        on:mousemove={handleMouseMove}
-        class="h-full parent-drawflow-style"
-      />
+        class="grid grid-cols-[1fr_auto] h-full absolute top-0 left-0 w-full"
+        bind:this={listenNodes}
+      >
+        <div
+          bind:this={drawDiv}
+          on:drop|preventDefault={dropNode}
+          on:dragover|preventDefault={() => void {}}
+          on:mousemove={handleMouseMove}
+          class="parent-drawflow parent-drawflow-style h-full w-full"
+        />
+        <div
+          class="w-56 bg-gray-100 border-l border-black p-1 overflow-auto properties"
+        >
+          <Nodes node={lastSelectedNode} {editor} />
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/rytsh/liz/utils/templatex"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/transfer"
 
@@ -32,14 +34,16 @@ type Template struct {
 	content      []byte
 	fetched      bool
 	checked      bool
+	disabled     bool
 	nodeID       string
+	tags         []string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
 func (n *Template) Run(_ context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	v := transfer.BytesToData(value.GetBinaryData())
 
-	payload, err := reg.Template.ExecuteBytes(v, string(n.content))
+	payload, err := reg.Template.ExecuteBuffer(templatex.WithData(v), templatex.WithContent(string(n.content)))
 	if err != nil {
 		err = fmt.Errorf("template cannot render: %v", err)
 	}
@@ -101,7 +105,17 @@ func (n *Template) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Template) ActiveInput(string) {}
+func (n *Template) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Template) ActiveInput(_ string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+}
 
 func (n *Template) Check() {
 	n.checked = true
@@ -115,6 +129,10 @@ func (n *Template) NodeID() string {
 	return n.nodeID
 }
 
+func (n *Template) Tags() []string {
+	return n.tags
+}
+
 func NewTemplate(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
@@ -122,12 +140,14 @@ func NewTemplate(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	templateName, _ := data.Data["template"].(string)
+	tags := convert.GetList(data.Data["tags"])
 
 	return &Template{
 		inputs:       inputs,
 		outputs:      outputs,
 		templateName: templateName,
 		nodeID:       nodeID,
+		tags:         tags,
 	}, nil
 }
 

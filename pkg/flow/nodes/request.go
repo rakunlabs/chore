@@ -8,8 +8,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rytsh/liz/utils/templatex"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/request"
 	"github.com/worldline-go/chore/pkg/transfer"
@@ -79,12 +81,14 @@ type Request struct {
 	mutex         sync.Mutex
 	fetched       bool
 	checked       bool
+	disabled      bool
 	payloadNil    bool
 	skipVerify    bool
 	poolClient    bool
 	stuckContext  context.Context
 	log           *zerolog.Logger
 	client        *request.Client
+	tags          []string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
@@ -156,28 +160,28 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 
 	if requestValues != nil {
 		// render url
-		renderedValue, err := reg.Template.Execute(requestValues, n.url)
+		renderedValue, err := reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(n.url))
 		if err != nil {
 			return nil, fmt.Errorf("template url cannot render: %v", err)
 		}
 
-		rendered.url = renderedValue
+		rendered.url = string(renderedValue)
 
 		// render method
-		renderedValue, err = reg.Template.Execute(requestValues, n.method)
+		renderedValue, err = reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(n.method))
 		if err != nil {
 			return nil, fmt.Errorf("template method cannot render: %v", err)
 		}
 
-		rendered.method = renderedValue
+		rendered.method = string(renderedValue)
 
 		// render headers
-		renderedValue, err = reg.Template.Execute(requestValues, n.addHeadersRaw)
+		renderedValue, err = reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(n.addHeadersRaw))
 		if err != nil {
 			return nil, fmt.Errorf("template headers cannot render: %v", err)
 		}
 
-		rendered.addHeadersRaw = renderedValue
+		rendered.addHeadersRaw = string(renderedValue)
 	}
 
 	var addHeaders map[string]interface{}
@@ -185,7 +189,10 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 		return nil, fmt.Errorf("faild unmarshal headers in request: %v", err)
 	}
 
-	headers := make(map[string]interface{})
+	headers := make(map[string]interface{}, len(n.headers)+len(addHeaders)+1)
+	if v, _ := ctx.Value("request_id").(string); v != "" {
+		headers["X-Request-Id"] = v
+	}
 	for k := range n.headers {
 		headers[k] = n.headers[k]
 	}
@@ -330,7 +337,17 @@ func (n *Request) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Request) ActiveInput(node string) {
+func (n *Request) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Request) ActiveInput(node string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
 			if !n.inputs[i].Active {
@@ -357,6 +374,10 @@ func (n *Request) NodeID() string {
 	return n.nodeID
 }
 
+func (n *Request) Tags() []string {
+	return n.tags
+}
+
 func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
@@ -371,9 +392,11 @@ func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nod
 	retryCodes, _ := data.Data["retry_codes"].(string)
 	retryDeCodes, _ := data.Data["retry_decodes"].(string)
 
-	skipVerify, _ := data.Data["skip_verify"].(string)
-	payloadNil, _ := data.Data["payload_nil"].(string)
-	poolClient, _ := data.Data["pool_client"].(string)
+	skipVerify := convert.GetBoolean(data.Data["skip_verify"])
+	payloadNil := convert.GetBoolean(data.Data["payload_nil"])
+	poolClient := convert.GetBoolean(data.Data["pool_client"])
+
+	tags := convert.GetList(data.Data["tags"])
 
 	l := log.Ctx(ctx).With().Str("component", requestType).Logger()
 
@@ -389,11 +412,12 @@ func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nod
 			Codes:   strings.ReplaceAll(retryCodes, ",", " "),
 			DeCodes: strings.ReplaceAll(retryDeCodes, ",", " "),
 		},
-		skipVerify: skipVerify == "true",
-		payloadNil: payloadNil == "true",
-		poolClient: poolClient == "true",
+		skipVerify: skipVerify,
+		payloadNil: payloadNil,
+		poolClient: poolClient,
 		log:        &l,
 		nodeID:     nodeID,
+		tags:       tags,
 	}, nil
 }
 

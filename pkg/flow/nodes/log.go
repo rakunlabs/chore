@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 
 	"github.com/rs/zerolog"
@@ -29,7 +30,9 @@ type Log struct {
 	printData bool
 	logLevel  zerolog.Level
 	checked   bool
+	disabled  bool
 	nodeID    string
+	tags      []string
 }
 
 // Run get values from everywhere no need to check active input.
@@ -98,17 +101,31 @@ func (n *Log) IsChecked() bool {
 	return n.checked
 }
 
-func (n *Log) ActiveInput(string) {}
+func (n *Log) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Log) ActiveInput(_ string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+}
 
 func (n *Log) NodeID() string {
 	return n.nodeID
+}
+
+func (n *Log) Tags() []string {
+	return n.tags
 }
 
 func NewLog(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	// printData "true" or "false"
-	printData, _ := data.Data["data"].(string)
+	printData := convert.GetBoolean(data.Data["data"])
 	// loglevel "debug", "info", "warn", "error"
 	level, _ := data.Data["level"].(string)
 	// message default ""
@@ -119,12 +136,15 @@ func NewLog(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID stri
 		logLevel = zerolog.DebugLevel
 	}
 
+	tags := convert.GetList(data.Data["tags"])
+
 	return &Log{
 		outputs:   outputs,
-		printData: printData == "true",
+		printData: printData,
 		logLevel:  logLevel,
 		message:   message,
 		nodeID:    nodeID,
+		tags:      tags,
 	}, nil
 }
 

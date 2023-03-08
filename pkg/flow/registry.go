@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 )
 
@@ -32,7 +33,7 @@ type NodesReg struct {
 	controlName       string
 	startName         string
 	method            string
-	starts            []Connection
+	starts            []Starts
 	mutex             sync.RWMutex
 	wgx               sync.WaitGroup
 	respondChanActive bool
@@ -153,7 +154,7 @@ func (r *NodesReg) Get(number string) (Noder, bool) {
 	return node, ok
 }
 
-func (r *NodesReg) GetStarts() []Connection {
+func (r *NodesReg) GetStarts() []Starts {
 	return r.starts
 }
 
@@ -165,8 +166,11 @@ func (r *NodesReg) Set(number string, node Noder) {
 		if nodeEndpoint.Endpoint() == r.startName {
 			for _, v := range nodeEndpoint.Methods() {
 				if strings.ToUpper(strings.TrimSpace(v)) == r.method {
-					r.starts = append(r.starts, Connection{
-						Node: number,
+					r.starts = append(r.starts, Starts{
+						Connection: Connection{
+							Node: number,
+						},
+						Tags: convert.SliceToMap(nodeEndpoint.Tags()),
 					})
 
 					break

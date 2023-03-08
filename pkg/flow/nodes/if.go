@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/script/js"
 	"github.com/worldline-go/chore/pkg/transfer"
@@ -37,7 +38,9 @@ type IfCase struct {
 	expression string
 	outputs    [][]flow.Connection
 	checked    bool
+	disabled   bool
 	nodeID     string
+	tags       []string
 }
 
 // selection 0 is false.
@@ -104,7 +107,17 @@ func (n *IfCase) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *IfCase) ActiveInput(string) {}
+func (n *IfCase) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *IfCase) ActiveInput(_ string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+}
 
 func (n *IfCase) Check() {
 	n.checked = true
@@ -118,16 +131,22 @@ func (n *IfCase) NodeID() string {
 	return n.nodeID
 }
 
+func (n *IfCase) Tags() []string {
+	return n.tags
+}
+
 func NewIfCase(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	expression, _ := data.Data["if"].(string)
+	tags := convert.GetList(data.Data["tags"])
 
 	return &IfCase{
 		outputs:    outputs,
 		expression: expression,
 		nodeID:     nodeID,
+		tags:       tags,
 	}, nil
 }
 

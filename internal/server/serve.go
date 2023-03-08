@@ -13,7 +13,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/rs/zerolog/log"
+	"github.com/rytsh/liz/utils/fstore"
 	"github.com/rytsh/liz/utils/templatex"
+	"github.com/rytsh/liz/utils/templatex/store"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/internal/config"
@@ -34,7 +36,7 @@ func Serve(ctx context.Context, wg *sync.WaitGroup, name string, db *gorm.DB) er
 
 	appStore := &registry.AppStore{
 		DB:       db,
-		Template: templatex.New(),
+		Template: templatex.New(store.WithAddFuncs(fstore.FuncMap(fstore.WithTrust(config.Application.Template.Trust)))),
 		App:      app,
 		JWT: sec.NewJWT(
 			[]byte(config.Application.Secret),
@@ -65,7 +67,8 @@ func Serve(ctx context.Context, wg *sync.WaitGroup, name string, db *gorm.DB) er
 	app.Use(requestid.New(), func(c *fiber.Ctx) error {
 		// set request id to logger context
 		requestID := c.Locals("requestid").(string)
-		logRequest := log.With().Str("requestid", requestID).Logger()
+		logRequest := log.With().Str("request_id", requestID).Logger()
+		ctx = context.WithValue(ctx, "request_id", requestID) //nolint:staticcheck,revive // skip
 		logCtx := logRequest.WithContext(ctx)
 
 		c.SetUserContext(logCtx)

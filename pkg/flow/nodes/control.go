@@ -11,6 +11,7 @@ import (
 
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 
 	"gorm.io/gorm"
@@ -40,7 +41,9 @@ type Control struct {
 	inputs       []flow.Inputs
 	outputs      [][]flow.Connection
 	checked      bool
+	disabled     bool
 	nodeID       string
+	tags         []string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
@@ -116,7 +119,15 @@ func (n *Control) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Control) ActiveInput(string) {}
+func (n *Control) ActiveInput(_ string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+	}
+}
+
+func (n *Control) IsDisabled() bool {
+	return n.disabled
+}
 
 func (n *Control) Check() {
 	n.checked = true
@@ -130,6 +141,10 @@ func (n *Control) NodeID() string {
 	return n.nodeID
 }
 
+func (n *Control) Tags() []string {
+	return n.tags
+}
+
 func NewControl(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 	outputs := flow.PrepareOutputs(data.Outputs)
@@ -138,6 +153,8 @@ func NewControl(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID 
 	endpointName, _ := data.Data["endpoint"].(string)
 	methodName, _ := data.Data["method"].(string)
 
+	tags := convert.GetList(data.Data["tags"])
+
 	return &Control{
 		inputs:       inputs,
 		outputs:      outputs,
@@ -145,6 +162,7 @@ func NewControl(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID 
 		endpointName: endpointName,
 		methodName:   methodName,
 		nodeID:       nodeID,
+		tags:         tags,
 	}, nil
 }
 

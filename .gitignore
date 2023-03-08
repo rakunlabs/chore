@@ -17,3 +17,5 @@
 semicolon_delimited_script
 
 /chore*
+
+/go.work*

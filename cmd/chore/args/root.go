@@ -130,7 +130,9 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 func runRoot(ctxParent context.Context) (err error) {
 	// appname and version
 	// config.Banner("custom send request with templates"),
-	log.WithLevel(zerolog.NoLevel).Msgf("%s [%s] buildCommit=[%s] buildDate=[%s] %s", strings.ToTitle(config.AppName), config.AppVersion, config.AppBuildCommit, config.AppBuildDate, config.Application.Env)
+	log.WithLevel(zerolog.NoLevel).Msgf(
+		"%s [%s] buildCommit=[%s] buildDate=[%s] %s",
+		strings.ToTitle(config.AppName), config.AppVersion, config.AppBuildCommit, config.AppBuildDate, config.Application.Env)
 
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()

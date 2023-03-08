@@ -10,7 +10,7 @@
 <navbar
   class={`${className} bg-slate-500 text-gray-100 flex flex-col justify-between`}
 >
-  <div>
+  <div class="sticky top-0">
     {#each links as link}
       {#if typeof link == "string"}
         <SideLink
@@ -38,7 +38,7 @@
       {/if}
     {/each}
   </div>
-  <div>
+  <div class="sticky bottom-0">
     <button
       data-action="sidebar"
       data-side="logout"

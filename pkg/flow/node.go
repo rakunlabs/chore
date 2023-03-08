@@ -31,6 +31,11 @@ type Connection = struct {
 	// input from which output information not needed
 }
 
+type Starts = struct {
+	Connection
+	Tags map[string]struct{}
+}
+
 // NodesData is content's represent.
 type NodesData = map[string]NodeData
 
@@ -82,18 +87,21 @@ type Noder interface {
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
 	Validate(context.Context) error
-	ActiveInput(string)
+	ActiveInput(string, map[string]struct{})
 	Next(int) []Connection
 	NextCount() int
 	IsRespond() bool
 	Check()
 	IsChecked() bool
+	IsDisabled() bool
 	NodeID() string
+	Tags() []string
 }
 
 type NoderEndpoint interface {
 	Endpoint() string
 	Methods() []string
+	Tags() []string
 }
 
 // nodeRetOutput struct for path.

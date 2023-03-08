@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 )
 
@@ -36,7 +37,9 @@ type Respond struct {
 	headersRaw    string
 	getData       bool
 	checked       bool
+	disabled      bool
 	nodeID        string
+	tags          []string
 }
 
 // Run get values from active input nodes.
@@ -116,25 +119,39 @@ func (n *Respond) IsChecked() bool {
 	return n.checked
 }
 
-func (n *Respond) ActiveInput(string) {}
+func (n *Respond) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Respond) ActiveInput(_ string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+}
 
 func (n *Respond) NodeID() string {
 	return n.nodeID
+}
+
+func (n *Respond) Tags() []string {
+	return n.tags
 }
 
 func NewRespond(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	headersRaw, _ := data.Data["headers"].(string)
 
 	statusCodeRaw, _ := data.Data["status"].(string)
-
-	// getData "true" or "false"
-	getData, _ := data.Data["get"].(string)
+	getData := convert.GetBoolean(data.Data["get"])
+	tags := convert.GetList(data.Data["tags"])
 
 	return &Respond{
 		statusCodeRaw: statusCodeRaw,
 		headersRaw:    headersRaw,
-		getData:       getData == "true",
+		getData:       getData,
 		nodeID:        nodeID,
+		tags:          tags,
 	}, nil
 }
 

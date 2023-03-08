@@ -7,11 +7,13 @@ import (
 	"sync"
 
 	"github.com/rs/zerolog/log"
+	"github.com/rytsh/liz/utils/templatex"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/email"
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/transfer"
 )
@@ -44,7 +46,9 @@ type Email struct {
 	mutex        sync.Mutex
 	fetched      bool
 	checked      bool
+	disabled     bool
 	nodeID       string
+	tags         []string
 }
 
 // Run get values from active input nodes.
@@ -115,12 +119,12 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 
 		if requestValues != nil {
 			// render
-			rendered, err := reg.Template.Execute(requestValues, value)
+			rendered, err := reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(value))
 			if err != nil {
 				return nil, fmt.Errorf("template cannot render: %v", err)
 			}
 
-			payload = rendered
+			payload = string(rendered)
 		}
 
 		if key == "Subject" {
@@ -197,7 +201,16 @@ func (n *Email) IsChecked() bool {
 	return n.checked
 }
 
-func (n *Email) ActiveInput(node string) {
+func (n *Email) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Email) ActiveInput(node string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+		return
+	}
+
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
 			if !n.inputs[i].Active {
@@ -216,6 +229,10 @@ func (n *Email) NodeID() string {
 	return n.nodeID
 }
 
+func (n *Email) Tags() []string {
+	return n.tags
+}
+
 func NewEmail(_ context.Context, reg *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
@@ -227,11 +244,14 @@ func NewEmail(_ context.Context, reg *flow.NodesReg, data flow.NodeData, nodeID 
 	values["Bcc"], _ = data.Data["bcc"].(string)
 	values["Subject"], _ = data.Data["subject"].(string)
 
+	tags := convert.GetList(data.Data["tags"])
+
 	return &Email{
 		reg:    reg,
 		values: values,
 		inputs: inputs,
 		nodeID: nodeID,
+		tags:   tags,
 	}, nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/script/js"
 	"github.com/worldline-go/chore/pkg/transfer"
@@ -52,7 +53,9 @@ type Script struct {
 	outputs      [][]flow.Connection
 	lock         sync.Mutex
 	checked      bool
+	disabled     bool
 	nodeID       string
+	tags         []string
 }
 
 // selection 0 is false.
@@ -152,7 +155,17 @@ func (n *Script) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *Script) ActiveInput(node string) {
+func (n *Script) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *Script) ActiveInput(node string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+
 	for i := range n.inputs {
 		if n.inputs[i].Node == node {
 			if !n.inputs[i].Active {
@@ -175,6 +188,10 @@ func (n *Script) NodeID() string {
 	return n.nodeID
 }
 
+func (n *Script) Tags() []string {
+	return n.tags
+}
+
 func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
 
@@ -182,6 +199,7 @@ func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID s
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	script, _ := data.Data["script"].(string)
+	tags := convert.GetList(data.Data["tags"])
 
 	return &Script{
 		inputs:       inputs,
@@ -190,6 +208,7 @@ func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID s
 		nodeID:       nodeID,
 		inputCounter: make(map[string]struct{}),
 		inputHolder:  make(map[string]inputHolderS),
+		tags:         tags,
 	}, nil
 }
 

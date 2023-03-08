@@ -1,0 +1,32 @@
+.view-endpoint {
+  border: 1px solid rgb(34 197 94) !important;
+}
+
+.view-endpoint-disabled {
+  border: 1px solid rgb(239 68 68) !important;
+  opacity: 0.5;
+}
+
+.view-disabled {
+  @apply bg-gray-200;
+}
+
+.view-connection {
+  path {
+    stroke: rgb(34 197 94) !important;
+  }
+}
+
+.view-connection-disabled {
+  path {
+    opacity: 0.5;
+    stroke: rgb(239 68 68) !important;
+  }
+}
+
+.view-connection.view-connection-disabled {
+  path {
+    opacity: 1;
+    stroke: rgb(34 197 94) !important;
+  }
+}

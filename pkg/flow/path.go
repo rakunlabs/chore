@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"runtime/debug"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -15,6 +17,13 @@ var (
 	ErrEndpointNotFound = errors.New("endpoint not found")
 )
 
+type (
+	ContextTagsValue = map[string]struct{}
+	ContextType      string
+)
+
+const CtxTags ContextType = "tags"
+
 func VisitAndFetch(ctx context.Context, reg *NodesReg) error {
 	starts := reg.GetStarts()
 
@@ -22,7 +31,25 @@ func VisitAndFetch(ctx context.Context, reg *NodesReg) error {
 		return fmt.Errorf("%s %w", reg.startName, ErrEndpointNotFound)
 	}
 
-	return validateFetch(ctx, "", starts, reg)
+	// gather tags for same start
+	// TODO: this is not the best way to do this
+	tags := make(map[string]struct{})
+	for _, start := range starts {
+		for tag := range start.Tags {
+			tags[tag] = struct{}{}
+		}
+	}
+
+	ctx = context.WithValue(ctx, CtxTags, tags)
+
+	for _, start := range starts {
+		// add tags to context
+		if err := validateFetch(ctx, "", []Connection{start.Connection}, reg); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func validateFetch(ctx context.Context, current string, outputs []Connection, reg *NodesReg) error {
@@ -41,8 +68,14 @@ func validateFetch(ctx context.Context, current string, outputs []Connection, re
 			return fmt.Errorf("node not found %s", output.Node)
 		}
 
+		// is disabled node
+		if node.IsDisabled() {
+			continue
+		}
+
 		// activate this input
-		node.ActiveInput(current)
+		ctxTags, _ := ctx.Value(CtxTags).(ContextTagsValue)
+		node.ActiveInput(current, ctxTags)
 
 		if node.IsChecked() {
 			continue
@@ -79,6 +112,7 @@ func validateFetch(ctx context.Context, current string, outputs []Connection, re
 
 func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue []byte) {
 	defer wg.Done()
+
 	starts := reg.GetStarts()
 
 	// stuct count check
@@ -109,7 +143,9 @@ func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue
 	}()
 
 	// change waitgroup to check all job is finished
-	branch(ctx, starts, reg, &nodeRetOutput{firstValue})
+	for _, start := range starts {
+		branch(ctx, []Connection{start.Connection}, reg, &nodeRetOutput{firstValue})
+	}
 
 	reg.wgx.Wait()
 
@@ -126,9 +162,17 @@ func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue
 				buff.WriteString("]")
 			}
 
-			reg.respondChan <- Respond{
-				Data:    buff.Bytes(),
-				IsError: true,
+			if buff.Len() != 0 {
+				reg.respondChan <- Respond{
+					Data:    buff.Bytes(),
+					IsError: true,
+				}
+			} else {
+				reg.respondChan <- Respond{
+					Status:  http.StatusAccepted,
+					Data:    []byte("Accepted"),
+					IsError: false,
+				}
 			}
 		}
 
@@ -150,8 +194,19 @@ func branch(ctx context.Context, nexts []Connection, reg *NodesReg, value NodeRe
 }
 
 func branchRun(ctx context.Context, start Connection, reg *NodesReg, value NodeRet) {
-	defer reg.wgx.Done()
-	defer reg.UpdateStuck(CountTotalDecrease, true)
+	defer func() {
+		// check panic
+		if r := recover(); r != nil {
+			log.Ctx(ctx).Error().Msgf("panic: %v\n%v", r, string(debug.Stack()))
+			reg.AddError(fmt.Errorf("panic: %s cannot run: %v\n%v", start.Node, r, string(debug.Stack())))
+		}
+
+		reg.UpdateStuck(CountTotalDecrease, true)
+		reg.wgx.Done()
+	}()
+
+	// defer reg.wgx.Done()
+	// defer reg.UpdateStuck(CountTotalDecrease, true)
 
 	// before to run check context
 	select {
@@ -164,6 +219,11 @@ func branchRun(ctx context.Context, start Connection, reg *NodesReg, value NodeR
 	if !ok {
 		log.Ctx(ctx).Error().Msgf("node %s not found", start.Node)
 
+		return
+	}
+
+	// is disabled node
+	if node.IsDisabled() {
 		return
 	}
 

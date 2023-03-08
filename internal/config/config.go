@@ -32,11 +32,12 @@ var Application = struct {
 	LogLevel string `cfg:"logLevel"`
 	Secret   string `cfg:"secret" loggable:"false"`
 	// BasePath for swagger ui ex /chore/
-	BasePath string `cfg:"basePath"`
-	User     User   `cfg:"user"`
-	Store    Store  `cfg:"store"`
-	Migrate  Store  `cfg:"migrate"`
-	Server   Server `cfg:"server"`
+	BasePath string   `cfg:"basePath"`
+	User     User     `cfg:"user"`
+	Store    Store    `cfg:"store"`
+	Migrate  Store    `cfg:"migrate"`
+	Server   Server   `cfg:"server"`
+	Template Template `cfg:"template"`
 }{
 	Host:     "0.0.0.0",
 	LogLevel: "info",
@@ -59,6 +60,9 @@ var Application = struct {
 	Server: Server{
 		ReadBufferSize:  1024 * 1024,
 		WriteBufferSize: 1024 * 1024,
+	},
+	Template: Template{
+		Trust: false,
 	},
 }
 
@@ -88,4 +92,8 @@ type Store struct {
 type Server struct {
 	ReadBufferSize  int `cfg:"readBufferSize"`
 	WriteBufferSize int `cfg:"writeBufferSize"`
+}
+
+type Template struct {
+	Trust bool `cfg:"trust"`
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/script/js"
 	"github.com/worldline-go/chore/pkg/transfer"
@@ -22,7 +23,9 @@ type ForLoop struct {
 	expression string
 	outputs    [][]flow.Connection
 	checked    bool
+	disabled   bool
 	nodeID     string
+	tags       []string
 }
 
 type ForRet struct {
@@ -100,7 +103,17 @@ func (n *ForLoop) NextCount() int {
 	return len(n.outputs)
 }
 
-func (n *ForLoop) ActiveInput(string) {}
+func (n *ForLoop) IsDisabled() bool {
+	return n.disabled
+}
+
+func (n *ForLoop) ActiveInput(_ string, tags map[string]struct{}) {
+	if !convert.IsTagsEnabled(n.tags, tags) {
+		n.disabled = true
+
+		return
+	}
+}
 
 func (n *ForLoop) Check() {
 	n.checked = true
@@ -114,16 +127,22 @@ func (n *ForLoop) NodeID() string {
 	return n.nodeID
 }
 
+func (n *ForLoop) Tags() []string {
+	return n.tags
+}
+
 func NewForLoop(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
 
 	expression, _ := data.Data["for"].(string)
+	tags := convert.GetList(data.Data["tags"])
 
 	return &ForLoop{
 		outputs:    outputs,
 		expression: expression,
 		nodeID:     nodeID,
+		tags:       tags,
 	}, nil
 }
 

@@ -1,0 +1,16 @@
+.properties {
+  input,
+  label,
+  textarea {
+    @apply mb-1 w-full block;
+  }
+
+  input,
+  textarea {
+    @apply px-1;
+  }
+
+  label > input {
+    @apply inline-block w-auto;
+  }
+}

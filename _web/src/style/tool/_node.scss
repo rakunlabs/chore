@@ -129,18 +129,20 @@
 }
 
 .node-note {
+  padding: 10px;
   width: unset !important;
 
-  textarea {
-    resize: both;
+  .box {
+    padding: 8px;
+  }
 
-    @apply bg-yellow-100;
+  textarea {
+    display: block;
+    resize: none;
   }
 }
 
 .node-wait {
-  border-radius: unset !important;
-
   .inputs .input_2 {
     @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
 
@@ -152,4 +154,8 @@
       content: 'P';
     }
   }
+}
+
+.title-box-alone {
+  border-radius: unset !important;
 }

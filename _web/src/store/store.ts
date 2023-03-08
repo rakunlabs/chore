@@ -19,4 +19,10 @@ const info = {
   "serverDate": "",
 };
 
+export const storeView = {
+  view: "",
+};
+
+export const storeViewReload = writable(false);
+
 export const storeInfo = writable(info);
