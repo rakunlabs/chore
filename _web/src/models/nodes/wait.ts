@@ -16,5 +16,5 @@ export const wait: node = {
   },
   input: 2,
   output: 1,
-  class: "node-wait title-box-alone",
+  class: "node-wait",
 };

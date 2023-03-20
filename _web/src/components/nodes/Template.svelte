@@ -36,7 +36,7 @@
   <input
     type="text"
     placeholder="create"
-    name="endpoint"
+    name="template"
     bind:value={data.template}
   />
   <p>Enter tags</p>

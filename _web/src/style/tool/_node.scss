@@ -1,6 +1,20 @@
 /* stylelint-disable no-descending-specificity */
 /* stylelint-disable selector-class-pattern */
+.node-endpoint {
+  .title-box {
+    color: #fff !important;
+
+    @apply bg-green-400;
+  }
+}
+
 .node-request {
+  .title-box {
+    color: #fff !important;
+
+    @apply bg-blue-400;
+  }
+
   .inputs .input_1 {
     @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
 
@@ -65,6 +79,12 @@
 }
 
 .node-script {
+  .title-box {
+    color: #fff !important;
+
+    @apply bg-orange-400;
+  }
+
   .outputs .output_1 {
     @apply bg-red-400 text-center h-5 [line-height:1rem] text-white;
 
@@ -102,7 +122,21 @@
   }
 }
 
+.node-for {
+  .title-box {
+    color: #fff !important;
+
+    @apply bg-orange-400;
+  }
+}
+
 .node-if {
+  .title-box {
+    color: #fff !important;
+
+    @apply bg-orange-400;
+  }
+
   .outputs .output_1 {
     @apply bg-red-400 text-center h-5 [line-height:1rem] text-white;
 
@@ -143,6 +177,14 @@
 }
 
 .node-wait {
+  .title-box {
+    border-bottom: unset;
+    border-radius: unset !important;
+    color: #fff !important;
+
+    @apply bg-indigo-300;
+  }
+
   .inputs .input_2 {
     @apply bg-yellow-200 text-center h-5 [line-height:1rem] text-gray-400;
 
@@ -153,6 +195,24 @@
     &::before {
       content: 'P';
     }
+  }
+}
+
+.node-template {
+  .title-box {
+    color: #fff !important;
+
+    @apply bg-teal-400;
+  }
+}
+
+.node-respond {
+  .title-box {
+    border-bottom: unset;
+    border-radius: unset !important;
+    color: #fff !important;
+
+    @apply bg-rose-400;
   }
 }
 

@@ -22,4 +22,5 @@ export const forLoop: node = {
   } as forLoopData,
   input: 1,
   output: 1,
+  class: "node-for",
 };

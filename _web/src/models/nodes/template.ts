@@ -21,4 +21,5 @@ export const template: node = {
   } as templateData,
   input: 1,
   output: 1,
+  class: "node-template",
 };

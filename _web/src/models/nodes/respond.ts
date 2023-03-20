@@ -22,5 +22,5 @@ export const respond: node = {
   },
   input: 1,
   output: 0,
-  class: "title-box-alone",
+  class: "node-respond",
 };

@@ -25,4 +25,5 @@ export const endpoint: node = {
   } as endpointData,
   input: 0,
   output: 1,
+  class: "node-endpoint",
 };

@@ -4,7 +4,7 @@
 
 .view-endpoint-disabled {
   border: 1px solid rgb(239 68 68) !important;
-  opacity: 0.5;
+  opacity: 0.2;
 }
 
 .view-disabled {
@@ -19,7 +19,7 @@
 
 .view-connection-disabled {
   path {
-    opacity: 0.5;
+    opacity: 0.2;
     stroke: rgb(239 68 68) !important;
   }
 }
