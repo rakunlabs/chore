@@ -45,7 +45,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - name: build frontend
         run: |
-          cd /work/_web
+          cd _web
           pnpm build-front
       # Backend build
       - name: Log in to the Container registry
