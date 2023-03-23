@@ -48,6 +48,7 @@ var (
 type Script struct {
 	script       string
 	inputs       []flow.Inputs
+	inputsAll    []string
 	inputCounter map[string]struct{}
 	inputHolder  map[string]inputHolderS
 	outputs      [][]flow.Connection
@@ -61,7 +62,7 @@ type Script struct {
 // selection 0 is false.
 //
 //nolint:lll // false positive
-func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	var transferValue interface{}
 	if value.GetBinaryData() != nil {
 		transferValue = transfer.BytesToData(value.GetBinaryData())
@@ -88,7 +89,15 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSt
 
 		n.lock.Unlock()
 	} else {
-		inputValues = []inputHolderS{{value: transferValue, input: input}}
+		n.inputHolder[input] = inputHolderS{value: transferValue, input: input}
+		inputValues = []inputHolderS{n.inputHolder[input]}
+	}
+
+	// fill other inputs with nil
+	for _, input := range n.inputsAll {
+		if _, ok := n.inputHolder[input]; !ok {
+			inputValues = append(inputValues, inputHolderS{value: nil, input: input})
+		}
 	}
 
 	// sort inputholder by input name, it effects to function arguments order
@@ -116,7 +125,7 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSt
 	if err != nil {
 		return &ScriptRet{ //nolint:nilerr // different kind of error
 			selection: []int{0, 2},
-			output:    result,
+			output:    []byte(err.Error()),
 		}, nil
 	}
 
@@ -194,6 +203,7 @@ func (n *Script) Tags() []string {
 
 func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID string) (flow.Noder, error) {
 	inputs := flow.PrepareInputs(data.Inputs)
+	inputsAll := flow.PrepareAllInputs(data.Inputs)
 
 	// add outputs with order
 	outputs := flow.PrepareOutputs(data.Outputs)
@@ -203,6 +213,7 @@ func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID s
 
 	return &Script{
 		inputs:       inputs,
+		inputsAll:    inputsAll,
 		outputs:      outputs,
 		script:       script,
 		nodeID:       nodeID,

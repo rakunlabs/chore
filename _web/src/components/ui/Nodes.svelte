@@ -17,6 +17,7 @@
 
   export let node: DrawflowNode;
   export let editor: Drawflow;
+  export let nodeUnselected: () => void;
 </script>
 
 {#if node == null}
@@ -32,7 +33,7 @@
   <Request {node} {editor} />
 {/if}
 {#if node?.name == "script"}
-  <Script {node} {editor} />
+  <Script {node} {editor} {nodeUnselected} />
 {/if}
 {#if node?.name == "forLoop"}
   <ForLoop {node} {editor} />

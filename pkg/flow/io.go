@@ -37,3 +37,13 @@ func PrepareInputs(inputs NodeConnection) []Inputs {
 
 	return retInputs
 }
+
+func PrepareAllInputs(inputs NodeConnection) []string {
+	retInputs := make([]string, 0, len(inputs))
+
+	for inputName := range inputs {
+		retInputs = append(retInputs, inputName)
+	}
+
+	return retInputs
+}

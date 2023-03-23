@@ -22,5 +22,5 @@ export const log: node = {
   },
   input: 1,
   output: 1,
-  class: "title-box-alone",
+  class: "node-log title-box-alone",
 };

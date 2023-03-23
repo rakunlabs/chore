@@ -7,9 +7,13 @@
 
   export let node: DrawflowNode;
   export let editor: Drawflow;
+  export let nodeUnselected: () => void;
 
   let data: scriptData;
   let countOfInputs: number;
+
+  let inputCount: number = 0;
+  let setInputCount: boolean = false;
 
   const getData = (nodeV: DrawflowNode) => {
     data = nodeV.data as scriptData;
@@ -27,6 +31,56 @@
     v.script = formData.get("script") as string;
     v.info = formData.get("info") as string;
     v.tags = formData.get("tags") as string;
+
+    if (setInputCount) {
+      const count = +(formData.get("input_count") as string);
+
+      editor.updateNodeDataFromId(node.id, v);
+
+      const nodeNew = editor.getNodeFromId(node.id);
+      editor.removeNodeId("node-" + node.id);
+
+      const newID = editor.addNode(
+        "script",
+        count,
+        Object.keys(nodeNew.outputs).length,
+        nodeNew.pos_x,
+        nodeNew.pos_y,
+        nodeNew.class,
+        nodeNew.data,
+        nodeNew.html,
+        nodeNew.typenode
+      );
+
+      editor.getNodeFromId(newID).inputs["input_1"].connections = [
+        ...nodeNew.inputs["input_1"].connections,
+      ];
+
+      Object.keys(nodeNew.inputs).forEach((input, index) => {
+        nodeNew.inputs[input].connections.forEach((connection) => {
+          if (index >= count) {
+            return;
+          }
+
+          editor.addConnection(connection.node, newID, connection.input, input);
+        });
+      });
+
+      Object.keys(nodeNew.outputs).forEach((output) => {
+        nodeNew.outputs[output].connections.forEach((connection) => {
+          editor.addConnection(
+            newID,
+            connection.node,
+            output,
+            (connection as any).output
+          );
+        });
+      });
+
+      nodeUnselected();
+
+      return;
+    }
 
     editor.updateNodeDataFromId(node.id, v);
   };
@@ -81,5 +135,17 @@
   />
   <p>Enter tags</p>
   <input type="text" placeholder="tags" name="tags" bind:value={data.tags} />
+  <p>Enter input count</p>
+  <div class="flex justify-between items-center">
+    <input class="flex-1" type="checkbox" bind:checked={setInputCount} />
+    <input
+      class="flex-auto"
+      type="number"
+      placeholder="0"
+      name="input_count"
+      disabled={!setInputCount}
+      bind:value={inputCount}
+    />
+  </div>
   <NodeSave />
 </form>

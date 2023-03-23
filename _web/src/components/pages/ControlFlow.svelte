@@ -565,6 +565,11 @@
 
   $: viewEndpointCaller($storeViewReload);
 
+  const nodeUnselected = () => {
+    lastSelectedID = 0;
+    lastSelectedNode = null;
+  };
+
   onMount(() => {
     editor = new Drawflow(drawDiv, null);
     editor.reroute = true;
@@ -608,10 +613,7 @@
       updateCheckboxAll();
     });
 
-    editor.on("nodeUnselected", () => {
-      lastSelectedID = 0;
-      lastSelectedNode = null;
-    });
+    editor.on("nodeUnselected", nodeUnselected);
 
     listenNodes.addEventListener("nodeUpdated", nodeUpdatedListener);
   });
@@ -834,7 +836,7 @@
         <div
           class="w-56 bg-gray-100 border-l border-black p-1 overflow-auto properties"
         >
-          <Nodes node={lastSelectedNode} {editor} />
+          <Nodes node={lastSelectedNode} {editor} {nodeUnselected} />
         </div>
       </div>
     </div>

@@ -16,11 +16,11 @@ import (
 var logType = "log"
 
 type LogRet struct {
-	output []byte
+	flow.NodeRet
 }
 
-func (r *LogRet) GetBinaryData() []byte {
-	return r.output
+func (w *LogRet) IsDirectGo() flow.NodeRet {
+	return w.NodeRet
 }
 
 // Respond node has one input.
@@ -58,7 +58,7 @@ func (n *Log) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, 
 
 	logEvent.Msg(n.message)
 
-	return &LogRet{value.GetBinaryData()}, nil
+	return &LogRet{NodeRet: value}, nil
 }
 
 func (n *Log) Special(_ interface{}) interface{} {

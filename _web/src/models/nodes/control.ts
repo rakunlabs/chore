@@ -27,4 +27,5 @@ export const control: node = {
   },
   input: 1,
   output: 1,
+  class: "node-control",
 };
