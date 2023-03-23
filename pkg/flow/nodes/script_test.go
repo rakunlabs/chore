@@ -179,7 +179,7 @@ func TestScript_Run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n, err := NewScript(nil, nil, tt.args.data, "test")
+			n, err := NewScript(context.TODO(), nil, tt.args.data, "test")
 			if err != nil {
 				t.Errorf("NewScript error = %v", err)
 				return
