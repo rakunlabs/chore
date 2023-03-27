@@ -248,6 +248,13 @@ definitions:
         example: jira-deepcore
         type: string
     type: object
+  models.ControlClone:
+    properties:
+      name:
+        type: string
+      new_name:
+        type: string
+    type: object
   models.ControlPureContent:
     properties:
       content:
@@ -764,6 +771,42 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: New or Update control
+      tags:
+      - control
+  /control/clone:
+    post:
+      description: Clone existed control
+      parameters:
+      - description: send control clone object
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/models.ControlClone'
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/apimodels.Data'
+            - properties:
+                data:
+                  $ref: '#/definitions/apimodels.ID'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apimodels.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Clone control
       tags:
       - control
   /controls:

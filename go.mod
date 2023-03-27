@@ -10,7 +10,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/consul/api v1.18.0 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.8
-	github.com/jackc/pgconn v1.13.0
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/rs/zerolog v1.29.0
 	github.com/spf13/cobra v1.2.1
@@ -81,10 +80,7 @@ require (
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v5 v5.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

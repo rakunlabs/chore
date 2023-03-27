@@ -36,6 +36,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">Control - {node.id}</p>
   <p>Info for UI</p>
   <input type="text" placeholder="info" name="info" bind:value={data.info} />
   <p>Enter control name</p>

@@ -32,6 +32,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">For - {node.id}</p>
   <p>Expression</p>
   <input type="text" placeholder="data" name="for" bind:value={data.for} />
   <p>Enter tags</p>

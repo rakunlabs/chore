@@ -13,7 +13,7 @@ GOLANGCI_LINT_VERSION := v1.52.1
 
 .DEFAULT_GOAL := help
 
-.PHONY: run run-front whoami build build-front build-all copy-front docs golangci lint env env-down test coverage html html-gen html-wsl help
+.PHONY: run run-front whoami build build-front build-all copy-front docs golangci lint env test coverage html html-gen html-wsl help
 
 run: export CONFIG_FILE ?= ./_example/config/config.yml
 run: export ENV ?= development
@@ -63,9 +63,6 @@ lint: .golangci.yml bin/golangci-lint-$(GOLANGCI_LINT_VERSION) ## Lint Go files
 
 env: ## Create environment
 	docker compose --project-name=chore --file=_example/chore/docker-compose.yml up
-
-env-down: ## Destroy environment
-	docker compose --project-name=chore down
 
 test: ## Run unit tests
 	@go test -v -race -cover ./...

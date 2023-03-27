@@ -31,3 +31,8 @@ type Control struct {
 	ControlPureContent
 	apimodels.ModelCU
 }
+
+type ControlClone struct {
+	Name    string `json:"name" swaggertype:"string"`
+	NewName string `json:"new_name" swaggertype:"string"`
+}

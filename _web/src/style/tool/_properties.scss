@@ -14,3 +14,7 @@
     @apply inline-block w-auto min-w-[3rem];
   }
 }
+
+.title-node {
+  @apply -m-1 mb-1 px-1 bg-yellow-50 border-b border-dashed border-black;
+}

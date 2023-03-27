@@ -656,6 +656,68 @@
                 }
             }
         },
+        "/control/clone": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Clone existed control",
+                "tags": [
+                    "control"
+                ],
+                "summary": "Clone control",
+                "parameters": [
+                    {
+                        "description": "send control clone object",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ControlClone"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/apimodels.Data"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/apimodels.ID"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apimodels.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/controls": {
             "get": {
                 "security": [
@@ -2614,6 +2676,17 @@
                 "name": {
                     "type": "string",
                     "example": "jira-deepcore"
+                }
+            }
+        },
+        "models.ControlClone": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "new_name": {
+                    "type": "string"
                 }
             }
         },

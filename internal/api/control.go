@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -260,11 +259,106 @@ func postControl(c *fiber.Ctx) error {
 	)
 
 	// check write error
-	var pErr *pgconn.PgError
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+		return c.Status(http.StatusConflict).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
 
-	errors.As(result.Error, &pErr)
+	if result.Error != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
 
-	if pErr != nil && pErr.Code == "23505" {
+	// return recorded data's id
+	return c.Status(http.StatusOK).JSON(
+		apimodels.Data{
+			Data: apimodels.ID{ID: id},
+		},
+	)
+}
+
+// @Summary Clone control
+// @Tags control
+// @Description Clone existed control
+// @Security ApiKeyAuth
+// @Router /control/clone [post]
+// @Param payload body models.ControlClone{} false "send control clone object"
+// @Success 200 {object} apimodels.Data{data=apimodels.ID{}}
+// @failure 400 {object} apimodels.Error{}
+// @failure 409 {object} apimodels.Error{}
+// @failure 500 {object} apimodels.Error{}
+func cloneControl(c *fiber.Ctx) error {
+	var body models.ControlClone
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	if body.Name == "" || body.NewName == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			apimodels.Error{
+				Error: apimodels.ErrRequiredName.Error(),
+			},
+		)
+	}
+
+	// body content must be base64
+	// body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
+
+	reg := registry.Reg().Get(c.Locals("registry").(string))
+
+	// get control content
+	controlContent := new(ControlPureContentID)
+
+	result := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Where("name = ?", body.Name).First(&controlContent)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return c.Status(http.StatusNotFound).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	if result.Error != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: result.Error.Error(),
+			},
+		)
+	}
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			apimodels.Error{
+				Error: err.Error(),
+			},
+		)
+	}
+
+	// set new name
+	controlContent.ControlPureContent.Name = body.NewName
+
+	result = reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Create(
+		&models.Control{
+			ControlPureContent: controlContent.ControlPureContent,
+			ModelCU: apimodels.ModelCU{
+				ID: apimodels.ID{ID: id},
+			},
+		},
+	)
+
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 		return c.Status(http.StatusConflict).JSON(
 			apimodels.Error{
 				Error: result.Error.Error(),
@@ -412,11 +506,7 @@ func patchControl(c *fiber.Ctx) error {
 	result := query.Updates(body)
 
 	// check write error
-	var pErr *pgconn.PgError
-
-	errors.As(result.Error, &pErr)
-
-	if pErr != nil && pErr.Code == "23505" {
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 		return c.Status(http.StatusConflict).JSON(
 			apimodels.Error{
 				Error: result.Error.Error(),
@@ -501,6 +591,7 @@ func deleteControl(c *fiber.Ctx) error {
 }
 
 func Control(router fiber.Router) {
+	router.Post("/control/clone", middleware.JWTCheck(nil, nil), cloneControl)
 	router.Get("/controls", middleware.JWTCheck(nil, nil), listControls)
 	router.Get("/control", middleware.JWTCheck(nil, nil), getControl)
 	router.Post("/control", middleware.JWTCheck(nil, nil), postControl)

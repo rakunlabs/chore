@@ -100,14 +100,3 @@
     </div>
   </div>
 </div>
-
-<style lang="scss">
-  .layout {
-    display: grid;
-    grid-template-areas:
-      "top top"
-      "sidebar content";
-    grid-template-columns: 10rem 1fr;
-    grid-template-rows: 3rem minmax(0, 1fr);
-  }
-</style>

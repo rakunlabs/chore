@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -278,11 +277,7 @@ func postAuth(c *fiber.Ctx) error {
 	)
 
 	// check write error
-	var pErr *pgconn.PgError
-
-	errors.As(result.Error, &pErr)
-
-	if pErr != nil && pErr.Code == "23505" {
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 		return c.Status(http.StatusConflict).JSON(
 			apimodels.Error{
 				Error: result.Error.Error(),
@@ -354,11 +349,7 @@ func patchAuth(c *fiber.Ctx) error {
 	result := query.Updates(body)
 
 	// check write error
-	var pErr *pgconn.PgError
-
-	errors.As(result.Error, &pErr)
-
-	if pErr != nil && pErr.Code == "23505" {
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 		return c.Status(http.StatusConflict).JSON(
 			apimodels.Error{
 				Error: result.Error.Error(),

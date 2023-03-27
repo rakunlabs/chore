@@ -34,6 +34,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">Respond - {node.id}</p>
   <p>Enter respond status code</p>
   <input class="mr-2" type="number" name="status" bind:value={data.status} />
   <p>Enter headers</p>

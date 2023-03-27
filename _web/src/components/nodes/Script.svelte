@@ -119,6 +119,7 @@
 />
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">Script - {node.id}</p>
   <p>Info for UI</p>
   <input type="text" placeholder="info" name="info" bind:value={data.info} />
   <button
@@ -137,7 +138,11 @@
   <input type="text" placeholder="tags" name="tags" bind:value={data.tags} />
   <p>Enter input count</p>
   <div class="flex justify-between items-center">
-    <input class="flex-1" type="checkbox" bind:checked={setInputCount} />
+    <input
+      class="flex-1 min-w-[2rem]"
+      type="checkbox"
+      bind:checked={setInputCount}
+    />
     <input
       class="flex-auto"
       type="number"

@@ -49,7 +49,7 @@
   on:reset|preventDefault={reset}
   bind:this={formElement}
 >
-  <p>Note</p>
+  <p class="title-node">Note - {node.id}</p>
   <label>
     <span>Background color</span>
     <input

@@ -35,6 +35,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">Endpoint - {node.id}</p>
   <p>Enter endpoint name</p>
   <input
     type="text"

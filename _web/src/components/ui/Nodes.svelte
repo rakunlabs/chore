@@ -1,6 +1,7 @@
 <script lang="ts">
   import type Drawflow from "drawflow";
   import type { DrawflowNode } from "drawflow";
+
   import Endpoint from "@/components/nodes/Endpoint.svelte";
   import Template from "@/components/nodes/Template.svelte";
   import Request from "@/components/nodes/Request.svelte";
@@ -13,6 +14,8 @@
   import Log from "@/components/nodes/Log.svelte";
   import Email from "@/components/nodes/Email.svelte";
   import Note from "@/components/nodes/Note.svelte";
+  import Hub from "@/components/nodes/Hub.svelte";
+
   import NodeView from "@/components/ui/NodeView.svelte";
 
   export let node: DrawflowNode;
@@ -58,4 +61,7 @@
 {/if}
 {#if node?.name == "wait"}
   <Wait {node} {editor} />
+{/if}
+{#if node?.name == "hub"}
+  <Hub {node} {editor} />
 {/if}

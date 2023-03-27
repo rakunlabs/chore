@@ -87,6 +87,8 @@
   };
 
   const setSelected = (v: string) => {
+    viewEndpointClear(drawDiv);
+    nodeUnselected();
     storeView.view = "";
 
     formEdit.reset();
@@ -150,6 +152,30 @@
       await requestSender("control", { id }, "DELETE", null, true);
 
       datas = datas.filter((d) => d.id != id);
+    } catch (reason: unknown) {
+      if (axios.isAxiosError(reason)) {
+        const msg = reason.response.data.error ?? reason.message;
+        addToast(msg, "alert");
+      }
+    }
+  };
+
+  const cloneControl = async (name: string, newName: string) => {
+    try {
+      const response = await requestSender(
+        "control/clone",
+        null,
+        "POST",
+        { name: name, new_name: newName },
+        true
+      );
+
+      datas.push({
+        id: response.data.data.id,
+        name: newName,
+      });
+
+      datas = datas;
     } catch (reason: unknown) {
       if (axios.isAxiosError(reason)) {
         const msg = reason.response.data.error ?? reason.message;
@@ -311,6 +337,8 @@
       if (confirm("Are you sure to delete?")) {
         deleteControl(id);
       }
+
+      return;
     }
 
     if (action == "edit") {
@@ -385,6 +413,22 @@
         // set lastId
         (editor as any).nodeId = lastId + 1;
       })();
+
+      return;
+    }
+
+    if (action == "clone") {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const name = (e.target as HTMLElement).dataset["name"];
+
+      let newName = prompt("Please enter new control name", name + "_new");
+      if (newName != null && newName != "") {
+        cloneControl(name, newName);
+      }
+
+      return;
     }
   };
 
@@ -719,8 +763,8 @@
             <tr>
               <th style="width:5%" />
               <th style="width:35%">name</th>
-              <th>groups</th>
-              <th style="width:20%" />
+              <th style="width:15%">groups</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -735,14 +779,23 @@
                     data-name={d.name}
                     data-groups={d.groups}
                     data-action="edit"
-                    class="bg-yellow-200 text-black hover:bg-green-500 hover:text-white px-2 rounded-sm"
+                    class="bg-yellow-200 text-black hover:bg-green-500 hover:text-white px-4 mx-1"
                   >
                     edit
                   </button>
                   <button
                     data-id={d.id}
+                    data-name={d.name}
+                    data-groups={d.groups}
+                    data-action="clone"
+                    class="bg-blue-400 text-black hover:bg-green-500 hover:text-white px-4 mx-1"
+                  >
+                    clone
+                  </button>
+                  <button
+                    data-id={d.id}
                     data-action="delete"
-                    class="bg-yellow-200 text-black hover:bg-red-500 hover:text-white px-2 rounded-sm"
+                    class="bg-red-400 text-black hover:bg-red-500 hover:text-white px-4 mx-1"
                   >
                     delete
                   </button>

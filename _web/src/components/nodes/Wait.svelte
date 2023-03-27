@@ -31,6 +31,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">Wait - {node.id}</p>
   <p>Enter tags</p>
   <input type="text" placeholder="tags" name="tags" bind:value={data.tags} />
   <NodeSave />

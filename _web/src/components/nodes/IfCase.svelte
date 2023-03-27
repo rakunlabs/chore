@@ -32,6 +32,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">If - {node.id}</p>
   <p>Expression</p>
   <input
     type="text"

@@ -40,6 +40,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
+  <p class="title-node">Request - {node.id}</p>
   <p>Info for UI</p>
   <input type="text" placeholder="info" name="info" bind:value={data.info} />
   <p>Enter request url</p>

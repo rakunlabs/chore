@@ -6,11 +6,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"github.com/rs/zerolog/log"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
+	"gorm.io/gorm"
 )
 
 // @Summary New Test
@@ -59,11 +59,7 @@ func postTest(c *fiber.Ctx) error {
 	log.Debug().Msgf("TEST-ID: %v", test.ID)
 
 	// check write error
-	var pErr *pgconn.PgError
-
-	errors.As(result.Error, &pErr)
-
-	if pErr != nil && pErr.Code == "23505" {
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 		return c.Status(http.StatusConflict).JSON(
 			apimodels.Error{
 				Error: result.Error.Error(),

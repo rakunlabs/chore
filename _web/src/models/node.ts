@@ -10,6 +10,7 @@ import { log } from "./nodes/log";
 import { email } from "./nodes/email";
 import { note } from "./nodes/note";
 import { wait } from "./nodes/wait";
+import { hub } from "./nodes/hub";
 
 export type node = {
   name: string
@@ -22,4 +23,18 @@ export type node = {
   style?: string
 };
 
-export const nodes = { endpoint, template, request, script, forLoop, ifCase, control, respond, log, email, note, wait } as Record<string, node>;
+export const nodes = {
+  endpoint,
+  template,
+  request,
+  script,
+  forLoop,
+  ifCase,
+  control,
+  respond,
+  log,
+  email,
+  note,
+  wait,
+  hub,
+} as Record<string, node>;
