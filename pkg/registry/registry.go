@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	"github.com/rytsh/liz/utils/templatex"
+	"github.com/rytsh/mugo/pkg/templatex"
 	"github.com/worldline-go/chore/pkg/sec"
 )
 

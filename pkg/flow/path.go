@@ -147,6 +147,7 @@ func GoAndRun(ctx context.Context, wg *sync.WaitGroup, reg *NodesReg, firstValue
 		branch(ctx, []Connection{start.Connection}, reg, &nodeRetOutput{firstValue})
 	}
 
+	// wait to finish that control flow
 	reg.wgx.Wait()
 
 	// cancel stuck check
@@ -204,9 +205,6 @@ func branchRun(ctx context.Context, start Connection, reg *NodesReg, value NodeR
 		reg.UpdateStuck(CountTotalDecrease, true)
 		reg.wgx.Done()
 	}()
-
-	// defer reg.wgx.Done()
-	// defer reg.UpdateStuck(CountTotalDecrease, true)
 
 	// before to run check context
 	select {

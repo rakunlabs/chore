@@ -89,5 +89,14 @@
       bind:value={data.height}
     />
   </label>
+  <label>
+    <span>Note</span>
+    <textarea
+      name="note"
+      placeholder="note"
+      autocomplete="off"
+      bind:value={data.note}
+    />
+  </label>
   <NodeSave />
 </form>

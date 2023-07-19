@@ -13,15 +13,15 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/rs/zerolog/log"
-	"github.com/rytsh/liz/utils/fstore"
-	"github.com/rytsh/liz/utils/templatex"
-	"github.com/rytsh/liz/utils/templatex/store"
+	"github.com/rytsh/mugo/pkg/fstore"
+	"github.com/rytsh/mugo/pkg/templatex"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/internal/config"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/sec"
+	"github.com/worldline-go/logz"
 )
 
 var shutdownTimeout = 5 * time.Second
@@ -35,9 +35,14 @@ func Serve(ctx context.Context, wg *sync.WaitGroup, name string, db *gorm.DB) er
 	})
 
 	appStore := &registry.AppStore{
-		DB:       db,
-		Template: templatex.New(store.WithAddFuncs(fstore.FuncMap(fstore.WithTrust(config.Application.Template.Trust)))),
-		App:      app,
+		DB: db,
+		Template: templatex.New(templatex.WithAddFuncsTpl(
+			fstore.FuncMapTpl(
+				fstore.WithLog(logz.AdapterKV{Log: log.With().Str("component", "template").Logger()}),
+				fstore.WithTrust(config.Application.Template.Trust),
+			),
+		)),
+		App: app,
 		JWT: sec.NewJWT(
 			[]byte(config.Application.Secret),
 			func() int64 {

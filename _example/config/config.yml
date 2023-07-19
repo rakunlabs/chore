@@ -1,4 +1,5 @@
 secret: thisisfordevelopmenttestsecret
+log_level: debug
 user:
   name: admin
   password: admin

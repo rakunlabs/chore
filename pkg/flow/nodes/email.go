@@ -1,13 +1,14 @@
 package nodes
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/rs/zerolog/log"
-	"github.com/rytsh/liz/utils/templatex"
+	"github.com/rytsh/mugo/pkg/templatex"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/models"
@@ -35,20 +36,23 @@ func (r *EmailRet) GetBinaryData() []byte {
 
 // Email node has one input.
 type Email struct {
-	reg          *flow.NodesReg
-	stuckContext context.Context
-	lockCtx      context.Context
-	lockCancel   context.CancelFunc
-	values       map[string]string
-	client       email.Client
-	inputs       []flow.Inputs
-	inputHolder  inputHolderEmail
-	mutex        sync.Mutex
-	fetched      bool
-	checked      bool
-	disabled     bool
-	nodeID       string
-	tags         []string
+	reg                *flow.NodesReg
+	stuckContext       context.Context
+	lockCtx            context.Context
+	lockCancel         context.CancelFunc
+	lockFeedBack       context.Context
+	lockFeedBackCancel context.CancelFunc
+	feedbackWait       bool
+	values             map[string]string
+	client             email.Client
+	inputs             []flow.Inputs
+	inputHolder        inputHolderEmail
+	mutex              sync.Mutex
+	fetched            bool
+	checked            bool
+	disabled           bool
+	nodeID             string
+	tags               []string
 }
 
 // Run get values from active input nodes.
@@ -71,6 +75,10 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 			n.lockCancel()
 		}
 
+		if n.feedbackWait {
+			<-n.lockFeedBack.Done()
+		}
+
 		return nil, flow.ErrStopGoroutine
 	}
 
@@ -81,19 +89,23 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 	}
 
 	if useValues == nil && n.lockCtx != nil {
-		// increase count
-		n.reg.UpdateStuck(flow.CountStuckIncrease, false)
+		n.feedbackWait = true
+		defer n.lockFeedBackCancel()
 
 		select {
 		case <-n.lockCtx.Done():
 			// continue process
 		default:
+			// increase count
+			n.reg.UpdateStuck(flow.CountStuckIncrease, false)
+			defer n.reg.UpdateStuck(flow.CountStuckDecrease, false)
+
 			// these events not happen at same time mostly
 			select {
 			case <-n.stuckContext.Done():
-				return nil, fmt.Errorf("stuck detected, terminated node wait")
+				return nil, fmt.Errorf("stuck detected, terminated node email")
 			case <-ctx.Done():
-				log.Ctx(ctx).Warn().Msg("program closed, terminated node wait")
+				log.Ctx(ctx).Warn().Msg("program closed, terminated node email")
 
 				return nil, flow.ErrStopGoroutine
 			case <-n.lockCtx.Done():
@@ -119,12 +131,13 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 
 		if requestValues != nil {
 			// render
-			rendered, err := reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(value))
+			var buf bytes.Buffer
+			err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(value))
 			if err != nil {
 				return nil, fmt.Errorf("template cannot render: %v", err)
 			}
 
-			payload = string(rendered)
+			payload = buf.String()
 		}
 
 		if key == "Subject" {
@@ -219,6 +232,8 @@ func (n *Email) ActiveInput(node string, tags map[string]struct{}) {
 				if n.inputs[i].InputName == flow.Input1 {
 					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
 					n.reg.AddCleanup(n.lockCancel)
+					n.lockFeedBack, n.lockFeedBackCancel = context.WithCancel(context.Background())
+					n.reg.AddCleanup(n.lockFeedBackCancel)
 				}
 			}
 		}

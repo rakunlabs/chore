@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -8,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rytsh/liz/utils/templatex"
+	"github.com/rytsh/mugo/pkg/templatex"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
@@ -64,31 +65,34 @@ type renderedValues struct {
 
 // Request node has one input and one output.
 type Request struct {
-	reg           *flow.NodesReg
-	nodeID        string
-	lockCtx       context.Context
-	lockCancel    context.CancelFunc
-	headers       map[string]interface{}
-	retry         *request.Retry
-	retryRaw      retryRaw
-	url           string
-	addHeadersRaw string
-	method        string
-	auth          string
-	outputs       [][]flow.Connection
-	inputs        []flow.Inputs
-	inputHolder   inputHolderRequest
-	mutex         sync.Mutex
-	fetched       bool
-	checked       bool
-	disabled      bool
-	payloadNil    bool
-	skipVerify    bool
-	poolClient    bool
-	stuckContext  context.Context
-	log           *zerolog.Logger
-	client        *request.Client
-	tags          []string
+	reg                *flow.NodesReg
+	nodeID             string
+	lockCtx            context.Context
+	lockCancel         context.CancelFunc
+	lockFeedBack       context.Context
+	lockFeedBackCancel context.CancelFunc
+	feedbackWait       bool
+	headers            map[string]interface{}
+	retry              *request.Retry
+	retryRaw           retryRaw
+	url                string
+	addHeadersRaw      string
+	method             string
+	auth               string
+	outputs            [][]flow.Connection
+	inputs             []flow.Inputs
+	inputHolder        inputHolderRequest
+	mutex              sync.Mutex
+	fetched            bool
+	checked            bool
+	disabled           bool
+	payloadNil         bool
+	skipVerify         bool
+	poolClient         bool
+	stuckContext       context.Context
+	log                *zerolog.Logger
+	client             *request.Client
+	tags               []string
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
@@ -111,6 +115,10 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 			n.lockCancel()
 		}
 
+		if n.feedbackWait {
+			<-n.lockFeedBack.Done()
+		}
+
 		return nil, flow.ErrStopGoroutine
 	}
 
@@ -121,27 +129,29 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 	}
 
 	if useValues == nil && n.lockCtx != nil {
-		// increase count
-		n.reg.UpdateStuck(flow.CountStuckIncrease, false)
+		n.feedbackWait = true
+		defer n.lockFeedBackCancel()
 
 		select {
 		case <-n.lockCtx.Done():
 			// continue process
 		default:
+			// increase count
+			n.reg.UpdateStuck(flow.CountStuckIncrease, false)
+			defer n.reg.UpdateStuck(flow.CountStuckDecrease, false)
+
 			// these events not happen at same time mostly
 			select {
 			case <-n.stuckContext.Done():
-				return nil, fmt.Errorf("stuck detected, terminated node wait")
+				return nil, fmt.Errorf("stuck detected, terminated node request")
 			case <-ctx.Done():
-				log.Ctx(ctx).Warn().Msg("program closed, terminated node wait")
+				log.Ctx(ctx).Warn().Msg("program closed, terminated node request")
 
 				return nil, flow.ErrStopGoroutine
 			case <-n.lockCtx.Done():
 				// continue process
 			}
 		}
-
-		n.reg.UpdateStuck(flow.CountStuckDecrease, true)
 	}
 
 	// check value and render it
@@ -160,28 +170,28 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 
 	if requestValues != nil {
 		// render url
-		renderedValue, err := reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(n.url))
-		if err != nil {
+		var buf bytes.Buffer
+		if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.url)); err != nil {
 			return nil, fmt.Errorf("template url cannot render: %v", err)
 		}
 
-		rendered.url = string(renderedValue)
+		rendered.url = buf.String()
 
 		// render method
-		renderedValue, err = reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(n.method))
-		if err != nil {
+		buf = bytes.Buffer{}
+		if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.method)); err != nil {
 			return nil, fmt.Errorf("template method cannot render: %v", err)
 		}
 
-		rendered.method = string(renderedValue)
+		rendered.method = buf.String()
 
 		// render headers
-		renderedValue, err = reg.Template.ExecuteBuffer(templatex.WithData(requestValues), templatex.WithContent(n.addHeadersRaw))
-		if err != nil {
+		buf = bytes.Buffer{}
+		if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.addHeadersRaw)); err != nil {
 			return nil, fmt.Errorf("template headers cannot render: %v", err)
 		}
 
-		rendered.addHeadersRaw = string(renderedValue)
+		rendered.addHeadersRaw = buf.String()
 	}
 
 	var addHeaders map[string]interface{}
@@ -356,6 +366,8 @@ func (n *Request) ActiveInput(node string, tags map[string]struct{}) {
 				if n.inputs[i].InputName == flow.Input1 {
 					n.lockCtx, n.lockCancel = context.WithCancel(context.Background())
 					n.reg.AddCleanup(n.lockCancel)
+					n.lockFeedBack, n.lockFeedBackCancel = context.WithCancel(context.Background())
+					n.reg.AddCleanup(n.lockFeedBackCancel)
 				}
 			}
 		}

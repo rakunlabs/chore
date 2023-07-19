@@ -57,7 +57,7 @@
     name="method"
     bind:value={data.method}
   />
-  <p>Enter method</p>
+  <p>Enter auth</p>
   <input type="text" placeholder="myauth" name="auth" bind:value={data.auth} />
   <label>
     <span>Payload set to nil</span>
@@ -86,11 +86,15 @@
       bind:checked={data.pool_client}
     />
   </label>
-  <details>
+  <details open={!!data.headers}>
     <summary>Enter additional headers</summary>
-    <textarea placeholder="json/yaml key:value" bind:value={data.headers} />
+    <textarea
+      name="headers"
+      placeholder="json/yaml key:value"
+      bind:value={data.headers}
+    />
   </details>
-  <details>
+  <details open={!!data.retry_codes || !!data.retry_decodes}>
     <summary>Retry with status codes</summary>
     <p>Enabled Status Codes</p>
     <input

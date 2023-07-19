@@ -1,12 +1,13 @@
 package nodes
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"sync"
 
-	"github.com/rytsh/liz/utils/templatex"
+	"github.com/rytsh/mugo/pkg/templatex"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
@@ -43,12 +44,12 @@ type Template struct {
 func (n *Template) Run(_ context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	v := transfer.BytesToData(value.GetBinaryData())
 
-	payload, err := reg.Template.ExecuteBuffer(templatex.WithData(v), templatex.WithContent(string(n.content)))
-	if err != nil {
-		err = fmt.Errorf("template cannot render: %v", err)
+	buf := bytes.Buffer{}
+	if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(v), templatex.WithContent(string(n.content))); err != nil {
+		return nil, fmt.Errorf("template cannot render: %v", err)
 	}
 
-	return &TemplateRet{payload}, err
+	return &TemplateRet{buf.Bytes()}, nil
 }
 
 func (n *Template) Special(_ interface{}) interface{} {
