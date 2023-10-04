@@ -13,10 +13,17 @@
 
   const getSettings = async () => {
     try {
-      const l = await requestSender("settings", null, "GET", null, true, {
-        noAlert: true,
-      });
-      data = l.data.data;
+      const l = await requestSender(
+        "settings",
+        { namespace: "email", name: "email-1" },
+        "GET",
+        null,
+        true,
+        {
+          noAlert: true,
+        }
+      );
+      data = l.data.data?.data;
     } catch (reason: unknown) {
       let msg = reason;
       if (axios.isAxiosError(reason)) {
@@ -41,7 +48,13 @@
     data["no_auth"] = !!data["no_auth"];
 
     try {
-      await requestSender("settings", null, "PATCH", data, true);
+      await requestSender(
+        "settings",
+        { namespace: "email", name: "email-1" },
+        "PATCH",
+        data,
+        true
+      );
       addToast("settings saved", "info");
     } catch (reason: unknown) {
       let msg = reason;
@@ -79,7 +92,7 @@
             type="email"
             name="email"
             placeholder="user@ingenico.com"
-            value={data?.email}
+            value={data?.email ?? ""}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
@@ -89,7 +102,7 @@
             type="text"
             name="host"
             placeholder="smtp.office365.com"
-            value={data?.host}
+            value={data?.host ?? ""}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
@@ -109,6 +122,7 @@
             type="password"
             name="password"
             autocomplete="off"
+            value={data?.password ?? ""}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>

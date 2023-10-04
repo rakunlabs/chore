@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 
-	"github.com/worldline-go/chore/internal/server/middleware"
+	"github.com/worldline-go/chore/internal/server/middlewares"
+	"github.com/worldline-go/chore/internal/utils"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
@@ -18,36 +19,46 @@ import (
 // @Description Get whole settings
 // @Security ApiKeyAuth
 // @Router /settings [get]
-// @Success 200 {object} apimodels.Data{data=UserDataID{}}
+// @Param namespace query string true "get by namespace (email, oauth2)"
+// @Param name query string false "name like email-1"
+// @Success 200 {object} apimodels.Data{}
+// @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func getSettings(c *fiber.Ctx) error {
-	settings := new(models.EmailPure)
+func getSettings(c echo.Context) error {
+	namespace := c.QueryParam("namespace")
+	if namespace == "" {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "required namespace"})
+	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
+	name := c.QueryParam("name")
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Settings{}).Where("namespace = ?", "application")
+	var setting models.SettingsPure
+	var settings []models.SettingsPure
 
-	result := query.First(settings)
+	var result *gorm.DB
+
+	var returnData interface{}
+	query := registry.Reg.DB.WithContext(c.Request().Context()).Model(&models.Settings{}).Where("namespace = ?", namespace)
+	if name != "" {
+		query.Where("name = ?", name)
+		result = query.First(&setting)
+		returnData = setting
+	} else {
+		result = query.Find(&settings)
+		returnData = settings
+	}
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return c.Status(http.StatusOK).JSON(
-			apimodels.Data{
-				Data: settings,
-			},
-		)
+		return c.JSON(http.StatusOK, apimodels.Data{Data: setting})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
-			Data: settings,
+			Data: returnData,
 		},
 	)
 }
@@ -57,46 +68,97 @@ func getSettings(c *fiber.Ctx) error {
 // @Description Replace with new data
 // @Security ApiKeyAuth
 // @Router /settings [patch]
-// @Param payload body models.Email{} false "send part of the settings object"
+// @Param payload body models.Settings{} false "send part of the settings object"
+// @Param namespace query string true "get by namespace (email, oauth2)"
+// @Param name query string false "name like email-1"
 // @Success 204 "No Content"
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func patchSettings(c *fiber.Ctx) error {
-	var body map[string]interface{}
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+func patchSettings(c echo.Context) error {
+	namespace := c.QueryParam("namespace")
+	if namespace == "" {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "required namespace"})
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
+	name := c.QueryParam("name")
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Settings{})
+	var body map[string]interface{}
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
+	}
 
-	queryUpdate := query.Where("namespace = ?", "application")
-	result := queryUpdate.Updates(body)
+	bodyModel := models.Settings{
+		SettingsPure: models.SettingsPure{
+			Name:      name,
+			Namespace: namespace,
+			Data:      body,
+		},
+	}
+
+	ctx := utils.Context(c)
+	query := registry.Reg.DB.WithContext(ctx).Model(&models.Settings{})
+
+	queryUpdate := query.Where("namespace = ?", namespace).Where("name = ?", name)
+	result := queryUpdate.Updates(&bodyModel)
 
 	if result.RowsAffected == 0 {
-		body["namespace"] = "application"
-		query.Create(body)
+		query.Create(&bodyModel)
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		// check write error
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return c.JSON(http.StatusConflict, apimodels.Error{Error: result.Error.Error()})
+		}
+
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	//nolint:wrapcheck // checking before
-	return c.SendStatus(http.StatusNoContent)
+	return c.NoContent(http.StatusNoContent)
 }
 
-func Settings(router fiber.Router) {
-	router.Get("/settings", middleware.JWTCheck([]string{"admin"}, nil), getSettings)
-	router.Patch("/settings", middleware.JWTCheck([]string{"admin"}, nil), patchSettings)
+// @Summary Delete settings
+// @Tags settings
+// @Description Replace with new data
+// @Security ApiKeyAuth
+// @Router /settings [delete]
+// @Param namespace query string true "get by namespace (email, oauth2)"
+// @Param name query string false "name like email-1"
+// @Success 204 "No Content"
+// @failure 400 {object} apimodels.Error{}
+// @failure 404 {object} apimodels.Error{}
+// @failure 500 {object} apimodels.Error{}
+func deleteSettings(c echo.Context) error {
+	namespace := c.QueryParam("namespace")
+	if namespace == "" {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "required namespace"})
+	}
+
+	name := c.QueryParam("name")
+
+	ctx := utils.Context(c)
+	query := registry.Reg.DB.WithContext(ctx).Model(&models.Settings{})
+
+	queryDelete := query.Where("namespace = ?", namespace).Where("name = ?", name)
+
+	// delete directly in DB
+	result := queryDelete.Delete(&models.Settings{})
+	if result.RowsAffected == 0 {
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: "not found any releated data"})
+	}
+
+	if result.Error != nil {
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
+	}
+
+	//nolint:wrapcheck // checking before
+	return c.NoContent(http.StatusNoContent)
+}
+
+func Settings(c *echo.Group, authMiddleware echo.MiddlewareFunc) {
+	c.GET("/settings", getSettings, authMiddleware, middlewares.AdminRole)
+	c.PATCH("/settings", patchSettings, authMiddleware, middlewares.AdminRole)
+	c.DELETE("/settings", deleteSettings, authMiddleware, middlewares.AdminRole)
 }

@@ -17,6 +17,7 @@ const info = {
   "buildCommit": "",
   "startDate": "",
   "serverDate": "",
+  "providers": [] as string[],
 };
 
 export const storeView = {

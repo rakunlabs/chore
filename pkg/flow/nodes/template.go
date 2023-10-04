@@ -41,12 +41,12 @@ type Template struct {
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Template) Run(_ context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Template) Run(_ context.Context, _ *sync.WaitGroup, reg *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	v := transfer.BytesToData(value.GetBinaryData())
 
 	buf := bytes.Buffer{}
 	if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(v), templatex.WithContent(string(n.content))); err != nil {
-		return nil, fmt.Errorf("template cannot render: %v", err)
+		return nil, fmt.Errorf("template cannot render: %w", err)
 	}
 
 	return &TemplateRet{buf.Bytes()}, nil
@@ -71,12 +71,12 @@ func (n *Template) Fetch(ctx context.Context, db *gorm.DB) error {
 	result := query.First(&getData)
 
 	if result.Error != nil {
-		return fmt.Errorf("template fetch failed: %v", result.Error)
+		return fmt.Errorf("template fetch failed: %w", result.Error)
 	}
 
 	content, err := base64.StdEncoding.DecodeString(getData.Content)
 	if err != nil {
-		return fmt.Errorf("template fetch failed: %v", err)
+		return fmt.Errorf("template fetch failed: %w", err)
 	}
 
 	n.content = content

@@ -9,7 +9,7 @@ SWAG_VERSION := $(shell grep -E 'swaggo/swag' go.mod | awk '{print $$2}')
 
 ## golangci configuration
 GOLANGCI_CONFIG_URL   := https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml
-GOLANGCI_LINT_VERSION := v1.52.1
+GOLANGCI_LINT_VERSION := v1.55.1
 
 .DEFAULT_GOAL := help
 
@@ -57,12 +57,19 @@ bin/golangci-lint-$(GOLANGCI_LINT_VERSION):
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCAL_BIN_DIR) $(GOLANGCI_LINT_VERSION)
 	@mv $(LOCAL_BIN_DIR)/golangci-lint $(LOCAL_BIN_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 
-lint: .golangci.yml bin/golangci-lint-$(GOLANGCI_LINT_VERSION) ## Lint Go files
+lint-all: .golangci.yml bin/golangci-lint-$(GOLANGCI_LINT_VERSION) ## Lint Go files
 	@$(LOCAL_BIN_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION) --version
 	@GOPATH="$(shell dirname $(PWD))" $(LOCAL_BIN_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION) run ./...
 
+lint: .golangci.yml bin/golangci-lint-$(GOLANGCI_LINT_VERSION) ## Lint Go files
+	@$(LOCAL_BIN_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION) --version
+	@GOPATH="$(shell dirname $(PWD))" $(LOCAL_BIN_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION) run --new-from-rev remotes/origin/main ./...
+
 env: ## Create environment
 	docker compose --project-name=chore --file=_example/chore/docker-compose.yml up
+
+env-extra: ## Create environment with extra services
+	docker compose --profile=extra --project-name=chore --file=_example/chore/docker-compose.yml up
 
 test: ## Run unit tests
 	@go test -v -race -cover ./...

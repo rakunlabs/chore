@@ -334,7 +334,11 @@
 
       const id = (e.target as HTMLElement).dataset["id"];
 
-      if (confirm("Are you sure to delete?")) {
+      if (
+        confirm(
+          `Are you sure to delete ${datas.find((d) => d.id == id)?.name}?`
+        )
+      ) {
         deleteControl(id);
       }
 

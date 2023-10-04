@@ -4,13 +4,15 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
+
+	"github.com/worldline-go/chore/internal/utils"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
-	"gorm.io/gorm"
 )
 
 // @Summary New Test
@@ -22,10 +24,11 @@ import (
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postTest(c *fiber.Ctx) error {
+func postTest(c echo.Context) error {
 	body := new(models.TestPure)
-	if err := c.BodyParser(body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
+	if err := c.Bind(body); err != nil {
+		return c.JSON(
+			http.StatusBadRequest,
 			apimodels.Error{
 				Error: err.Error(),
 			},
@@ -33,16 +36,15 @@ func postTest(c *fiber.Ctx) error {
 	}
 
 	if body.Name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
+		return c.JSON(
+			http.StatusBadRequest,
 			apimodels.Error{
 				Error: "name is required",
 			},
 		)
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	tx := reg.DB.Begin()
+	tx := registry.Reg.DB.Begin()
 
 	test := models.Test{
 		TestPure: models.TestPure{
@@ -50,7 +52,8 @@ func postTest(c *fiber.Ctx) error {
 		},
 	}
 
-	result := tx.WithContext(c.UserContext()).Create(&test)
+	ctx := utils.Context(c)
+	result := tx.WithContext(ctx).Create(&test)
 
 	if result.Error != nil {
 		tx.Rollback()
@@ -60,7 +63,8 @@ func postTest(c *fiber.Ctx) error {
 
 	// check write error
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-		return c.Status(http.StatusConflict).JSON(
+		return c.JSON(
+			http.StatusConflict,
 			apimodels.Error{
 				Error: result.Error.Error(),
 			},
@@ -68,7 +72,8 @@ func postTest(c *fiber.Ctx) error {
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
+		return c.JSON(
+			http.StatusInternalServerError,
 			apimodels.Error{
 				Error: result.Error.Error(),
 			},
@@ -78,13 +83,14 @@ func postTest(c *fiber.Ctx) error {
 	tx.Commit()
 
 	// return recorded data's id
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(
+		http.StatusOK,
 		apimodels.Data{
 			Data: apimodels.ID{ID: uuid.Nil},
 		},
 	)
 }
 
-func Test(router fiber.Router) {
-	router.Post("/test", postTest)
+func Test(e *echo.Group) {
+	e.POST("/test", postTest)
 }

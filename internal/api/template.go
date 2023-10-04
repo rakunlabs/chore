@@ -4,16 +4,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"github.com/worldline-go/chore/internal/parser"
-	"github.com/worldline-go/chore/internal/server/middleware"
+	"github.com/worldline-go/chore/internal/server/middlewares"
 	"github.com/worldline-go/chore/internal/utils"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/models/apimodels"
@@ -46,24 +47,19 @@ type ItemName struct {
 // @Success 200 {object} apimodels.DataMeta{data=[]ItemName{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func listTemplates(c *fiber.Ctx) error {
+func listTemplates(c echo.Context) error {
 	items := []ItemName{}
 
 	meta := &MetaFolder{Meta: apimodels.Meta{Limit: apimodels.Limit}}
 
-	if err := c.QueryParser(meta); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+	if err := c.Bind(meta); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
-
-	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	// Table(reg.DB.Config.NamingStrategy.JoinTableName("folders"))
 
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Folder{}).Select("item", "name")
+	ctx := c.Request().Context()
+	query := registry.Reg.DB.WithContext(ctx).Model(&models.Folder{}).Select("item", "name")
 
 	if meta.Limit >= 0 {
 		query = query.Limit(meta.Limit)
@@ -75,17 +71,13 @@ func listTemplates(c *fiber.Ctx) error {
 
 	// check write error
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// get counts
-	reg.DB.WithContext(c.UserContext()).Model(&models.Folder{}).Count(&meta.Count)
+	registry.Reg.DB.WithContext(ctx).Model(&models.Folder{}).Count(&meta.Count)
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.DataMeta{
 			Meta: meta,
 			Data: apimodels.Data{Data: items},
@@ -105,32 +97,23 @@ func listTemplates(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func getTemplate(c *fiber.Ctx) error {
-	id := c.Query("id")
-	name := c.Query("name")
+func getTemplate(c echo.Context) error {
+	id := c.QueryParam("id")
+	name := c.QueryParam("name")
 
 	if id == "" && name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredIDName.Error()})
 	}
 
 	dump, err := parser.GetQueryBool(c, "dump")
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	getData := TemplatePureID{}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Template{})
+	ctx := c.Request().Context()
+	query := registry.Reg.DB.WithContext(ctx).Model(&models.Template{})
 
 	if id != "" {
 		query = query.Where("id = ?", id)
@@ -143,35 +126,23 @@ func getTemplate(c *fiber.Ctx) error {
 	result := query.First(&getData)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return c.Status(http.StatusNotFound).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if dump {
 		v, err := base64.StdEncoding.DecodeString(getData.Content)
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(
-				apimodels.Error{
-					Error: result.Error.Error(),
-				},
-			)
+			return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 		}
 
-		return c.Status(http.StatusOK).Send(v)
+		return c.Blob(http.StatusOK, "text/plain", v)
 	}
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
 			Data: getData,
 		},
@@ -191,79 +162,59 @@ func getTemplate(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postTemplate(c *fiber.Ctx) error {
-	template := new(models.Template)
+func postTemplate(c echo.Context) error {
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
+	}
 
-	body := c.Body()
+	template := new(models.Template)
 	template.Content = base64.StdEncoding.EncodeToString(body)
 
-	name := c.Query("name")
+	name := c.QueryParam("name")
 	if name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: "name is required",
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "name is required"})
 	}
 
 	// trim slash
 	template.Name = strings.Trim(name, "/")
 
-	if groups := c.Query("groups"); groups != "" {
+	if groups := c.QueryParam("groups"); groups != "" {
 		var err error
 
 		template.Groups.Groups, err = json.Marshal(strings.Split(groups, ","))
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(
-				apimodels.Error{
-					Error: err.Error(),
-				},
-			)
+			return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 		}
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	var err error
-
 	template.ID.ID, err = uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Create(template)
+	ctx := utils.Context(c)
+	result := registry.Reg.DB.WithContext(ctx).Create(template)
 
 	// check write error
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-		return c.Status(http.StatusConflict).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusConflict, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// create folder
 	folderMap := utils.FolderFile(template.Name)
 
 	// on conflict do nothing
-	reg.DB.WithContext(c.UserContext()).Model(models.Folder{}).Clauses(
+	registry.Reg.DB.WithContext(ctx).Model(models.Folder{}).Clauses(
 		clause.OnConflict{DoNothing: true},
 	).Create(folderMap)
 
 	// return recorded data's id
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
 			Data: apimodels.ID{ID: template.ID.ID},
 		},
@@ -282,74 +233,58 @@ func postTemplate(c *fiber.Ctx) error {
 // @Success 204 "No Content"
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func putTemplate(c *fiber.Ctx) error {
-	template := new(models.Template)
+func putTemplate(c echo.Context) error {
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
+	}
 
-	body := c.Body()
+	template := new(models.Template)
 	template.Content = base64.StdEncoding.EncodeToString(body)
 
-	name := c.Query("name")
+	name := c.QueryParam("name")
 	if name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: "name is required",
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "name is required"})
 	}
 
 	// trim slash
 	template.Name = strings.Trim(name, "/")
 
-	if groups := c.Query("groups"); groups != "" {
+	if groups := c.QueryParam("groups"); groups != "" {
 		var err error
 
 		template.Groups.Groups, err = json.Marshal(strings.Split(groups, ","))
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(
-				apimodels.Error{
-					Error: err.Error(),
-				},
-			)
+			return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 		}
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	var err error
-
 	template.ID.ID, err = uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Clauses(
+	ctx := utils.Context(c)
+	result := registry.Reg.DB.WithContext(ctx).Clauses(
 		clause.OnConflict{
 			UpdateAll: true,
 			Columns:   []clause.Column{{Name: "name"}},
 		}).Create(template)
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// create folder
 	folderMap := utils.FolderFile(template.Name)
 
 	// on conflict do nothing
-	reg.DB.WithContext(c.UserContext()).Model(models.Folder{}).Clauses(
+	registry.Reg.DB.WithContext(ctx).Model(models.Folder{}).Clauses(
 		clause.OnConflict{DoNothing: true},
 	).Create(folderMap)
 
 	//nolint:wrapcheck // checking before
-	return c.SendStatus(http.StatusNoContent)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // TODO: currently just changeable inside of the data.
@@ -367,23 +302,20 @@ func putTemplate(c *fiber.Ctx) error {
 // @failure 404 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func patchTemplate(c *fiber.Ctx) error {
-	name := c.Query("name")
+func patchTemplate(c echo.Context) error {
+	name := c.QueryParam("name")
 
 	if name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: "name is required and cannot be empty",
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "name is required and cannot be empty"})
 	}
 
-	body := c.Body()
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
+	}
 
 	// fix parameter
 	name = strings.Trim(name, "/")
-
-	reg := registry.Reg().Get(c.Locals("registry").(string))
 
 	data := models.Template{
 		TemplatePure: models.TemplatePure{
@@ -392,32 +324,21 @@ func patchTemplate(c *fiber.Ctx) error {
 		},
 	}
 
+	ctx := utils.Context(c)
 	// save new value
-	result := reg.DB.WithContext(c.UserContext()).Where("name = ?", name).Updates(&data)
+	result := registry.Reg.DB.WithContext(ctx).Where("name = ?", name).Updates(&data)
 
 	// check write error
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-		return c.Status(http.StatusConflict).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusConflict, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return c.Status(http.StatusNotFound).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// // update from folder table
@@ -433,9 +354,9 @@ func patchTemplate(c *fiber.Ctx) error {
 	// 	).Create(folderMap)
 	// }
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
-			Data: fiber.Map{"id": data.ID},
+			Data: map[string]interface{}{"id": data.ID},
 		},
 	)
 }
@@ -451,21 +372,16 @@ func patchTemplate(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func deleteTemplate(c *fiber.Ctx) error {
-	id := c.Query("id")
-	name := c.Query("name")
+func deleteTemplate(c echo.Context) error {
+	id := c.QueryParam("id")
+	name := c.QueryParam("name")
 
 	if id == "" && name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredIDName.Error()})
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	query := reg.DB.WithContext(c.UserContext())
+	ctx := utils.Context(c)
+	query := registry.Reg.DB.WithContext(ctx)
 	if id != "" {
 		query = query.Where("id = ?", id)
 	}
@@ -482,23 +398,15 @@ func deleteTemplate(c *fiber.Ctx) error {
 	result := query.Unscoped().Delete(&models.Template{})
 
 	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(
-			apimodels.Error{
-				Error: "not found any releated data",
-			},
-		)
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: "not found any releated data"})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// delete from folder table
-	query = reg.DB.WithContext(c.UserContext())
+	query = registry.Reg.DB.WithContext(ctx)
 	if name[len(name)-1] == '/' {
 		query = query.Where("name LIKE ?", name+"%")
 	} else {
@@ -508,14 +416,14 @@ func deleteTemplate(c *fiber.Ctx) error {
 	query.Delete(&models.Folder{})
 
 	//nolint:wrapcheck // checking before
-	return c.SendStatus(http.StatusNoContent)
+	return c.NoContent(http.StatusNoContent)
 }
 
-func Template(router fiber.Router) {
-	router.Get("/templates", middleware.JWTCheck(nil, nil), listTemplates)
-	router.Get("/template", middleware.JWTCheck(nil, nil), getTemplate)
-	router.Post("/template", middleware.JWTCheck(nil, nil), postTemplate)
-	router.Put("/template", middleware.JWTCheck(nil, nil), putTemplate)
-	router.Patch("/template", middleware.JWTCheck(nil, nil), patchTemplate)
-	router.Delete("/template", middleware.JWTCheck(nil, nil), deleteTemplate)
+func Template(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
+	e.GET("/templates", listTemplates, authMiddleware, middlewares.UserRole)
+	e.GET("/template", getTemplate, authMiddleware, middlewares.UserRole)
+	e.POST("/template", postTemplate, authMiddleware, middlewares.UserRole)
+	e.PUT("/template", putTemplate, authMiddleware, middlewares.UserRole)
+	e.PATCH("/template", patchTemplate, authMiddleware, middlewares.UserRole)
+	e.DELETE("/template", deleteTemplate, authMiddleware, middlewares.UserRole)
 }

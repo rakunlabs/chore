@@ -11,11 +11,11 @@
   let error = "";
   let working = false;
 
-  // let selected = "chore";
+  let selected = "";
 
-  // const setSelected = (v: string) => {
-  //   selected = v;
-  // };
+  const setSelected = (v: string) => {
+    selected = v;
+  };
 
   const signin = async (
     e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
@@ -28,8 +28,11 @@
     working = true;
     const data = formToObject(e.currentTarget);
     try {
-      const response = await login(data);
-      tokenSet(response.data.data.token);
+      const response = await login(
+        data,
+        selected ? { provider: selected } : null
+      );
+      tokenSet(response.data.data, selected);
       pushRedirect($querystring);
     } catch (reason: unknown) {
       if (axios.isAxiosError(reason)) {
@@ -50,14 +53,29 @@
     <h2 class="mb-8 text-center text-sm font-extrabold [line-height:1.2]">
       {banner}
     </h2>
-    <!-- <div>
-      <button
-        class={`border border-b-0 py-1 px-3 ${
-          selected == "chore" ? "bg-yellow-50" : "bg-gray-200"
-        }`}
-        on:click={() => setSelected("chore")}>chore</button
-      >
-    </div> -->
+    {#if $storeInfo.providers.length > 0}
+      <div>
+        <button
+          class={`border border-b-0 py-1 px-3 ${
+            selected == "" ? "bg-yellow-50" : "bg-gray-100"
+          }`}
+          on:click={() => setSelected("")}
+        >
+          chore
+        </button>
+        {#each $storeInfo.providers as provider}
+          <button
+            class={`border border-b-0 py-1 px-3 ${
+              selected == provider ? "bg-yellow-50" : "bg-gray-100"
+            }`}
+            on:click={() => setSelected(provider)}
+          >
+            {provider}
+          </button>
+        {/each}
+      </div>
+    {/if}
+
     <div class="border p-4 bg-yellow-50 relative">
       <span class="absolute top-0 right-0 bg-slate-100 px-1"
         >{$storeInfo.version +
@@ -65,11 +83,7 @@
       >
       <form on:submit|preventDefault|stopPropagation={signin}>
         <div class="mb-4">
-          <label class="block mb-1" for="login">
-            <!-- {#if selected == "chore"} -->
-            Username or email address
-            <!-- {/if} -->
-          </label>
+          <label class="block mb-1" for="login"> Username </label>
           <input
             id="login"
             type="text"

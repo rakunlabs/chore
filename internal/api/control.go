@@ -5,13 +5,14 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"github.com/worldline-go/chore/internal/parser"
-	"github.com/worldline-go/chore/internal/server/middleware"
+	"github.com/worldline-go/chore/internal/server/middlewares"
+	"github.com/worldline-go/chore/internal/utils"
 	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
@@ -38,22 +39,16 @@ type ControlPureID struct {
 // @Success 200 {object} apimodels.DataMeta{data=[]ControlPureID{},meta=apimodels.Meta{}}
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func listControls(c *fiber.Ctx) error {
+func listControls(c echo.Context) error {
 	controlsPureID := []ControlPureID{}
 
 	meta := &apimodels.Meta{Limit: apimodels.Limit}
 
-	if err := c.QueryParser(meta); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+	if err := c.Bind(meta); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{})
+	query := registry.Reg.DB.WithContext(c.Request().Context()).Model(&models.Control{})
 
 	if meta.Search != "" {
 		query = query.Where("name LIKE ?", meta.Search+"%")
@@ -63,22 +58,18 @@ func listControls(c *fiber.Ctx) error {
 
 	// check write error
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// get counts
-	query = reg.DB.WithContext(c.UserContext()).Model(&models.Control{})
+	query = registry.Reg.DB.WithContext(c.Request().Context()).Model(&models.Control{})
 	if meta.Search != "" {
 		query = query.Where("name LIKE ?", meta.Search+"%")
 	}
 
 	query.Count(&meta.Count)
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.DataMeta{
 			Meta: meta,
 			Data: apimodels.Data{Data: controlsPureID},
@@ -100,51 +91,33 @@ func listControls(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func getControl(c *fiber.Ctx) error {
+func getControl(c echo.Context) error {
 	nodata, err := parser.GetQueryBool(c, "nodata")
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
-	id := c.Query("id")
-	name := c.Query("name")
+	id := c.QueryParam("id")
+	name := c.QueryParam("name")
 
 	if id == "" && name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredIDName.Error()})
 	}
 
 	dump, err := parser.GetQueryBool(c, "dump")
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	pretty, err := parser.GetQueryBool(c, "pretty")
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	controlContent := new(ControlPureContentID)
 	control := new(ControlPureID)
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{})
+	query := registry.Reg.DB.WithContext(c.Request().Context()).Model(&models.Control{})
 
 	if id != "" {
 		query = query.Where("id = ?", id)
@@ -162,19 +135,11 @@ func getControl(c *fiber.Ctx) error {
 	}
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return c.Status(http.StatusNotFound).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	var ret interface{}
@@ -197,10 +162,14 @@ func getControl(c *fiber.Ctx) error {
 	}
 
 	if dump {
-		return parser.JSON(c.Status(http.StatusOK), ret, pretty)
+		if pretty {
+			return c.JSONPretty(http.StatusOK, ret, "  ")
+		}
+
+		return c.JSON(http.StatusOK, ret)
 	}
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
 			Data: ret,
 		},
@@ -217,39 +186,26 @@ func getControl(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postControl(c *fiber.Ctx) error {
+func postControl(c echo.Context) error {
 	var body models.ControlPureContent
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	if body.Name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredName.Error()})
 	}
 
 	// body content must be base64
 	// body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
 	id, err := uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Create(
+	ctx := utils.Context(c)
+	result := registry.Reg.DB.WithContext(ctx).Model(&models.Control{}).Create(
 		&models.Control{
 			ControlPureContent: body,
 			ModelCU: apimodels.ModelCU{
@@ -260,27 +216,15 @@ func postControl(c *fiber.Ctx) error {
 
 	// check write error
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-		return c.Status(http.StatusConflict).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusConflict, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// return recorded data's id
-	return c.Status(http.StatusOK).JSON(
-		apimodels.Data{
-			Data: apimodels.ID{ID: id},
-		},
-	)
+	return c.JSON(http.StatusOK, apimodels.Data{Data: apimodels.ID{ID: id}})
 }
 
 // @Summary Clone control
@@ -293,63 +237,42 @@ func postControl(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func cloneControl(c *fiber.Ctx) error {
+func cloneControl(c echo.Context) error {
 	var body models.ControlClone
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	if body.Name == "" || body.NewName == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredName.Error()})
 	}
 
 	// body content must be base64
 	// body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
 	// get control content
 	controlContent := new(ControlPureContentID)
 
-	result := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Where("name = ?", body.Name).First(&controlContent)
+	ctx := utils.Context(c)
+	result := registry.Reg.DB.WithContext(ctx).Model(&models.Control{}).Where("name = ?", body.Name).First(&controlContent)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return c.Status(http.StatusNotFound).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 	}
 
 	// set new name
 	controlContent.ControlPureContent.Name = body.NewName
 
-	result = reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Create(
+	result = registry.Reg.DB.WithContext(ctx).Model(&models.Control{}).Create(
 		&models.Control{
 			ControlPureContent: controlContent.ControlPureContent,
 			ModelCU: apimodels.ModelCU{
@@ -359,23 +282,15 @@ func cloneControl(c *fiber.Ctx) error {
 	)
 
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-		return c.Status(http.StatusConflict).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusConflict, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	// return recorded data's id
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
 			Data: apimodels.ID{ID: id},
 		},
@@ -391,39 +306,26 @@ func cloneControl(c *fiber.Ctx) error {
 // @Success 204 "No Content"
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func putControl(c *fiber.Ctx) error {
+func putControl(c echo.Context) error {
 	var body models.ControlPureContent
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	if body.Name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredName.Error()})
 	}
 
 	// body content must be base64
 	// body.Content = base64.StdEncoding.EncodeToString([]byte(body.Content))
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
 	id, err := uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 	}
 
-	result := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Clauses(
+	ctx := utils.Context(c)
+	result := registry.Reg.DB.WithContext(ctx).Model(&models.Control{}).Clauses(
 		clause.OnConflict{
 			UpdateAll: true,
 			Columns:   []clause.Column{{Name: "name"}},
@@ -437,15 +339,11 @@ func putControl(c *fiber.Ctx) error {
 	)
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	//nolint:wrapcheck // checking before
-	return c.SendStatus(http.StatusNoContent)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // @Summary Replace control
@@ -458,22 +356,14 @@ func putControl(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func patchControl(c *fiber.Ctx) error {
+func patchControl(c echo.Context) error {
 	var body map[string]interface{}
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	if v, ok := body["id"].(string); !ok || v == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: "id is required and cannot be empty",
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "id is required and cannot be empty"})
 	}
 
 	// content, _ := body["content"].(string)
@@ -483,49 +373,32 @@ func patchControl(c *fiber.Ctx) error {
 
 	body["endpoints"], err = json.Marshal(body["endpoints"])
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
 	body["groups"], err = json.Marshal(body["groups"])
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	query := reg.DB.WithContext(c.UserContext()).Model(&models.Control{}).Where("id = ?", body["id"])
+	ctx := utils.Context(c)
+	query := registry.Reg.DB.WithContext(ctx).Model(&models.Control{}).Where("id = ?", body["id"])
 
 	result := query.Updates(body)
 
 	// check write error
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-		return c.Status(http.StatusConflict).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusConflict, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	resultData := make(map[string]interface{})
 	resultData["id"] = body["id"]
 
-	return c.Status(http.StatusOK).JSON(
+	return c.JSON(http.StatusOK,
 		apimodels.Data{
 			Data: resultData,
 		},
@@ -543,21 +416,16 @@ func patchControl(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 404 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func deleteControl(c *fiber.Ctx) error {
-	id := c.Query("id")
-	name := c.Query("name")
+func deleteControl(c echo.Context) error {
+	id := c.QueryParam("id")
+	name := c.QueryParam("name")
 
 	if id == "" && name == "" {
-		return c.Status(http.StatusBadRequest).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrRequiredIDName.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: apimodels.ErrRequiredIDName.Error()})
 	}
 
-	reg := registry.Reg().Get(c.Locals("registry").(string))
-
-	query := reg.DB.WithContext(c.UserContext())
+	ctx := utils.Context(c)
+	query := registry.Reg.DB.WithContext(ctx)
 
 	if id != "" {
 		query = query.Where("id = ?", id)
@@ -571,31 +439,23 @@ func deleteControl(c *fiber.Ctx) error {
 	result := query.Unscoped().Delete(&models.Control{})
 
 	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(
-			apimodels.Error{
-				Error: apimodels.ErrNotFound.Error(),
-			},
-		)
+		return c.JSON(http.StatusNotFound, apimodels.Error{Error: apimodels.ErrNotFound.Error()})
 	}
 
 	if result.Error != nil {
-		return c.Status(http.StatusInternalServerError).JSON(
-			apimodels.Error{
-				Error: result.Error.Error(),
-			},
-		)
+		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
 	//nolint:wrapcheck // checking before
-	return c.SendStatus(http.StatusNoContent)
+	return c.NoContent(http.StatusNoContent)
 }
 
-func Control(router fiber.Router) {
-	router.Post("/control/clone", middleware.JWTCheck(nil, nil), cloneControl)
-	router.Get("/controls", middleware.JWTCheck(nil, nil), listControls)
-	router.Get("/control", middleware.JWTCheck(nil, nil), getControl)
-	router.Post("/control", middleware.JWTCheck(nil, nil), postControl)
-	router.Put("/control", middleware.JWTCheck(nil, nil), putControl)
-	router.Patch("/control", middleware.JWTCheck(nil, nil), patchControl)
-	router.Delete("/control", middleware.JWTCheck(nil, nil), deleteControl)
+func Control(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
+	e.POST("/control/clone", cloneControl, authMiddleware, middlewares.UserRole)
+	e.GET("/controls", listControls, authMiddleware, middlewares.UserRole)
+	e.GET("/control", getControl, authMiddleware, middlewares.UserRole)
+	e.POST("/control", postControl, authMiddleware, middlewares.UserRole)
+	e.PUT("/control", putControl, authMiddleware, middlewares.UserRole)
+	e.PATCH("/control", patchControl, authMiddleware, middlewares.UserRole)
+	e.DELETE("/control", deleteControl, authMiddleware, middlewares.UserRole)
 }

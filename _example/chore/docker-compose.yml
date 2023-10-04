@@ -12,3 +12,13 @@ services:
       # - ./data/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+  keycloak:
+    image: quay.io/keycloak/keycloak:20.0.2
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8082:8082"
+    command: start-dev --http-port=8082
+    profiles:
+      - extra

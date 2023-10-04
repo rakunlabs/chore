@@ -56,7 +56,7 @@ type Email struct {
 }
 
 // Run get values from active input nodes.
-func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
 	if input == flow.Input1 {
 		// don't allow multiple inputs
@@ -134,7 +134,7 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 			var buf bytes.Buffer
 			err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(value))
 			if err != nil {
-				return nil, fmt.Errorf("template cannot render: %v", err)
+				return nil, fmt.Errorf("template cannot render: %w", err)
 			}
 
 			payload = buf.String()
@@ -153,7 +153,7 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppSto
 	}
 
 	if err := n.client.Send(value.GetBinaryData(), headers); err != nil {
-		return nil, fmt.Errorf("failed to send email: values %v, err %v", headers, err)
+		return nil, fmt.Errorf("failed to send email: values %v, err %w", headers, err)
 	}
 
 	return &EmailRet{output: value.GetBinaryData()}, nil
@@ -166,11 +166,11 @@ func (n *Email) GetType() string {
 func (n *Email) Fetch(ctx context.Context, db *gorm.DB) error {
 	getData := models.Email{}
 
-	query := db.WithContext(ctx).Model(&models.Settings{}).Where("namespace = ?", "application")
+	query := db.WithContext(ctx).Model(&models.Settings{}).Select("data").Where("namespace = ?", "email").Where("name = ?", "email-1")
 	result := query.First(&getData)
 
 	if result.Error != nil {
-		return fmt.Errorf("email fetch failed: %v", result.Error)
+		return fmt.Errorf("email fetch failed: %w", result.Error)
 	}
 
 	n.client = email.NewClient(getData.Host, getData.Port, getData.NoAuth, getData.Email, getData.Password)

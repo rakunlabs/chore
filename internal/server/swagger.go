@@ -1,27 +1,22 @@
 package server
 
 import (
-	"path"
-
-	"github.com/gofiber/fiber/v2"
-
-	"github.com/gofiber/swagger"
+	"github.com/labstack/echo/v4"
 
 	"github.com/worldline-go/chore/docs"
 	"github.com/worldline-go/chore/internal/config"
+	echoSwagger "github.com/worldline-go/echo-swagger"
 )
 
-func routerSwagger(f fiber.Router) {
-	// information
-	docs.SwaggerInfo.Title = config.AppName
-	docs.SwaggerInfo.Version = config.AppVersion
+func routerSwagger(apiGroup *echo.Group) error {
+	if err := docs.SetInfo(
+		config.AppName,
+		config.AppVersion,
+	); err != nil {
+		return err
+	}
 
-	docs.SwaggerInfo.BasePath = path.Join(config.Application.BasePath, docs.SwaggerInfo.BasePath)
+	apiGroup.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	// swagger documentation
-	f.Get("/swagger", func(c *fiber.Ctx) error {
-		return c.Redirect("./swagger/index.html") //nolint:wrapcheck
-	})
-
-	f.Get("/swagger/*", swagger.HandlerDefault) // default
+	return nil
 }

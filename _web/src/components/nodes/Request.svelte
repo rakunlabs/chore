@@ -25,7 +25,8 @@
     v.auth = formData.get("auth") as string;
     v.payload_nil = formData.get("payload_nil") != null;
     v.skip_verify = formData.get("skip_verify") != null;
-    v.pool_client = formData.get("pool_client") != null;
+    v.retry_disabled = formData.get("retry_disabled") != null;
+    v.oauth2 = formData.get("oauth2") as string;
     v.headers = formData.get("headers") as string;
     v.retry_codes = formData.get("retry_codes") as string;
     v.retry_decodes = formData.get("retry_decodes") as string;
@@ -68,6 +69,13 @@
       bind:checked={data.payload_nil}
     />
   </label>
+  <p>Enter oauth2</p>
+  <input
+    type="text"
+    placeholder="oauth2"
+    name="oauth2"
+    bind:value={data.oauth2}
+  />
   <label>
     <span>Skip verify certificate</span>
     <input
@@ -78,12 +86,12 @@
     />
   </label>
   <label>
-    <span>Use pooled client</span>
+    <span>Retry disable</span>
     <input
       type="checkbox"
-      name="pool_client"
+      name="retry_disabled"
       data-action="checkbox"
-      bind:checked={data.pool_client}
+      bind:checked={data.retry_disabled}
     />
   </label>
   <details open={!!data.headers}>

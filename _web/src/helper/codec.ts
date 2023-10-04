@@ -27,6 +27,10 @@ const formToObjectMulti = (form: HTMLFormElement) => {
 
     if (key.startsWith("headers-value")) {
       const headerKey = remember[key.slice(13)];
+      if (headerKey == null) {
+        continue;
+      }
+
       data["headers"][headerKey] = value;
       continue;
     }

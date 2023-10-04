@@ -3,16 +3,20 @@ package request
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
-	"github.com/hashicorp/go-cleanhttp"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rs/zerolog"
+	"github.com/worldline-go/klient"
+	"github.com/worldline-go/logz"
 )
+
+type Retry struct {
+	Enabled             bool
+	DisabledStatusCodes []int
+	EnabledStatusCodes  []int
+}
 
 type ClientResponse struct {
 	Header     http.Header
@@ -21,84 +25,82 @@ type ClientResponse struct {
 }
 
 type Client struct {
-	HTTPClient *http.Client
+	klient *klient.Client
 }
 
 type Config struct {
 	SkipVerify bool
-	Pooled     bool
 	Log        *zerolog.Logger
+	Retry      Retry
+	Auth       AuthConfig
 }
 
-var (
-	defaultRetryWaitMin = 1 * time.Second
-	defaultRetryWaitMax = 30 * time.Second
-	defaultRetryMax     = 4
-)
+type AuthConfig struct {
+	Enabled      bool     `json:"enabled"`
+	ClientID     string   `json:"client_id"`
+	ClientSecret string   `json:"client_secret"`
+	TokenURL     string   `json:"token_url"`
+	Scopes       []string `json:"scopes"`
+}
 
-func NewClient(cfg Config) *Client {
-	var logger interface{}
+func NewClient(cfg Config) (*Client, error) {
+	options := []klient.OptionClientFn{klient.WithDisableBaseURLCheck(true)}
 	if cfg.Log != nil {
-		logger = LogZ{Log: *cfg.Log}
-	}
-
-	var httpClient *http.Client
-	if cfg.Pooled {
-		httpClient = cleanhttp.DefaultPooledClient()
-	} else {
-		httpClient = cleanhttp.DefaultClient()
+		options = append(options, klient.WithLogger(logz.AdapterKV{Log: *cfg.Log}))
 	}
 
 	if cfg.SkipVerify {
-		//nolint:forcetypeassert // clear
-		tlsClientConfig := httpClient.Transport.(*http.Transport).TLSClientConfig
-		if tlsClientConfig == nil {
-			tlsClientConfig = &tls.Config{
-				//nolint:gosec // user defined
-				InsecureSkipVerify: true,
-			}
-		} else {
-			tlsClientConfig.InsecureSkipVerify = true
-		}
-		//nolint:forcetypeassert // clear
-		httpClient.Transport.(*http.Transport).TLSClientConfig = tlsClientConfig
+		options = append(options, klient.WithInsecureSkipVerify(true))
 	}
 
-	client := &retryablehttp.Client{
-		HTTPClient:   httpClient,
-		Logger:       logger,
-		RetryWaitMin: defaultRetryWaitMin,
-		RetryWaitMax: defaultRetryWaitMax,
-		RetryMax:     defaultRetryMax,
-		CheckRetry:   RetryPolicy,
-		Backoff:      retryablehttp.DefaultBackoff,
+	optionsRetry := []klient.OptionRetryFn{}
+	if !cfg.Retry.Enabled {
+		optionsRetry = append(optionsRetry, klient.OptionRetry.WithRetryDisable())
+	}
+
+	if len(cfg.Retry.DisabledStatusCodes) > 0 {
+		optionsRetry = append(optionsRetry, klient.OptionRetry.WithRetryDisabledStatusCodes(cfg.Retry.DisabledStatusCodes...))
+	}
+
+	if len(cfg.Retry.EnabledStatusCodes) > 0 {
+		optionsRetry = append(optionsRetry, klient.OptionRetry.WithRetryEnabledStatusCodes(cfg.Retry.EnabledStatusCodes...))
+	}
+
+	if len(optionsRetry) > 0 {
+		options = append(options, klient.WithRetryOptions(optionsRetry...))
+	}
+
+	if cfg.Auth.Enabled {
+		roundTripper, err := GlobalRegistry.AddService(cfg.Auth) //nolint:contextcheck // ctx from application level
+		if err != nil {
+			return nil, err
+		}
+
+		options = append(options, klient.WithRoundTripper(roundTripper))
+	}
+
+	client, err := klient.New(options...)
+	if err != nil {
+		return nil, err //nolint:wrapcheck // no need
 	}
 
 	return &Client{
-		HTTPClient: client.StandardClient(),
-	}
+		klient: client,
+	}, nil
 }
 
-func (c *Client) Send(
+func (c *Client) Call(
 	ctx context.Context,
 	url, method string,
 	headers map[string]interface{},
 	payload []byte,
-	retry *Retry,
-	skipVerify bool,
 ) (*ClientResponse, error) {
-	var resp *http.Response
-
-	if retry != nil {
-		ctx = context.WithValue(ctx, RetryCodesValue, retry)
-	}
-
-	req, err := c.NewRequest(ctx, url, method, headers, payload)
+	req, err := c.newRequest(ctx, url, method, headers, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err = c.HTTPClient.Do(req)
+	resp, err := c.klient.HTTP.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
@@ -116,7 +118,7 @@ func (c *Client) Send(
 // NewRequest creates a new HTTP request with the given method, URL, and optional body.
 //
 //nolint:lll // clear
-func (c *Client) NewRequest(ctx context.Context, url, method string, headers map[string]interface{}, payload []byte) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, url, method string, headers map[string]interface{}, payload []byte) (*http.Request, error) {
 	var body io.Reader
 
 	if payload != nil {

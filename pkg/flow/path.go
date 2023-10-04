@@ -84,11 +84,11 @@ func validateFetch(ctx context.Context, current string, outputs []Connection, re
 		// fetch and validation
 
 		if err := node.Validate(ctx); err != nil {
-			return fmt.Errorf("ID %s, %s validate failed: %v", output, node.GetType(), err)
+			return fmt.Errorf("ID %s, %s validate failed: %w", output, node.GetType(), err)
 		}
 
 		if err := node.Fetch(ctx, reg.appStore.DB); err != nil {
-			return fmt.Errorf("ID %s, %s fetch failed: %v", output, node.GetType(), err)
+			return fmt.Errorf("ID %s, %s fetch failed: %w", output, node.GetType(), err)
 		}
 
 		// respond channel activate

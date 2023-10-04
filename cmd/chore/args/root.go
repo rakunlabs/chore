@@ -2,17 +2,15 @@ package args
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/worldline-go/chore/internal/config"
 	"github.com/worldline-go/chore/internal/server"
 	"github.com/worldline-go/chore/internal/store"
+	"github.com/worldline-go/initializer"
+	"github.com/worldline-go/tell"
 
 	// Add flow nodes to register in control flow algorithm.
 	_ "github.com/worldline-go/chore/pkg/flow/nodes"
@@ -25,8 +23,6 @@ import (
 	"github.com/worldline-go/igconfig/loader"
 	"github.com/worldline-go/logz"
 )
-
-var ErrShutdown = errors.New("shutting down signal received")
 
 type overrideHold struct {
 	Memory *string
@@ -93,20 +89,18 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 		&loader.Env{},
 	}
 
-	loader.VaultSecretAdditionalPaths = append(loader.VaultSecretAdditionalPaths,
-		loader.AdditionalPath{Map: "migrate", Name: "migrate"},
-		loader.AdditionalPath{Map: "migrate", Name: "migrations"},
-	)
+	// stop to lead generic directly
+	loader.VaultSecretAdditionalPaths = []loader.AdditionalPath{}
 
 	if err := igconfig.LoadWithLoadersWithContext(ctxConfig, "", &config.LoadConfig, loaders[3]); err != nil {
-		return fmt.Errorf("unable to load prefix settings: %v", err)
+		return fmt.Errorf("unable to load prefix settings: %w", err)
 	}
 
 	loader.ConsulConfigPathPrefix = config.LoadConfig.Prefix.Consul
 	loader.VaultSecretBasePath = config.LoadConfig.Prefix.Vault
 
 	if err := igconfig.LoadWithLoadersWithContext(ctxConfig, config.LoadConfig.AppName, &config.Application, loaders...); err != nil {
-		return fmt.Errorf("unable to load configuration settings: %v", err)
+		return fmt.Errorf("unable to load configuration settings: %w", err)
 	}
 
 	// override used cmd values
@@ -127,47 +121,27 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 	return nil
 }
 
-func runRoot(ctxParent context.Context) (err error) {
+func runRoot(ctx context.Context) error {
 	// appname and version
 	// config.Banner("custom send request with templates"),
 	log.WithLevel(zerolog.NoLevel).Msgf(
 		"%s [%s] buildCommit=[%s] buildDate=[%s] %s",
-		strings.ToTitle(config.AppName), config.AppVersion, config.AppBuildCommit, config.AppBuildDate, config.Application.Env)
+		strings.ToTitle(config.AppName), config.AppVersion,
+		config.AppBuildCommit, config.AppBuildDate, config.Application.Env,
+	)
+
+	// telemetry initialize
+	collector, err := tell.New(ctx, config.Application.Telemetry)
+	if err != nil {
+		return fmt.Errorf("failed to init telemetry; %w", err)
+	}
+	defer collector.Shutdown() //nolint:errcheck // no need
 
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
 	defer func() {
-		log.Info().Msg("application shutdown complete")
-	}()
-
-	ctx, ctxCancel := context.WithCancel(ctxParent)
-	defer ctxCancel()
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-		select {
-		case <-sig:
-			log.Warn().Msg("received shutdown signal")
-			ctxCancel()
-
-			if err != nil {
-				err = ErrShutdown
-			}
-		case <-ctx.Done():
-		}
-
-		if err := server.Shutdown(); err != nil {
-			log.Err(err).Msg("shutdown server")
-		}
-
-		log.Info().Msg("server shutdown complete")
+		log.Info().Msg("application shutdown")
 	}()
 
 	// open db connection
@@ -182,13 +156,13 @@ func runRoot(ctxParent context.Context) (err error) {
 		"dsn":      config.Application.Store.DBDataSource,
 	})
 	if err != nil {
-		return fmt.Errorf("cannot open db: %v", err)
+		return fmt.Errorf("cannot open db: %w", err)
 	}
 
 	// get generic interface and close in defer
 	dbGeneric, err := dbConn.DB()
 	if err != nil {
-		return fmt.Errorf("cannot get generic interface of gorm: %v", err)
+		return fmt.Errorf("cannot get generic interface of gorm: %w", err)
 	}
 
 	// set generic db settings
@@ -197,7 +171,7 @@ func runRoot(ctxParent context.Context) (err error) {
 	}
 
 	dbGeneric.SetConnMaxIdleTime(config.Application.Store.ConnMaxIdleTime)
-	dbGeneric.SetConnMaxLifetime(config.Application.Store.ConnMaxLifetime)
+	dbGeneric.SetConnMaxLifetime(config.Application.Store.ConnMaxLifeTime)
 	dbGeneric.SetMaxIdleConns(config.Application.Store.MaxIdleConns)
 	dbGeneric.SetMaxOpenConns(config.Application.Store.MaxOpenConns)
 
@@ -205,11 +179,21 @@ func runRoot(ctxParent context.Context) (err error) {
 
 	// migrate database
 	if err := store.AutoMigrate(ctx, dbConn); err != nil {
-		return fmt.Errorf("auto migration: %v", err)
+		return fmt.Errorf("auto migration: %w", err)
 	}
 
 	// server wait
-	if err := server.Serve(ctx, wg, "main", dbConn); err != nil {
+	e, err := server.Set(ctx, wg, dbConn)
+	if err != nil {
+		return err //nolint:wrapcheck // no need
+	}
+
+	initializer.Shutdown.Add(func() error {
+		return server.Stop(e) //nolint:wrapcheck // no need
+	}, initializer.WithShutdownName("server"))
+
+	// start server
+	if err := server.Start(e); err != nil {
 		return err //nolint:wrapcheck // no need
 	}
 

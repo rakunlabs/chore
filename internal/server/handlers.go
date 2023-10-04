@@ -1,10 +1,31 @@
 package server
 
 import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog/log"
+	"github.com/rytsh/mugo/pkg/fstore"
+	"github.com/rytsh/mugo/pkg/templatex"
+	"github.com/worldline-go/auth"
+	"github.com/worldline-go/auth/pkg/authecho"
+	"github.com/worldline-go/logz"
+	"github.com/worldline-go/logz/logecho"
+	"github.com/worldline-go/tell/metric/metricecho"
+	"github.com/ziflex/lecho/v3"
+	"gorm.io/gorm"
+
+	jwtgo "github.com/golang-jwt/jwt/v5"
 	"github.com/worldline-go/chore/internal/api"
 	"github.com/worldline-go/chore/internal/api/run"
-
-	"github.com/gofiber/fiber/v2"
+	"github.com/worldline-go/chore/internal/config"
+	"github.com/worldline-go/chore/internal/server/claims"
+	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/worldline-go/chore/pkg/request"
 )
 
 // @description Storage and Send API
@@ -16,31 +37,125 @@ import (
 // @securityDefinitions.basic BasicAuth
 // @in header
 // @name Authorization
-func setHandlers(app fiber.Router) {
-	apiRouter := app.Group("/api")                                // /api
-	v1Router := apiRouter.Group("/v1", func(c *fiber.Ctx) error { // middleware for /api/v1
-		// c.Set("Version", "v1")
-
-		return c.Next() //nolint:wrapcheck
-	})
+func setHandlers(e *echo.Group, authMiddleware echo.MiddlewareFunc) error {
+	v1 := e.Group("/api/v1")
 
 	// set swagger
-	routerSwagger(v1Router)
+	if err := routerSwagger(v1); err != nil {
+		return err
+	}
 
 	// set routers
-	api.Auth(v1Router)
-	api.Template(v1Router)
-	api.User(v1Router)
-	api.Login(v1Router)
-	api.Token(v1Router)
-	api.Control(v1Router)
-	api.Settings(v1Router)
-	api.Info(v1Router)
-	run.API(v1Router)
+	api.Auth(v1, authMiddleware)
+	api.Template(v1, authMiddleware)
+	api.User(v1, authMiddleware)
+	api.Login(v1)
+	api.Token(v1, authMiddleware)
+	api.Control(v1, authMiddleware)
+	api.Settings(v1, authMiddleware)
+	api.Info(v1)
+	run.API(v1, authMiddleware)
 
 	// testing
 	// apitest.Test(v1Router)
 
 	// set send api
-	api.Send(v1Router)
+	api.Send(v1, authMiddleware)
+
+	return nil
+}
+
+func Set(ctx context.Context, wg *sync.WaitGroup, db *gorm.DB) (*echo.Echo, error) {
+	serverJWT, err := auth.NewJWT(
+		auth.WithExpFunc(
+			func() int64 {
+				return time.Now().Add(time.Hour).Unix()
+			},
+		),
+		auth.WithSecretByte([]byte(config.Application.Secret)),
+		auth.WithKID(auth.GenerateKeyID([]byte(config.Application.Secret))),
+		auth.WithMethod(jwtgo.SigningMethodHS256),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create jwt: %w", err)
+	}
+
+	providers := make([]auth.InfProviderCert, 0, len(config.Application.AuthProviders))
+	for i := range config.Application.AuthProviders {
+		providers = append(providers, &auth.ProviderExtra{InfProvider: config.Application.AuthProviders[i]})
+	}
+
+	jwksMulti, err := auth.MultiJWTKeyFunc(providers, auth.WithContext(ctx), auth.WithKeyFunc(serverJWT.Jwks()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create jwks: %w", err)
+	}
+
+	authMiddleware := authecho.MiddlewareJWT(
+		authecho.WithKeyFunc(jwksMulti.Keyfunc),
+		authecho.WithClaims(claims.NewClaims),
+	)
+
+	e := echo.New()
+
+	registry.Init(&registry.Registry{
+		DB: db,
+		Template: templatex.New(templatex.WithAddFuncsTpl(
+			fstore.FuncMapTpl(
+				fstore.WithLog(logz.AdapterKV{Log: log.With().Str("component", "template").Logger()}),
+				fstore.WithTrust(config.Application.Template.Trust),
+			),
+		)),
+		Server: e,
+		JWT: registry.JWT{
+			JWT:    serverJWT,
+			Parser: auth.JwkKeyFuncParse{KeyFunc: jwksMulti.Keyfunc},
+		},
+		WG:            wg,
+		AuthProviders: config.Application.AuthProviders,
+	})
+
+	request.InitGlobalRegistry(ctx).Start(wg)
+
+	e.HideBanner = true
+
+	e.Logger = lecho.From(log.With().Str("component", "server").Logger())
+
+	// middlewares
+	e.Use(metricecho.HTTPMetrics(nil))
+	e.Use(
+		middleware.Recover(),
+		middleware.CORS(),
+	)
+
+	e.Use(
+		middleware.RequestID(),
+		middleware.RequestLoggerWithConfig(logecho.RequestLoggerConfig()),
+		logecho.ZerologLogger(),
+	)
+
+	e.Use(
+		middleware.Gzip(),
+	)
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("context", ctx)
+			c.Response().Header().Set(echo.HeaderServer, config.AppName+":"+config.AppVersion)
+
+			return next(c)
+		}
+	})
+
+	if config.Application.BasePath != "" {
+		log.Info().Msgf("application BasePath: %s", config.Application.BasePath)
+	}
+
+	baseGroup := e.Group(config.Application.BasePath)
+	if err := setHandlers(baseGroup, authMiddleware); err != nil {
+		return nil, err
+	}
+
+	setFileHandler(baseGroup)
+
+	return e, nil
 }

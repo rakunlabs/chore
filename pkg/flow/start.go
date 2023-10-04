@@ -14,7 +14,7 @@ func StartFlow(
 	wg *sync.WaitGroup,
 	controlName, endPoint, method string,
 	content []byte,
-	appStore *registry.AppStore,
+	appStore *registry.Registry,
 	value []byte,
 ) (*NodesReg, error) {
 	nodesData, err := ParseData(content)

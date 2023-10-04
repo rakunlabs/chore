@@ -3,6 +3,7 @@ package nodes
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -73,7 +74,7 @@ type Request struct {
 	lockFeedBackCancel context.CancelFunc
 	feedbackWait       bool
 	headers            map[string]interface{}
-	retry              *request.Retry
+	oauth2             request.AuthConfig
 	retryRaw           retryRaw
 	url                string
 	addHeadersRaw      string
@@ -88,7 +89,8 @@ type Request struct {
 	disabled           bool
 	payloadNil         bool
 	skipVerify         bool
-	poolClient         bool
+	retryDisabled      bool
+	oauth2Name         string
 	stuckContext       context.Context
 	log                *zerolog.Logger
 	client             *request.Client
@@ -96,7 +98,7 @@ type Request struct {
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_1 is value
 	if input == flow.Input1 {
 		// don't allow multiple inputs
@@ -168,35 +170,35 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 		requestValues = transfer.BytesToData(n.inputHolder.value)
 	}
 
-	if requestValues != nil {
-		// render url
-		var buf bytes.Buffer
-		if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.url)); err != nil {
-			return nil, fmt.Errorf("template url cannot render: %v", err)
-		}
-
-		rendered.url = buf.String()
-
-		// render method
-		buf = bytes.Buffer{}
-		if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.method)); err != nil {
-			return nil, fmt.Errorf("template method cannot render: %v", err)
-		}
-
-		rendered.method = buf.String()
-
-		// render headers
-		buf = bytes.Buffer{}
-		if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.addHeadersRaw)); err != nil {
-			return nil, fmt.Errorf("template headers cannot render: %v", err)
-		}
-
-		rendered.addHeadersRaw = buf.String()
+	// if requestValues != nil {
+	// render url
+	var buf bytes.Buffer
+	if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.url)); err != nil {
+		return nil, fmt.Errorf("template url cannot render: %w", err)
 	}
+
+	rendered.url = buf.String()
+
+	// render method
+	buf = bytes.Buffer{}
+	if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.method)); err != nil {
+		return nil, fmt.Errorf("template method cannot render: %w", err)
+	}
+
+	rendered.method = buf.String()
+
+	// render headers
+	buf = bytes.Buffer{}
+	if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(requestValues), templatex.WithContent(n.addHeadersRaw)); err != nil {
+		return nil, fmt.Errorf("template additional headers cannot render: %w", err)
+	}
+
+	rendered.addHeadersRaw = buf.String()
+	// }
 
 	var addHeaders map[string]interface{}
 	if err := yaml.Unmarshal([]byte(rendered.addHeadersRaw), &addHeaders); err != nil {
-		return nil, fmt.Errorf("faild unmarshal headers in request: %v", err)
+		return nil, fmt.Errorf("faild unmarshal headers in request: %w", err)
 	}
 
 	headers := make(map[string]interface{}, len(n.headers)+len(addHeaders)+1)
@@ -220,17 +222,15 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppS
 		return nil, fmt.Errorf("http client not set")
 	}
 
-	response, err := n.client.Send(
+	response, err := n.client.Call(
 		ctx,
 		rendered.url,
 		rendered.method,
 		headers,
 		payload,
-		n.retry,
-		n.skipVerify,
 	)
 	if err != nil {
-		// return nil, fmt.Errorf("failed to send request: %v", err)
+		// return nil, fmt.Errorf("failed to send request: %w", err)
 		return &RequestRet{
 			respond: flow.Respond{
 				Header: nil,
@@ -272,22 +272,65 @@ func (n *Request) GetType() string {
 }
 
 func (n *Request) Fetch(ctx context.Context, db *gorm.DB) error {
-	if n.auth == "" {
-		n.fetched = true
+	if n.auth != "" {
+		getData := models.AuthPure{}
 
-		return nil
+		query := db.WithContext(ctx).Model(&models.Auth{}).Where("name = ?", n.auth)
+		result := query.First(&getData)
+
+		if result.Error != nil {
+			return fmt.Errorf("request fetch failed: %w", result.Error)
+		}
+
+		n.headers = getData.Headers
 	}
 
-	getData := models.AuthPure{}
+	// get oauth2 specs
+	if n.oauth2Name != "" {
+		authConfig := request.AuthConfig{
+			Enabled: true,
+		}
 
-	query := db.WithContext(ctx).Model(&models.Auth{}).Where("name = ?", n.auth)
-	result := query.First(&getData)
+		data := map[string]interface{}{}
+		query := db.WithContext(ctx).Model(&models.Settings{}).Where("namespace = ?", "oauth2").Where("name = ?", n.oauth2Name)
+		result := query.First(&data)
+		if result.Error != nil {
+			return fmt.Errorf("request fetch failed: %w", result.Error)
+		}
 
-	if result.Error != nil {
-		return fmt.Errorf("request fetch failed: %v", result.Error)
+		dataInner, _ := data["data"].(string)
+
+		if err := json.Unmarshal([]byte(dataInner), &authConfig); err != nil {
+			return fmt.Errorf("request fetch failed: %w", err)
+		}
+
+		n.oauth2 = authConfig
 	}
 
-	n.headers = getData.Headers
+	// fill retry values
+	retryCodes, err := getCodes(n.retryRaw.Codes)
+	if err != nil {
+		return err
+	}
+
+	retryDeCodes, err := getCodes(n.retryRaw.DeCodes)
+	if err != nil {
+		return err
+	}
+
+	n.client, err = request.NewClient(request.Config{ //nolint:contextcheck // application context using
+		SkipVerify: n.skipVerify,
+		Log:        n.log,
+		Retry: request.Retry{
+			Enabled:             true,
+			EnabledStatusCodes:  retryCodes,
+			DisabledStatusCodes: retryDeCodes,
+		},
+		Auth: n.oauth2,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create http client: %w", err)
+	}
 
 	n.fetched = true
 
@@ -311,28 +354,6 @@ func (n *Request) Validate(ctx context.Context) error {
 	if n.url == "" {
 		return fmt.Errorf("url is empty")
 	}
-
-	// fill retry values
-	retryCodes, err := getCodes(n.retryRaw.Codes)
-	if err != nil {
-		return err
-	}
-
-	retryDeCodes, err := getCodes(n.retryRaw.DeCodes)
-	if err != nil {
-		return err
-	}
-
-	n.retry = &request.Retry{
-		EnabledStatusCodes:  retryCodes,
-		DisabledStatusCodes: retryDeCodes,
-	}
-
-	n.client = request.NewClient(request.Config{
-		SkipVerify: n.skipVerify,
-		Pooled:     n.poolClient,
-		Log:        n.log,
-	})
 
 	n.stuckContext = n.reg.GetStuctCancel(ctx)
 
@@ -406,7 +427,9 @@ func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nod
 
 	skipVerify := convert.GetBoolean(data.Data["skip_verify"])
 	payloadNil := convert.GetBoolean(data.Data["payload_nil"])
-	poolClient := convert.GetBoolean(data.Data["pool_client"])
+	retryDisabled := convert.GetBoolean(data.Data["retry_disabled"])
+
+	oauth2Name, _ := data.Data["oauth2"].(string)
 
 	tags := convert.GetList(data.Data["tags"])
 
@@ -424,12 +447,13 @@ func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nod
 			Codes:   strings.ReplaceAll(retryCodes, ",", " "),
 			DeCodes: strings.ReplaceAll(retryDeCodes, ",", " "),
 		},
-		skipVerify: skipVerify,
-		payloadNil: payloadNil,
-		poolClient: poolClient,
-		log:        &l,
-		nodeID:     nodeID,
-		tags:       tags,
+		skipVerify:    skipVerify,
+		payloadNil:    payloadNil,
+		retryDisabled: retryDisabled,
+		log:           &l,
+		nodeID:        nodeID,
+		tags:          tags,
+		oauth2Name:    oauth2Name,
 	}, nil
 }
 

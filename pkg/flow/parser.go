@@ -21,9 +21,9 @@ func DataToNode(
 	ctx context.Context,
 	controlName, startName, method string,
 	datas NodesData,
-	appStore *registry.AppStore,
+	appStore *registry.Registry,
 ) (*NodesReg, error) {
-	reg := NewNodesReg(ctx, controlName, startName, method, appStore)
+	reg := NewNodesReg(controlName, startName, method, appStore)
 
 	for nodeNumber := range datas {
 		createFunc := NodeTypes[datas[nodeNumber].Name]

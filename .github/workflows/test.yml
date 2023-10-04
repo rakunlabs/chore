@@ -13,13 +13,14 @@ jobs:
         fetch-depth: 0
     - uses: actions/setup-go@v3
       with:
-        go-version: '1.20.6' # The Go version to download (if necessary) and use.
+        go-version: '1.21.3' # The Go version to download (if necessary) and use.
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
     - name: Run tests
+    # [[ ! -f ".golangci.yml" ]] && curl -kfsSL -O https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml || true
+    # GOPATH="$(dirname ${PWD})" golangci-lint run --out-format checkstyle --issues-exit-code 0 ./... > golangci-lint-report.out
+    # GOPATH="$(dirname ${PWD})" golangci-lint run --out-format checkstyle --new-from-rev remotes/origin/${{ github.event.repository.default_branch }} ./... > golangci-lint-report.out
       run: |
-        [[ ! -f ".golangci.yml" ]] && curl -kfsSL -O https://raw.githubusercontent.com/worldline-go/guide/main/lint/.golangci.yml || true
-        GOPATH="$(dirname ${PWD})" golangci-lint run --out-format checkstyle ./... > golangci-lint-report.out || true
         go test -coverprofile=coverage.out -json ./... > test-report.out
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master

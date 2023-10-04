@@ -18,7 +18,7 @@ const requestSender = async (area: string, params: object, method: Method, data:
   if (useToken) {
     try {
       const [token] = tokenGet();
-      headers = { Authorization: `Bearer ${token}` };
+      headers = { Authorization: `Bearer ${token["access_token"]}` };
     } catch (error) {
       console.log(error);
     }

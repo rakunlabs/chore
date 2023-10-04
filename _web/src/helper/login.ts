@@ -1,23 +1,23 @@
 import { requestSender } from "@/helper/api";
 import { tokenClear } from "@/helper/token";
 
-const login = async (data:object) => {
+const login = async (data: object, params: object | null) => {
   return requestSender(
     "/login",
-    null,
+    params,
     "POST",
     data,
     false,
   );
 };
 
-const renew = async () => {
+const renew = async (token: string, params: object | null) => {
   return requestSender(
     "/token/renew",
-    null,
-    "GET",
-    null,
-    true,
+    params,
+    "POST",
+    { token },
+    false,
   );
 };
 

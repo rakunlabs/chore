@@ -3,68 +3,30 @@ package registry
 import (
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
+	"github.com/labstack/echo/v4"
 	"github.com/rytsh/mugo/pkg/templatex"
-	"github.com/worldline-go/chore/pkg/sec"
+	"github.com/worldline-go/auth"
+	"github.com/worldline-go/auth/providers"
 )
-
-type AppStore struct {
-	Template *templatex.Template
-	App      *fiber.App
-	DB       *gorm.DB
-	JWT      *sec.JWT
-}
 
 type Registry struct {
-	apps  map[string]*AppStore
-	WG    *sync.WaitGroup
-	mutex sync.RWMutex
+	Template      *templatex.Template
+	Server        *echo.Echo
+	DB            *gorm.DB
+	JWT           JWT
+	WG            *sync.WaitGroup
+	AuthProviders map[string]*providers.Generic
 }
 
-func (r *Registry) Get(name string) *AppStore {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	return r.apps[name]
+type JWT struct {
+	*auth.JWT
+	Parser auth.JwkKeyFuncParse
 }
 
-func (r *Registry) Iter(fn func(*AppStore)) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
+var Reg *Registry
 
-	for k := range r.apps {
-		fn(r.apps[k])
-	}
-}
-
-func (r *Registry) Set(name string, appStore *AppStore) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	r.apps[name] = appStore
-}
-
-var (
-	regOnce  sync.Once
-	registry *Registry
-)
-
-// Reg get the registry or create it if not exists.
-// Options can be used just once.
-func Reg(options ...Option) *Registry {
-	regOnce.Do(func() {
-		reg := &Registry{
-			apps: make(map[string]*AppStore),
-		}
-
-		for _, opt := range options {
-			opt(reg)
-		}
-
-		registry = reg
-	})
-
-	return registry
+func Init(reg *Registry) {
+	Reg = reg
 }

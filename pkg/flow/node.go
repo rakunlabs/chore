@@ -83,7 +83,7 @@ type NodeDirectGo interface {
 // Noder for nodes like script, endpoint.
 type Noder interface {
 	GetType() string
-	Run(context.Context, *sync.WaitGroup, *registry.AppStore, NodeRet, string) (NodeRet, error)
+	Run(context.Context, *sync.WaitGroup, *registry.Registry, NodeRet, string) (NodeRet, error)
 	Fetch(context.Context, *gorm.DB) error
 	IsFetched() bool
 	Validate(context.Context) error

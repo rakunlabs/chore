@@ -50,7 +50,7 @@ type Wait struct {
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Wait) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Wait) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	// input_2 is value for pause
 	if input == flow.Input2 {
 		// don't allow multiple inputs

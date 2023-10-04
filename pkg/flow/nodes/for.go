@@ -40,20 +40,20 @@ func (r *ForRet) GetBinaryDatas() [][]byte {
 	return r.output
 }
 
-var _ flow.NodeRetDatas = &ForRet{}
+var _ flow.NodeRetDatas = (*ForRet)(nil)
 
-func (n *ForLoop) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *ForLoop) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	transferValue := transfer.BytesToData(value.GetBinaryData())
 
 	runner := js.NewGoja()
 
 	if err := runner.SetData(transferValue); err != nil {
-		return nil, fmt.Errorf("cannot set data in script: %v", err)
+		return nil, fmt.Errorf("cannot set data in script: %w", err)
 	}
 
 	gojaV, err := runner.RunString(n.expression)
 	if err != nil {
-		return nil, fmt.Errorf("cannot run loop value: %v", err)
+		return nil, fmt.Errorf("cannot run loop value: %w", err)
 	}
 
 	var forValues [][]byte

@@ -31,7 +31,7 @@ type Hub struct {
 }
 
 // Run get values from everywhere no need to check active input.
-func (n *Hub) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Hub) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	return &HubRet{NodeRet: value}, nil
 }
 

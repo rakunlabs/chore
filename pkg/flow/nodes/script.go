@@ -62,7 +62,7 @@ type Script struct {
 // selection 0 is false.
 //
 //nolint:lll // false positive
-func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	var transferValue interface{}
 	if value.GetBinaryData() != nil {
 		transferValue = transfer.BytesToData(value.GetBinaryData())
@@ -124,8 +124,9 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStor
 	result, err := runner.RunScript(ctx, n.script, inputValuesInterface)
 	if err != nil {
 		return &ScriptRet{ //nolint:nilerr // different kind of error
-			selection: []int{0, 2},
-			output:    []byte(err.Error()),
+			selection:    []int{0, 2},
+			output:       result,
+			outputValues: transfer.DataToBytes(valueToPass),
 		}, nil
 	}
 

@@ -1,0 +1,17 @@
+secret: thisisfordevelopmenttestsecret
+log_level: debug
+user:
+  name: admin
+  password: admin
+store:
+  type: postgres
+  schema: chore
+  host: "127.0.0.1"
+  port: "5432"
+  user: postgres
+  dbName: postgres
+auth_providers:
+  keycloak:
+    client_id: 'ui'
+    cert_url: 'http://localhost:8082/realms/master/protocol/openid-connect/certs'
+    token_url: 'http://localhost:8082/realms/master/protocol/openid-connect/token'

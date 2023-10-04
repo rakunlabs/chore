@@ -44,9 +44,13 @@
     if (remain) {
       // get new token based on old token
       try {
-        const response = await renew();
+        const [token, , provider] = tokenGet();
+        const response = await renew(
+          provider ? token["refresh_token"] : token["access_token"],
+          provider ? { provider } : null
+        );
 
-        tokenSet(response.data.data.token);
+        tokenSet(response.data.data, provider);
         getExpDate();
 
         cancelButton();
@@ -70,14 +74,17 @@
 
   const loginButton = async () => {
     try {
-      const [, claims] = tokenGet();
+      const [, claims, provider] = tokenGet();
 
-      const response = await login({
-        login: claims.user,
-        password: pass,
-      });
+      const response = await login(
+        {
+          login: claims.preferred_username ?? claims.sub,
+          password: pass,
+        },
+        provider ? { provider } : null
+      );
 
-      tokenSet(response.data.data.token);
+      tokenSet(response.data.data, provider);
       getExpDate();
       setCountDown();
 

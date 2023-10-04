@@ -4,8 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
+
 	"github.com/worldline-go/chore/internal/config"
+	"github.com/worldline-go/chore/pkg/registry"
 )
 
 type information struct {
@@ -16,6 +18,7 @@ type information struct {
 	BuildCommit string    `json:"buildCommit"`
 	StartDate   time.Time `json:"startDate"`
 	ServerDate  time.Time `json:"serverDate"`
+	Providers   []string  `json:"providers"`
 }
 
 // @Summary Information
@@ -23,8 +26,14 @@ type information struct {
 // @Tags public
 // @Router /info [get]
 // @Success 200 {object} information{}
-func getInfo(c *fiber.Ctx) error {
-	return c.Status(http.StatusOK).JSON(
+func getInfo(c echo.Context) error {
+	providers := make([]string, 0, len(registry.Reg.AuthProviders))
+	for i := range registry.Reg.AuthProviders {
+		providers = append(providers, i)
+	}
+
+	return c.JSON(
+		http.StatusOK,
 		information{
 			Name:        config.AppName,
 			Version:     config.AppVersion,
@@ -33,6 +42,7 @@ func getInfo(c *fiber.Ctx) error {
 			BuildCommit: config.AppBuildCommit,
 			StartDate:   config.StartDate,
 			ServerDate:  time.Now(),
+			Providers:   providers,
 		},
 	)
 }
@@ -42,11 +52,11 @@ func getInfo(c *fiber.Ctx) error {
 // @Tags public
 // @Router /ping [get]
 // @Success 200
-func getPing(c *fiber.Ctx) error {
-	return c.SendStatus(http.StatusOK)
+func getPing(c echo.Context) error {
+	return c.String(http.StatusOK, http.StatusText(http.StatusOK))
 }
 
-func Info(router fiber.Router) {
-	router.Get("/info", getInfo)
-	router.Get("/ping", getPing)
+func Info(e *echo.Group) {
+	e.GET("/info", getInfo)
+	e.GET("/ping", getPing)
 }

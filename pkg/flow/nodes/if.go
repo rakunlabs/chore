@@ -30,7 +30,7 @@ func (r *IfRet) GetSelection() []int {
 	return r.selection
 }
 
-var _ flow.NodeRetSelection = &IfRet{}
+var _ flow.NodeRetSelection = (*IfRet)(nil)
 
 // Ifcase node has one input and one output.
 // Not need to wait other inputs.
@@ -44,7 +44,7 @@ type IfCase struct {
 }
 
 // selection 0 is false.
-func (n *IfCase) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, input string) (flow.NodeRet, error) {
+func (n *IfCase) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	var transferValue interface{}
 	if value.GetBinaryData() != nil {
 		transferValue = transfer.BytesToData(value.GetBinaryData())
@@ -53,7 +53,7 @@ func (n *IfCase) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStor
 	runner := js.NewGoja()
 
 	if err := runner.SetData(transferValue); err != nil {
-		return nil, fmt.Errorf("cannot set data in script: %v", err)
+		return nil, fmt.Errorf("cannot set data in script: %w", err)
 	}
 
 	gojaV, err := runner.RunString(n.expression)

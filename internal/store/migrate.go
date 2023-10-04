@@ -31,19 +31,19 @@ func AutoMigrate(ctx context.Context, dbConn *gorm.DB) error {
 			"dsn":      choiceExist(config.Application.Migrate.DBDataSource, config.Application.Store.DBDataSource),
 		})
 		if err != nil {
-			return fmt.Errorf("cannot open db: %v", err)
+			return fmt.Errorf("cannot open db: %w", err)
 		}
 
 		db, err := dbConnMigrate.DB()
 		if err != nil {
-			return fmt.Errorf("cannot get db: %v", err)
+			return fmt.Errorf("cannot get db: %w", err)
 		}
 
 		defer db.Close()
 	}
 
 	if err := dbConnMigrate.AutoMigrate(Models...); err != nil {
-		return fmt.Errorf("auto migrate failed: %v", err)
+		return fmt.Errorf("auto migrate failed: %w", err)
 	}
 
 	if err := initializeAdminGroup(ctx, dbConnMigrate); err != nil {

@@ -27,7 +27,7 @@ const (
 
 // NodesReg hold concreate information of nodes and start points.
 type NodesReg struct {
-	appStore          *registry.AppStore
+	appStore          *registry.Registry
 	reg               map[string]Noder
 	respondChan       chan Respond
 	controlName       string
@@ -47,7 +47,7 @@ type NodesReg struct {
 	stuckChan       chan bool
 }
 
-func NewNodesReg(ctx context.Context, controlName, startName, method string, appStore *registry.AppStore) *NodesReg {
+func NewNodesReg(controlName, startName, method string, appStore *registry.Registry) *NodesReg {
 	return &NodesReg{
 		controlName: controlName,
 		startName:   startName,

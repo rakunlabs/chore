@@ -41,7 +41,7 @@ func (g *Goja) RunString(value string) (goja.Value, error) {
 
 func (g *Goja) RunScript(ctx context.Context, script string, inputs []interface{}) ([]byte, error) {
 	if _, err := g.runtime.RunString(script); err != nil {
-		return nil, fmt.Errorf("script cannot read: %v", err)
+		return nil, fmt.Errorf("script cannot read: %w", err)
 	}
 
 	mainScript, ok := goja.AssertFunction(g.runtime.Get("main"))
@@ -69,13 +69,13 @@ func (g *Goja) RunScript(ctx context.Context, script string, inputs []interface{
 			if strings.HasPrefix(err.Error(), "ReferenceError: ") && !strings.HasPrefix(fmt.Sprint(retVal), "ReferenceError: ") {
 				log.Ctx(ctx).Error().Msgf("main function run: %v", err)
 
-				return []byte(err.Error()), fmt.Errorf("main function run: %v", err)
+				return []byte(err.Error()), fmt.Errorf("main function run: %w", err)
 			}
 
 			return transfer.DataToBytes(retVal), ErrThrow
 		}
 
-		return nil, fmt.Errorf("main function run: %v", err)
+		return nil, fmt.Errorf("main function run: %w", err)
 	}
 
 	return transfer.DataToBytes(res.Export()), nil

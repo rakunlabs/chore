@@ -9,6 +9,7 @@ import (
 type AuthPure struct {
 	Name    string            `json:"name" gorm:"unique;uniqueIndex;not null" example:"jira-deepcore"`
 	Headers datatypes.JSONMap `json:"headers" swaggertype:"object,string" example:"Content-Type:application/json"`
+	Data    string            `json:"data" example:"any data"`
 	apimodels.Groups
 }
 

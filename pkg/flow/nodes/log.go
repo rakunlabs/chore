@@ -36,7 +36,7 @@ type Log struct {
 }
 
 // Run get values from everywhere no need to check active input.
-func (n *Log) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Log) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	var logEvent *zerolog.Event
 
 	switch n.logLevel {

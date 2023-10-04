@@ -17,6 +17,7 @@
   import Users from "@/components/pages/Users.svelte";
   import Send from "@/components/pages/Send.svelte";
   import Email from "@/components/pages/Email.svelte";
+  import Oauth2 from "@/components/pages/Oauth2.svelte";
   import { isAdminToken } from "@/helper/token";
 
   // highlight operations
@@ -30,6 +31,7 @@
   routes.set(new RegExp("^/token(/(.*))*"), Token);
   routes.set(new RegExp("^/users(/(.*))*"), Users);
   routes.set(new RegExp("^/email(/(.*))*"), Email);
+  routes.set(new RegExp("^/oauth2(/(.*))*"), Oauth2);
   routes.set("*", Main);
 
   const sideLinks = [
@@ -37,7 +39,11 @@
     "control",
     "auths",
     "templates",
-    { settings: isAdminToken() ? ["token", "users", "email"] : ["token"] },
+    {
+      settings: isAdminToken()
+        ? ["token", "users", "email", "oauth2"]
+        : ["token"],
+    },
   ];
 
   let layout: HTMLElement;

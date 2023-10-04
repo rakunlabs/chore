@@ -34,10 +34,10 @@ type Endpoint struct {
 	tags     []string
 }
 
-var _ flow.NoderEndpoint = &Endpoint{}
+var _ flow.NoderEndpoint = (*Endpoint)(nil)
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Endpoint) Run(_ context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Endpoint) Run(_ context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	return &EndpointRet{output: value.GetBinaryData()}, nil
 }
 

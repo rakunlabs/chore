@@ -23,7 +23,7 @@
   <div class="flex items-center gap-2">
     <TokenRenew />
     <a
-      href="./api/v1/swagger"
+      href="./api/v1/swagger/index.html"
       target="_blank"
       class="px-4 py-1 my-auto bg-transparent border-2 border-green-500 text-green-500 text-sm hover:bg-green-500 hover:text-gray-100"
     >

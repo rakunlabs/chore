@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
-	"github.com/worldline-go/chore/internal/server/middleware"
+
+	"github.com/worldline-go/chore/internal/server/middlewares"
 	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/script/js"
@@ -23,10 +24,11 @@ import (
 // @Success 200 {object} string "result of the script"
 // @failure 400 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postJS(c *fiber.Ctx) error {
+func postJS(c echo.Context) error {
 	body := defaultRunModel()
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(
+			http.StatusBadRequest,
 			apimodels.Error{
 				Error: err.Error(),
 			},
@@ -36,7 +38,8 @@ func postJS(c *fiber.Ctx) error {
 	if body.Settings.Timeout != "" {
 		duration, err := time.ParseDuration(body.Settings.Timeout)
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(
+			return c.JSON(
+				http.StatusBadRequest,
 				apimodels.Error{
 					Error: err.Error(),
 				},
@@ -46,15 +49,14 @@ func postJS(c *fiber.Ctx) error {
 		body.Settings.TimeoutDuration = duration
 	}
 
-	log.Ctx(c.UserContext()).Debug().Msgf("script run with API")
+	ctx := c.Request().Context()
+	log.Ctx(ctx).Debug().Msgf("script run with API")
 
 	runtime := js.NewGoja()
 	parsedInputs := js.ParseInputs(body.Inputs)
 
 	if body.Settings.Async {
-		ctx := c.UserContext()
-		logX := log.Ctx(ctx)
-		wg := registry.Reg().WG
+		wg := registry.Reg.WG
 
 		wg.Add(1)
 		go func() {
@@ -62,22 +64,21 @@ func postJS(c *fiber.Ctx) error {
 
 			result, err := runtime.RunScript(ctx, string(body.Script), parsedInputs)
 			if err != nil {
-				logX.Error().Err(err).Msg("error while running script")
+				log.Ctx(ctx).Error().Err(err).Msg("error while running script")
 
 				return
 			}
 
-			logX.Info().Msgf("%s", result)
+			log.Ctx(ctx).Info().Msgf("%s", result)
 		}()
 
-		return c.SendStatus(http.StatusAccepted)
+		return c.String(http.StatusAccepted, http.StatusText(http.StatusAccepted))
 	}
-
-	ctx := log.Ctx(c.UserContext()).WithContext(c.Context())
 
 	result, err := runtime.RunScript(ctx, string(body.Script), parsedInputs)
 	if err != nil && !errors.Is(err, js.ErrThrow) {
-		return c.Status(http.StatusBadRequest).JSON(
+		return c.JSON(
+			http.StatusBadRequest,
 			apimodels.Error{
 				Error: err.Error(),
 			},
@@ -85,9 +86,7 @@ func postJS(c *fiber.Ctx) error {
 	}
 
 	// return recorded data's id
-	_, err = c.Status(http.StatusOK).Write(result)
-
-	return err
+	return c.Blob(http.StatusOK, "text/plain", result)
 }
 
 // @Summary Render template
@@ -101,15 +100,16 @@ func postJS(c *fiber.Ctx) error {
 // @failure 400 {object} apimodels.Error{}
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
-func postTemplate(c *fiber.Ctx) error {
-	return c.Status(http.StatusNotImplemented).JSON(
+func postTemplate(c echo.Context) error {
+	return c.JSON(
+		http.StatusNotImplemented,
 		apimodels.Error{
 			Error: "waiting implementation",
 		},
 	)
 }
 
-func API(router fiber.Router) {
-	router.Post("/run/js", middleware.JWTCheck(nil, nil), postJS)
-	router.Post("/run/template", middleware.JWTCheck(nil, nil), postTemplate)
+func API(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
+	e.POST("/run/js", postJS, authMiddleware, middlewares.UserRole)
+	e.POST("/run/template", postTemplate, authMiddleware, middlewares.UserRole)
 }

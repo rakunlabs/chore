@@ -1,6 +1,11 @@
 package config
 
-import "time"
+import (
+	"time"
+
+	"github.com/worldline-go/auth/providers"
+	"github.com/worldline-go/tell"
+)
 
 var (
 	AppName        = "chore"
@@ -29,15 +34,18 @@ var Application = struct {
 	Env      string `cfg:"env"`
 	Host     string `cfg:"host"`
 	Port     string `cfg:"port"`
-	LogLevel string `cfg:"logLevel"`
-	Secret   string `cfg:"secret" loggable:"false"`
+	LogLevel string `cfg:"log_level"`
+	Secret   string `cfg:"secret"    log:"false"`
 	// BasePath for swagger ui ex /chore/
-	BasePath string   `cfg:"basePath"`
+	BasePath string   `cfg:"base_path"`
 	User     User     `cfg:"user"`
 	Store    Store    `cfg:"store"`
 	Migrate  Store    `cfg:"migrate"`
-	Server   Server   `cfg:"server"`
 	Template Template `cfg:"template"`
+
+	AuthProviders map[string]*providers.Generic `cfg:"auth_providers"`
+
+	Telemetry tell.Config
 }{
 	Host:     "0.0.0.0",
 	LogLevel: "info",
@@ -53,13 +61,9 @@ var Application = struct {
 		DBName:          "postgres",
 		Host:            "127.0.0.1",
 		Port:            "5432",
-		ConnMaxLifetime: 15 * time.Minute,
+		ConnMaxLifeTime: 15 * time.Minute,
 		MaxIdleConns:    5,
 		MaxOpenConns:    7,
-	},
-	Server: Server{
-		ReadBufferSize:  1024 * 1024,
-		WriteBufferSize: 1024 * 1024,
 	},
 	Template: Template{
 		Trust: false,
@@ -69,29 +73,24 @@ var Application = struct {
 // User settings will use if doesn't have any user on database.
 type User struct {
 	Name     string `cfg:"name"`
-	Password string `cfg:"password" loggable:"false"`
+	Password string `cfg:"password" log:"false"`
 }
 
 type Store struct {
 	Type            string        `cfg:"type"`
-	FileName        string        `cfg:"fileName"`
+	FileName        string        `cfg:"file_name"`
 	Schema          string        `cfg:"schema"`
 	Host            string        `cfg:"host"`
 	Port            string        `cfg:"port"`
 	User            string        `cfg:"user"`
-	Password        string        `cfg:"password" loggable:"false"`
-	DBName          string        `cfg:"dbName"`
-	TimeZone        string        `cfg:"timeZone" default:"UTC"`
-	DBDataSource    string        `cfg:"dbDataSource" loggable:"false"`
-	ConnMaxIdleTime time.Duration `cfg:"connMaxIdleTime"`
-	ConnMaxLifetime time.Duration `cfg:"connMaxLifetime"`
-	MaxIdleConns    int           `cfg:"maxIdleConns"`
-	MaxOpenConns    int           `cfg:"maxOpenConns"`
-}
-
-type Server struct {
-	ReadBufferSize  int `cfg:"readBufferSize"`
-	WriteBufferSize int `cfg:"writeBufferSize"`
+	Password        string        `cfg:"password"           log:"false"`
+	DBName          string        `cfg:"db_name"`
+	TimeZone        string        `cfg:"time_zone"          default:"UTC"`
+	DBDataSource    string        `cfg:"db_data_source"     log:"false"`
+	ConnMaxIdleTime time.Duration `cfg:"conn_max_idle_time"`
+	ConnMaxLifeTime time.Duration `cfg:"conn_max_life_time"`
+	MaxIdleConns    int           `cfg:"max_idle_conns"`
+	MaxOpenConns    int           `cfg:"max_open_conns"`
 }
 
 type Template struct {

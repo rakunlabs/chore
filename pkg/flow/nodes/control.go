@@ -23,15 +23,18 @@ type ControlRet struct {
 	respond flow.Respond
 }
 
+func (r *ControlRet) GetRespondData() flow.Respond {
+	return r.respond
+}
+
 func (r *ControlRet) GetBinaryData() []byte {
 	return r.respond.Data
 }
 
-func (r *ControlRet) GetRespond() flow.Respond {
-	return r.respond
-}
-
-var _ flow.NodeRetRespond = &ControlRet{}
+var (
+	_ flow.NodeRetRespondData = (*ControlRet)(nil)
+	_ flow.NodeRet            = (*ControlRet)(nil)
+)
 
 // Control node has one input and one output.
 type Control struct {
@@ -44,31 +47,19 @@ type Control struct {
 	disabled     bool
 	nodeID       string
 	tags         []string
+	control      models.Control
 }
 
 // Run get values from active input nodes and it will not run until last input comes.
-func (n *Control) Run(ctx context.Context, wg *sync.WaitGroup, reg *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
-	control := models.Control{}
-
-	query := reg.DB.WithContext(ctx).Where("name = ?", n.controlName)
-	result := query.First(&control)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("control not found %s; %w", n.controlName, result.Error)
-	}
-
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to fetch %s; %w", n.controlName, result.Error)
-	}
-
-	content, err := base64.StdEncoding.DecodeString(control.Content)
+func (n *Control) Run(ctx context.Context, wg *sync.WaitGroup, reg *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+	content, err := base64.StdEncoding.DecodeString(n.control.Content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode content; %w", err)
 	}
 
-	log.Ctx(ctx).Info().Msgf("internal call control=[%s] endpoint=[%s]", control.Name, n.endpointName)
+	log.Ctx(ctx).Info().Msgf("internal call control=[%s] endpoint=[%s]", n.control.Name, n.endpointName)
 
-	nodesReg, err := flow.StartFlow(ctx, wg, control.Name, n.endpointName, n.methodName, content, reg, value.GetBinaryData())
+	nodesReg, err := flow.StartFlow(ctx, wg, n.control.Name, n.endpointName, n.methodName, content, reg, value.GetBinaryData())
 	if errors.Is(err, flow.ErrEndpointNotFound) {
 		return nil, fmt.Errorf("endpoint not found %s; %w", n.endpointName, err)
 	}
@@ -96,6 +87,16 @@ func (n *Control) GetType() string {
 }
 
 func (n *Control) Fetch(ctx context.Context, db *gorm.DB) error {
+	query := db.WithContext(ctx).Where("name = ?", n.controlName)
+	result := query.First(&n.control)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("control not found %s; %w", n.controlName, result.Error)
+	}
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to fetch %s; %w", n.controlName, result.Error)
+	}
 	return nil
 }
 

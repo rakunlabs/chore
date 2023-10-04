@@ -3,10 +3,11 @@ package parser
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
 )
 
 type UserPass struct {
@@ -14,9 +15,9 @@ type UserPass struct {
 	Pass string
 }
 
-func GetQueryBool(c *fiber.Ctx, s string) (bool, error) {
+func GetQueryBool(c echo.Context, s string) (bool, error) {
 	rest := false
-	restRaw := c.Query(s)
+	restRaw := c.QueryParam(s)
 
 	if restRaw != "" {
 		var err error
@@ -30,9 +31,8 @@ func GetQueryBool(c *fiber.Ctx, s string) (bool, error) {
 	return rest, nil
 }
 
-func GetAuthorizationBasic(c *fiber.Ctx) (*UserPass, error) {
-	headerValue := c.Get("authorization")
-
+func GetAuthorizationBasic(r *http.Request) (*UserPass, error) {
+	headerValue := r.Header.Get("authorization")
 	if headerValue == "" {
 		return nil, fmt.Errorf("authorization header not found")
 	}

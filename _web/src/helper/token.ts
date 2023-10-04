@@ -19,9 +19,27 @@ const tokenClear = () => {
 const isAdminToken = () => {
   try {
     const [, claims] = tokenGet();
-    const groups = claims["groups"] as string[];
-    return groups ? groups.includes("admin") : false;
+    let roles = claims?.roles as string[];
+
+    if (roles == null) {
+      roles = [];
+    }
+
+    // get all roles in the claims
+    for (const resource in claims?.resource_access) {
+      claims?.resource_access[resource]?.roles.forEach((role: string) => {
+        roles.push(role);
+      });
+    }
+
+    claims?.realm_access?.roles.forEach((role: string) => {
+      roles.push(role);
+    });
+
+
+    return roles.includes("chore_admin");
   } catch (error) {
+    console.error(error);
     return false;
   }
 };
@@ -38,12 +56,13 @@ const tokenGet = () => {
     throw new Error("token not defined");
   }
 
-  return [data["token"], data["claims"]];
+  return [data["token"], data["claims"], data["provider"]];
 };
 
-const tokenSet = (token: string) => {
-  const claims = jwtDecode(token);
+const tokenSet = (token: object, provider: string) => {
+  const claims = jwtDecode(token["access_token"]);
   const data = JSON.stringify({
+    provider,
     token,
     claims,
   });
@@ -54,7 +73,7 @@ const tokenSet = (token: string) => {
 const tokenCondition = async () => {
   try {
     const [token] = tokenGet();
-    await tokenCheck(token);
+    await tokenCheck(token["access_token"]);
   } catch (error) {
     tokenClear();
     return false;

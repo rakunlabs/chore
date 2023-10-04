@@ -17,10 +17,29 @@
   let editMode = false;
 
   let formEdit: HTMLFormElement;
-  let editID = "";
+  // let editID = "";
+  let editData = {
+    id: "",
+    name: "",
+    groups: "",
+    headers: {},
+    data: "",
+  };
+
+  let error = "";
+  let headerCount = [];
 
   const setEditMode = (v: boolean) => {
-    editID = "";
+    editData = {
+      id: "",
+      name: "",
+      groups: "",
+      headers: {},
+      data: "",
+    };
+
+    headerCount = [];
+
     editMode = v;
   };
 
@@ -76,22 +95,42 @@
 
       const id = (e.target as HTMLElement).dataset["id"];
 
-      if (confirm("Are you sure to delete?")) {
+      if (
+        confirm(
+          `Are you sure to delete ${datas.find((v) => v.id == id)?.name}?`
+        )
+      ) {
         deleteAuth(id);
       }
+
+      return;
     }
 
     if (action == "edit") {
       e.preventDefault();
       e.stopPropagation();
 
-      editMode = true;
+      if (!editMode) {
+        editMode = true;
 
-      formEdit.reset();
+        formEdit.reset();
+      }
 
       const dataset = (e.target as HTMLElement).dataset;
 
-      editID = dataset["id"];
+      let editID = dataset["id"];
+
+      let data = datas.find((d) => d.id == editID);
+
+      editData = {
+        id: data["id"],
+        name: data["name"],
+        groups: data["groups"],
+        headers: data["headers"],
+        data: data["data"],
+      };
+
+      return;
     }
   };
 
@@ -102,7 +141,7 @@
     const submitter = (e.submitter as HTMLButtonElement).value;
 
     // delete unused fields
-    for (const key of ["id", "name", "groups", "headers"]) {
+    for (const key of ["id", "name", "groups", "headers", "data"]) {
       if (data[key] == "") {
         delete data[key];
       }
@@ -125,20 +164,20 @@
       const response = await requestSender(
         "auth",
         null,
-        submitter == "create" ? "POST" : "PATCH",
+        submitter == "create" ? "POST" : "PUT",
         data,
         true
       );
 
       // console.log(l);
       // filter and add
-      datas = datas.filter((d) => d["id"] != response.data.data.id);
+      datas = datas.filter((d) => d["id"] != data.id);
 
       try {
         const responseGet = await requestSender(
           "auth",
           {
-            id: response.data.data.id,
+            id: submitter == "create" ? response.data.data.id : data.id,
           },
           "GET",
           null,
@@ -164,10 +203,6 @@
       }
     }
   };
-
-  let error = "";
-
-  let headerCount = [];
 
   const searchFn = (s: string) => {
     listAuthSearch(s, 0);
@@ -214,7 +249,8 @@
             name="id"
             placeholder="----"
             disabled={!editMode}
-            bind:value={editID}
+            readonly={true}
+            bind:value={editData.id}
             autocomplete="off"
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
@@ -226,6 +262,7 @@
             name="name"
             placeholder="jira1"
             autocomplete="off"
+            value={editData.name}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
@@ -236,6 +273,7 @@
             name="groups"
             placeholder="admin, deepcore"
             autocomplete="off"
+            value={editData.groups}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />
         </label>
@@ -245,43 +283,62 @@
             type="button"
             class="h-full"
             on:click|preventDefault|stopPropagation={() => {
-              if (headerCount.length > 0) {
-                headerCount.push(headerCount[headerCount.length - 1] + 1);
-              } else {
-                headerCount.push(1);
-              }
-              headerCount = headerCount;
+              const data = formToObjectMulti(formEdit);
+
+              editData.headers = {
+                ...data.headers,
+                "": "",
+              };
             }}
           >
             <Icon icon="plus" class="p-1" />
           </button>
           <div class="flex flex-grow flex-col">
-            {#each headerCount as h (h)}
+            {#each Object.keys(editData?.headers ?? {}) as key}
               <div class="flex">
                 <button
                   type="button"
-                  on:click|preventDefault|stopPropagation={() =>
-                    (headerCount = headerCount.filter((v) => v != h))}
+                  on:click|preventDefault|stopPropagation={() => {
+                    const data = formToObjectMulti(formEdit);
+
+                    delete data.headers[key];
+                    editData.headers = {
+                      ...data.headers,
+                    };
+                  }}
                 >
                   <Icon icon="minus" class="p-1" />
                 </button>
                 <input
                   type="text"
-                  name={`headers-key-${h}`}
-                  placeholder={`key-${h}`}
+                  name={`headers-key-${key}`}
+                  placeholder={`key-${key}`}
+                  value={key}
                   class="w-full px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
                 />
                 <input
                   type="text"
-                  name={`headers-value-${h}`}
-                  placeholder={`value-${h}`}
+                  name={`headers-value-${key}`}
+                  placeholder={`value-${key}`}
                   autocomplete="off"
+                  value={editData.headers[key]}
                   class="w-full px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
                 />
               </div>
             {/each}
           </div>
         </span>
+        <label class="mb-1 flex">
+          <span class="w-20 inline-block">Data</span>
+          <textarea
+            name="data"
+            placeholder="any data"
+            autocomplete="off"
+            rows="5"
+            value={editData.data}
+            class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
+          />
+        </label>
         <button
           type="submit"
           value={editMode ? "edit" : "create"}
@@ -309,13 +366,14 @@
           <th style="width:5%" />
           <th style="width:10%">name</th>
           <th>headers</th>
+          <th>data</th>
           <th>groups</th>
           <th style="width:20%" />
         </tr>
       </thead>
       <tbody>
         {#each datas as d, i (d.id)}
-          <tr class={editID == d.id ? "!bg-indigo-200" : ""}>
+          <tr class={editData.id == d.id ? "!bg-indigo-200" : ""}>
             <th>{i + 1}</th>
             <th>{d.name}</th>
             <th class="text-left">
@@ -325,6 +383,9 @@
                 class="w-full"
                 value={d.headers ? JSON.stringify(d.headers) : ""}
               />
+            </th>
+            <th class="text-left">
+              <input type="text" readonly class="w-full" value={d.data ?? ""} />
             </th>
             <th>{d.groups ?? ""}</th>
             <th>

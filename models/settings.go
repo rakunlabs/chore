@@ -2,27 +2,21 @@ package models
 
 import (
 	"github.com/worldline-go/chore/models/apimodels"
+	"gorm.io/datatypes"
 )
 
-type EmailPure struct {
-	Host   string `json:"host"`
-	Email  string `json:"email"`
-	Port   int    `json:"port"`
-	NoAuth bool   `json:"no_auth"`
-}
-
-type EmailPrivate struct {
+type Email struct {
+	Host     string `json:"host"`
+	Email    string `json:"email"`
+	Port     int    `json:"port"`
+	NoAuth   bool   `json:"no_auth"`
 	Password string `json:"password"`
 }
 
-type Email struct {
-	EmailPrivate
-	EmailPure
-}
-
 type SettingsPure struct {
-	Namespace string `json:"namespace" gorm:"unique;uniqueIndex;not null" example:"application"`
-	Email     `json:"email"`
+	Name      string            `json:"name" gorm:"uniqueIndex:idx_name_namespace" example:"email-1"`
+	Namespace string            `json:"namespace" gorm:"uniqueIndex:idx_name_namespace;not null" example:"email"`
+	Data      datatypes.JSONMap `json:"data" swaggertype:"object,string"`
 }
 
 type Settings struct {

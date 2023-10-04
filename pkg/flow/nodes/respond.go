@@ -29,7 +29,7 @@ func (r *RespondRet) GetRespond() flow.Respond {
 	return r.respond
 }
 
-var _ flow.NodeRetRespond = &RespondRet{}
+var _ flow.NodeRetRespond = (*RespondRet)(nil)
 
 // Respond node has one input.
 type Respond struct {
@@ -43,10 +43,10 @@ type Respond struct {
 }
 
 // Run get values from active input nodes.
-func (n *Respond) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.AppStore, value flow.NodeRet, _ string) (flow.NodeRet, error) {
+func (n *Respond) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
 	var headers map[string]interface{}
 	if err := yaml.Unmarshal([]byte(n.headersRaw), &headers); err != nil {
-		return nil, fmt.Errorf("faild unmarshal headers in request: %v", err)
+		return nil, fmt.Errorf("faild unmarshal headers in request: %w", err)
 	}
 
 	if n.getData {
