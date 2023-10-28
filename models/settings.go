@@ -8,7 +8,7 @@ import (
 type Email struct {
 	Host     string `json:"host"`
 	Email    string `json:"email"`
-	Port     int    `json:"port"`
+	Port     string `json:"port"`
 	NoAuth   bool   `json:"no_auth"`
 	Password string `json:"password"`
 }

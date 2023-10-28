@@ -3,7 +3,9 @@ package nodes
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -164,7 +166,7 @@ func (n *Email) GetType() string {
 }
 
 func (n *Email) Fetch(ctx context.Context, db *gorm.DB) error {
-	getData := models.Email{}
+	getData := map[string]interface{}{}
 
 	query := db.WithContext(ctx).Model(&models.Settings{}).Select("data").Where("namespace = ?", "email").Where("name = ?", "email-1")
 	result := query.First(&getData)
@@ -173,10 +175,23 @@ func (n *Email) Fetch(ctx context.Context, db *gorm.DB) error {
 		return fmt.Errorf("email fetch failed: %w", result.Error)
 	}
 
-	n.client = email.NewClient(getData.Host, getData.Port, getData.NoAuth, getData.Email, getData.Password)
+	// log.Debug().Msgf("%v", getData)
+
+	dataInner, _ := getData["data"].(string)
+	emailModel := models.Email{}
+	if err := json.Unmarshal([]byte(dataInner), &emailModel); err != nil {
+		return fmt.Errorf("request fetch failed: %w", err)
+	}
+
+	port, err := strconv.ParseInt(emailModel.Port, 10, 32)
+	if err != nil {
+		return fmt.Errorf("request fetch failed: %w", err)
+	}
+
+	n.client = email.NewClient(emailModel.Host, int(port), emailModel.NoAuth, emailModel.Email, emailModel.Password)
 
 	if n.values["From"] == "" {
-		n.values["From"] = getData.Email
+		n.values["From"] = emailModel.Email
 	}
 
 	n.fetched = true

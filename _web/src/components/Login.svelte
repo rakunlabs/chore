@@ -20,6 +20,7 @@
   const signin = async (
     e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
   ) => {
+    e.preventDefault();
     // prevent multiple click
     if (working) {
       return;

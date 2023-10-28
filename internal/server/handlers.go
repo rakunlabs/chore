@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -147,6 +148,7 @@ func Set(ctx context.Context, wg *sync.WaitGroup, db *gorm.DB) (*echo.Echo, erro
 	})
 
 	if config.Application.BasePath != "" {
+		config.Application.BasePath = "/" + strings.Trim(config.Application.BasePath, "/")
 		log.Info().Msgf("application BasePath: %s", config.Application.BasePath)
 	}
 

@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 	"github.com/worldline-go/auth"
 	"github.com/worldline-go/auth/request"
 	"gorm.io/gorm"
@@ -162,7 +161,7 @@ func loginAndGetToken(c echo.Context, body LoginModel, raw bool) error {
 		}
 	}
 
-	log.Info().Msgf("user groups: %v", groups)
+	// log.Info().Msgf("user groups: %v", groups)
 
 	tokenID, err := uuid.NewUUID()
 	if err != nil {

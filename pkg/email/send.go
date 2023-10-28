@@ -1,8 +1,12 @@
 package email
 
 import (
+	"time"
+
 	gomail "gopkg.in/mail.v2"
 )
+
+var EmailTimeout = 1 * time.Minute
 
 type Client struct {
 	d *gomail.Dialer
@@ -16,6 +20,8 @@ func NewClient(host string, port int, noAuth bool, mail, password string) Client
 	} else {
 		mailDialer = gomail.NewDialer(host, port, mail, password)
 	}
+
+	mailDialer.Timeout = EmailTimeout
 
 	return Client{mailDialer}
 }

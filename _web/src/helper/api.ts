@@ -31,7 +31,7 @@ const requestSender = async (area: string, params: object, method: Method, data:
       params: params,
       data: data,
       headers: headers,
-      timeout: options.timeout == null || options.timeout == undefined ? 2000 : options.timeout,
+      timeout: options.timeout == null || options.timeout == undefined ? 3000 : options.timeout,
       transformResponse: options.notTransformResponse ? null : undefined,
       cancelToken: options.cancelToken,
     });

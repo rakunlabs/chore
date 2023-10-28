@@ -29,6 +29,8 @@ _First initialization user and password is **admin:admin**, changable with confi
 
 ### Configuration
 
+Camel or snake-case usable for keys.
+
 ```yaml
 secret: thisisfordevelopmenttestsecret
 user:
@@ -56,11 +58,10 @@ migrate:
   password: formigration
   user: migration
 
-# BasePath just required for swagger ui, this tool use relative paths at all
-# basePath: /chore/ # to set mywebsite.com/chore/
+# base_path: /chore # to set mywebsite.com/chore/
 # host: 0.0.0.0 # default
 # port: 8080 # default
-# logLevel: info # default
+# log_level: info # default
 ```
 
 Secret is important for tokens, to generate own token, use one of this commands:

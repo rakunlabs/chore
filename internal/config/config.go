@@ -31,12 +31,11 @@ var LoadConfig = Load{
 }
 
 var Application = struct {
-	Env      string `cfg:"env"`
-	Host     string `cfg:"host"`
-	Port     string `cfg:"port"`
-	LogLevel string `cfg:"log_level"`
-	Secret   string `cfg:"secret"    log:"false"`
-	// BasePath for swagger ui ex /chore/
+	Env      string   `cfg:"env"`
+	Host     string   `cfg:"host"`
+	Port     string   `cfg:"port"`
+	LogLevel string   `cfg:"log_level"`
+	Secret   string   `cfg:"secret"    log:"false"`
 	BasePath string   `cfg:"base_path"`
 	User     User     `cfg:"user"`
 	Store    Store    `cfg:"store"`
