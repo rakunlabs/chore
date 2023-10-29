@@ -2,7 +2,16 @@ package models
 
 import (
 	"github.com/worldline-go/chore/models/apimodels"
+	"gopkg.in/guregu/null.v4"
 )
+
+type UserRequest struct {
+	Name     null.String `json:"name"`
+	Email    null.String `json:"email"`
+	Groups   []string    `json:"groups"`
+	Password null.String `json:"password"`
+	ID       string      `json:"id"`
+}
 
 type UserData struct {
 	Name  string `json:"name" gorm:"unique;uniqueIndex;not null" example:"userX"`

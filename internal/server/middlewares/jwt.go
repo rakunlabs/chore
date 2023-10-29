@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -15,7 +17,7 @@ var (
 	UserRoleKey  = "chore_user"
 
 	AdminRole = authecho.MiddlewareRole(authecho.WithRoles("chore_admin"))
-	UserRole  = authecho.MiddlewareRole(authecho.WithRoles("chore_user"))
+	UserRole  = authecho.MiddlewareRole(authecho.WithRoles("chore_user", "chore_admin"))
 )
 
 // JWTCheck comes after the auth middleware to check ID's can have do that.
@@ -57,6 +59,18 @@ func IDFromBody(c echo.Context) string {
 	body := struct {
 		ID string `json:"id"`
 	}{}
+
+	var bodyBytes []byte
+	if c.Request().Body != nil {
+		bodyBytes, _ = io.ReadAll(c.Request().Body)
+	}
+
+	// TODO: fix this ugly code!
+	c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	defer func() {
+		c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}()
+
 	if err := c.Bind(&body); err != nil {
 		return ""
 	}

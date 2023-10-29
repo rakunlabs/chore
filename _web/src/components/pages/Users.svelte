@@ -109,14 +109,12 @@
     }
 
     // fix groups
-    if (data["groups"]) {
-      if (data["groups"].replaceAll(" ", "") == "") {
-        data["groups"] = null;
-      } else {
-        data["groups"] = (data["groups"] as string)
-          .replaceAll(" ", "")
-          .split(",");
-      }
+    if (data["groups"].replaceAll(" ", "") == "") {
+      data["groups"] = [];
+    } else {
+      data["groups"] = (data["groups"] as string)
+        .replaceAll(" ", "")
+        .split(",");
     }
 
     try {
@@ -171,7 +169,9 @@
 
       const id = (e.target as HTMLElement).dataset["id"];
 
-      if (confirm("Are you sure to delete?")) {
+      if (
+        confirm(`Are you sure to delete ${datas.find((d) => d.id == id).name}?`)
+      ) {
         deleteUser(id);
       }
     }

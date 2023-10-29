@@ -37,6 +37,7 @@ require (
 	github.com/worldline-go/tell v0.4.0
 	github.com/worldline-go/tell/metric/metricecho v0.4.0
 	github.com/ziflex/lecho/v3 v3.5.0
+	gopkg.in/guregu/null.v4 v4.0.0
 )
 
 require (

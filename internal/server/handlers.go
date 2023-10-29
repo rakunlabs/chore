@@ -39,10 +39,11 @@ import (
 // @in header
 // @name Authorization
 func setHandlers(e *echo.Group, authMiddleware echo.MiddlewareFunc) error {
-	v1 := e.Group("/api/v1")
+	apiPath := "/api/v1"
+	v1 := e.Group(apiPath)
 
 	// set swagger
-	if err := routerSwagger(v1); err != nil {
+	if err := routerSwagger(v1, apiPath); err != nil {
 		return err
 	}
 

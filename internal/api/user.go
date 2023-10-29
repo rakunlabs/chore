@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/worldline-go/chore/internal/server/middlewares"
@@ -174,26 +175,34 @@ func deleteUser(c echo.Context) error {
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func postUser(c echo.Context) error {
-	body := new(models.UserPure)
-	if err := c.Bind(body); err != nil {
+	// body := map[string]interface{}{}
+	body := models.UserRequest{}
+	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
-	if body.Name == "" {
+	if !body.Name.Valid {
 		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "name is required"})
 	}
 
-	if body.Password == "" {
+	if !body.Password.Valid {
 		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "password is required"})
 	}
 
 	// hash password
-	hashedPassword, err := sec.HashPassword([]byte(body.Password))
+	hashedPassword, err := sec.HashPassword([]byte(body.Password.String))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 	}
 
-	body.Password = string(hashedPassword)
+	var rawBodyGroups []byte
+
+	if body.Groups != nil {
+		rawBodyGroups, err = json.Marshal(body.Groups)
+		if err != nil {
+			return c.JSON(http.StatusBadGateway, apimodels.Error{Error: err.Error()})
+		}
+	}
 
 	id, err := uuid.NewUUID()
 	if err != nil {
@@ -204,7 +213,18 @@ func postUser(c echo.Context) error {
 
 	result := registry.Reg.DB.WithContext(ctx).Create(
 		&models.User{
-			UserPure: *body,
+			UserPure: models.UserPure{
+				UserPrivate: models.UserPrivate{
+					Password: string(hashedPassword),
+				},
+				UserData: models.UserData{
+					Name: body.Name.String,
+					Groups: apimodels.Groups{
+						Groups: datatypes.JSON(rawBodyGroups),
+					},
+					Email: body.Email.String,
+				},
+			},
 			ModelCU: apimodels.ModelCU{
 				ID: apimodels.ID{ID: id},
 			},
@@ -235,48 +255,34 @@ func postUser(c echo.Context) error {
 // @failure 409 {object} apimodels.Error{}
 // @failure 500 {object} apimodels.Error{}
 func patchUser(c echo.Context) error {
-	var body map[string]interface{}
+	bodySend := map[string]interface{}{}
+	body := models.UserRequest{}
 	if err := c.Bind(&body); err != nil {
-		return c.JSON(
-			http.StatusBadRequest,
-			apimodels.Error{
-				Error: err.Error(),
-			},
-		)
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: err.Error()})
 	}
 
-	if v, ok := body["id"].(string); !ok || v == "" {
-		return c.JSON(
-			http.StatusBadRequest,
-			apimodels.Error{
-				Error: "id is required and cannot be empty",
-			},
-		)
+	if body.ID == "" {
+		return c.JSON(http.StatusBadRequest, apimodels.Error{Error: "id is required and cannot be empty"})
 	}
 
 	// hash password
-	if v, ok := body["password"].(string); ok {
-		hashedPassword, err := sec.HashPassword([]byte(v))
+	if body.Password.Valid {
+		hashedPassword, err := sec.HashPassword([]byte(body.Password.String))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
 		}
 
-		body["password"] = hashedPassword
+		bodySend["password"] = hashedPassword
 	}
 
-	if body["groups"] != nil {
-		var err error
-
-		body["groups"], err = json.Marshal(body["groups"])
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: err.Error()})
-		}
+	if body.Groups != nil {
+		bodySend["groups"], _ = json.Marshal(body.Groups)
 	}
 
 	ctx := utils.Context(c)
-	query := registry.Reg.DB.WithContext(ctx).Model(&models.User{}).Where("id = ?", body["id"])
+	query := registry.Reg.DB.WithContext(ctx).Model(&models.User{}).Where("id = ?", body.ID)
 
-	result := query.Updates(body)
+	result := query.Updates(bodySend)
 
 	// check write error
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrDuplicatedKey) {
@@ -287,12 +293,11 @@ func patchUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, apimodels.Error{Error: result.Error.Error()})
 	}
 
-	resultData := make(map[string]interface{})
-	resultData["id"] = body["id"]
-
 	return c.JSON(http.StatusOK,
 		apimodels.Data{
-			Data: resultData,
+			Data: map[string]interface{}{
+				"id": body.ID,
+			},
 		},
 	)
 }
