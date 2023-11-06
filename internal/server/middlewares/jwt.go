@@ -18,6 +18,7 @@ var (
 
 	AdminRole = authecho.MiddlewareRole(authecho.WithRoles("chore_admin"))
 	UserRole  = authecho.MiddlewareRole(authecho.WithRoles("chore_user", "chore_admin"))
+	PatToken  = authecho.MiddlewareControl(PatTokenExist)
 )
 
 // JWTCheck comes after the auth middleware to check ID's can have do that.

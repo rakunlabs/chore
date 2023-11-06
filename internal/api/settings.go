@@ -158,7 +158,7 @@ func deleteSettings(c echo.Context) error {
 }
 
 func Settings(c *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	c.GET("/settings", getSettings, authMiddleware, middlewares.AdminRole)
-	c.PATCH("/settings", patchSettings, authMiddleware, middlewares.AdminRole)
-	c.DELETE("/settings", deleteSettings, authMiddleware, middlewares.AdminRole)
+	c.GET("/settings", getSettings, authMiddleware, middlewares.AdminRole, middlewares.PatToken)
+	c.PATCH("/settings", patchSettings, authMiddleware, middlewares.AdminRole, middlewares.PatToken)
+	c.DELETE("/settings", deleteSettings, authMiddleware, middlewares.AdminRole, middlewares.PatToken)
 }

@@ -110,6 +110,6 @@ func postTemplate(c echo.Context) error {
 }
 
 func API(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	e.POST("/run/js", postJS, authMiddleware, middlewares.UserRole)
-	e.POST("/run/template", postTemplate, authMiddleware, middlewares.UserRole)
+	e.POST("/run/js", postJS, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.POST("/run/template", postTemplate, authMiddleware, middlewares.UserRole, middlewares.PatToken)
 }

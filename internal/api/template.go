@@ -420,10 +420,10 @@ func deleteTemplate(c echo.Context) error {
 }
 
 func Template(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	e.GET("/templates", listTemplates, authMiddleware, middlewares.UserRole)
-	e.GET("/template", getTemplate, authMiddleware, middlewares.UserRole)
-	e.POST("/template", postTemplate, authMiddleware, middlewares.UserRole)
-	e.PUT("/template", putTemplate, authMiddleware, middlewares.UserRole)
-	e.PATCH("/template", patchTemplate, authMiddleware, middlewares.UserRole)
-	e.DELETE("/template", deleteTemplate, authMiddleware, middlewares.UserRole)
+	e.GET("/templates", listTemplates, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.GET("/template", getTemplate, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.POST("/template", postTemplate, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.PUT("/template", putTemplate, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.PATCH("/template", patchTemplate, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.DELETE("/template", deleteTemplate, authMiddleware, middlewares.UserRole, middlewares.PatToken)
 }

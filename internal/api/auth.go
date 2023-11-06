@@ -332,10 +332,10 @@ func deleteAuth(c echo.Context) error {
 }
 
 func Auth(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	e.GET("/auths", listAuths, authMiddleware, middlewares.UserRole)
-	e.GET("/auth", getAuth, authMiddleware, middlewares.UserRole)
-	e.POST("/auth", postAuth, authMiddleware, middlewares.UserRole)
-	e.PUT("/auth", putAuth, authMiddleware, middlewares.UserRole)
-	e.PATCH("/auth", patchAuth, authMiddleware, middlewares.UserRole)
-	e.DELETE("/auth", deleteAuth, authMiddleware, middlewares.UserRole)
+	e.GET("/auths", listAuths, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.GET("/auth", getAuth, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.POST("/auth", postAuth, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.PUT("/auth", putAuth, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.PATCH("/auth", patchAuth, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.DELETE("/auth", deleteAuth, authMiddleware, middlewares.UserRole, middlewares.PatToken)
 }

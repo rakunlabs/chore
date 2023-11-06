@@ -1,6 +1,8 @@
 package claims
 
 import (
+	"encoding/json"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/worldline-go/auth/claims"
@@ -15,6 +17,22 @@ var (
 
 type Custom struct {
 	claims.Custom
+
+	TokenType string `json:"chore_token_type,omitempty"`
+	TokenID   string `json:"chore_token_id,omitempty"`
+}
+
+func (c *Custom) UnmarshalJSON(b []byte) error {
+	type newCustom Custom
+	err := json.Unmarshal(b, (*newCustom)(c))
+	if err != nil {
+		return err
+	}
+
+	c.TokenID, _ = c.Map[KeyTokenID].(string)
+	c.TokenType, _ = c.Map[KeyTokenType].(string)
+
+	return nil
 }
 
 func NewClaims() jwt.Claims {

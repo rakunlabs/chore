@@ -248,5 +248,5 @@ func endpointCheck(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func Send(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	e.Any("/send", send, endpointCheck, authMiddleware, middlewares.UserRole)
+	e.Any("/send", send, endpointCheck, authMiddleware, middlewares.UserRole, middlewares.PatToken)
 }

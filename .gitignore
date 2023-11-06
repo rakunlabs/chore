@@ -1,6 +1,7 @@
 /_out
 /bin
 /.golangci.yml
+/.vscode/
 
 /internal/server/dist/*
 !/internal/server/dist/.gitkeep
@@ -17,5 +18,4 @@
 semicolon_delimited_script
 
 /chore*
-
 /go.work*

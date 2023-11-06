@@ -451,11 +451,11 @@ func deleteControl(c echo.Context) error {
 }
 
 func Control(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	e.POST("/control/clone", cloneControl, authMiddleware, middlewares.UserRole)
-	e.GET("/controls", listControls, authMiddleware, middlewares.UserRole)
-	e.GET("/control", getControl, authMiddleware, middlewares.UserRole)
-	e.POST("/control", postControl, authMiddleware, middlewares.UserRole)
-	e.PUT("/control", putControl, authMiddleware, middlewares.UserRole)
-	e.PATCH("/control", patchControl, authMiddleware, middlewares.UserRole)
-	e.DELETE("/control", deleteControl, authMiddleware, middlewares.UserRole)
+	e.POST("/control/clone", cloneControl, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.GET("/controls", listControls, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.GET("/control", getControl, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.POST("/control", postControl, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.PUT("/control", putControl, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.PATCH("/control", patchControl, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.DELETE("/control", deleteControl, authMiddleware, middlewares.UserRole, middlewares.PatToken)
 }

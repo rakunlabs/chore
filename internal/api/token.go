@@ -320,8 +320,8 @@ func postTokenRenew(c echo.Context) error {
 func Token(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
 	e.POST("/token/check", postTokenCheck)
 	e.POST("/token/renew", postTokenRenew)
-	e.GET("/tokens", listTokens, authMiddleware, middlewares.UserRole)
-	e.GET("/token", getToken, authMiddleware, middlewares.UserRole)
-	e.POST("/token", postToken, authMiddleware, middlewares.UserRole)
-	e.DELETE("/token", deleteToken, authMiddleware, middlewares.UserRole)
+	e.GET("/tokens", listTokens, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.GET("/token", getToken, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.POST("/token", postToken, authMiddleware, middlewares.UserRole, middlewares.PatToken)
+	e.DELETE("/token", deleteToken, authMiddleware, middlewares.UserRole, middlewares.PatToken)
 }

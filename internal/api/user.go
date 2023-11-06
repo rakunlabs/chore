@@ -303,9 +303,9 @@ func patchUser(c echo.Context) error {
 }
 
 func User(e *echo.Group, authMiddleware echo.MiddlewareFunc) {
-	e.GET("/users", listUsers, authMiddleware, middlewares.AdminRole)
-	e.GET("/user", getUser, authMiddleware, middlewares.JWTCheck(middlewares.IDFromQuery), middlewares.AdminRole)
-	e.POST("/user", postUser, authMiddleware, middlewares.AdminRole)
-	e.PATCH("/user", patchUser, authMiddleware, middlewares.JWTCheck(middlewares.IDFromBody), middlewares.AdminRole)
-	e.DELETE("/user", deleteUser, authMiddleware, middlewares.JWTCheck(middlewares.IDFromQuery), middlewares.AdminRole)
+	e.GET("/users", listUsers, authMiddleware, middlewares.AdminRole, middlewares.PatToken)
+	e.GET("/user", getUser, authMiddleware, middlewares.JWTCheck(middlewares.IDFromQuery), middlewares.AdminRole, middlewares.PatToken)
+	e.POST("/user", postUser, authMiddleware, middlewares.AdminRole, middlewares.PatToken)
+	e.PATCH("/user", patchUser, authMiddleware, middlewares.JWTCheck(middlewares.IDFromBody), middlewares.AdminRole, middlewares.PatToken)
+	e.DELETE("/user", deleteUser, authMiddleware, middlewares.JWTCheck(middlewares.IDFromQuery), middlewares.AdminRole, middlewares.PatToken)
 }
