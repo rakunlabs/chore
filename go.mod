@@ -27,11 +27,11 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/rytsh/mugo v0.6.0
-	github.com/worldline-go/auth v0.7.3
+	github.com/worldline-go/auth v0.7.4
 	github.com/worldline-go/echo-swagger v1.3.5
 	github.com/worldline-go/igconfig v0.2.4
 	github.com/worldline-go/initializer v0.2.3
-	github.com/worldline-go/klient v0.7.3
+	github.com/worldline-go/klient v0.7.4
 	github.com/worldline-go/logz v0.5.0
 	github.com/worldline-go/swagger v1.0.0
 	github.com/worldline-go/tell v0.4.0
