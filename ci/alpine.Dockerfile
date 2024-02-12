@@ -1,5 +1,5 @@
 ARG ALPINE
-# alpine:3.18.4
+# alpine:3.19.1
 
 FROM $ALPINE
 

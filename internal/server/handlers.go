@@ -25,6 +25,7 @@ import (
 	"github.com/worldline-go/chore/internal/api/run"
 	"github.com/worldline-go/chore/internal/config"
 	"github.com/worldline-go/chore/internal/server/claims"
+	"github.com/worldline-go/chore/internal/server/middlewares"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/request"
 )
@@ -95,6 +96,13 @@ func Set(ctx context.Context, wg *sync.WaitGroup, db *gorm.DB) (*echo.Echo, erro
 	authMiddleware := authecho.MiddlewareJWT(
 		authecho.WithKeyFunc(jwksMulti.Keyfunc),
 		authecho.WithClaims(claims.NewClaims),
+		authecho.WithSkipper(func(c echo.Context) bool {
+			if v, ok := c.Get(middlewares.DisableTokenCheck).(bool); ok && v {
+				return true
+			}
+
+			return false
+		}),
 	)
 
 	e := echo.New()

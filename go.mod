@@ -6,14 +6,14 @@ require (
 	github.com/dop251/goja v0.0.0-20221024130056-0ad46a434ac5
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/consul/api v1.18.0 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/swaggo/swag v1.16.2
 	github.com/wei840222/gorm-zerolog v0.0.0-20210303025759-235c42bb33fa
-	golang.org/x/crypto v0.11.0
+	golang.org/x/crypto v0.14.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -24,14 +24,14 @@ require (
 
 require (
 	github.com/go-test/deep v1.1.0
-	github.com/golang-jwt/jwt/v5 v5.0.0
-	github.com/labstack/echo/v4 v4.11.1
-	github.com/rytsh/mugo v0.6.0
-	github.com/worldline-go/auth v0.7.4
+	github.com/golang-jwt/jwt/v5 v5.1.0
+	github.com/labstack/echo/v4 v4.11.3
+	github.com/rytsh/mugo v0.7.4
+	github.com/worldline-go/auth v0.7.7
 	github.com/worldline-go/echo-swagger v1.3.5
 	github.com/worldline-go/igconfig v0.2.4
-	github.com/worldline-go/initializer v0.2.3
-	github.com/worldline-go/klient v0.7.4
+	github.com/worldline-go/initializer v0.2.4
+	github.com/worldline-go/klient v0.7.7
 	github.com/worldline-go/logz v0.5.0
 	github.com/worldline-go/swagger v1.0.0
 	github.com/worldline-go/tell v0.4.0
@@ -137,10 +137,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

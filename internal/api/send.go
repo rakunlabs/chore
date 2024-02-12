@@ -216,8 +216,9 @@ func endpointCheck(next echo.HandlerFunc) echo.HandlerFunc {
 		// method check
 		allowMethod := false
 
+		reqMethod := c.Request().Method
 		for _, endpointMethod := range endpointSpec.Methods {
-			if endpointMethod == c.Request().Method {
+			if endpointMethod == reqMethod {
 				allowMethod = true
 
 				break
@@ -230,7 +231,7 @@ func endpointCheck(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.JSON(
 				http.StatusMethodNotAllowed,
 				apimodels.Error{
-					Error: fmt.Sprintf("method %s not allowed", c.Request().Method),
+					Error: fmt.Sprintf("method %s not allowed", reqMethod),
 				},
 			)
 		}
@@ -242,6 +243,8 @@ func endpointCheck(next echo.HandlerFunc) echo.HandlerFunc {
 
 		c.Set(authecho.DisableRoleCheckKey, true)
 		c.Set(authecho.DisableScopeCheckKey, true)
+		c.Set(authecho.DisableControlCheckKey, true)
+		c.Set(middlewares.DisableTokenCheck, true)
 
 		return next(c)
 	}
