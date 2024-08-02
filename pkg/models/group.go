@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 )
 
 type GroupPure struct {

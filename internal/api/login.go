@@ -14,8 +14,8 @@ import (
 	"github.com/worldline-go/chore/internal/parser"
 	"github.com/worldline-go/chore/internal/server/claims"
 	"github.com/worldline-go/chore/internal/server/middlewares"
-	"github.com/worldline-go/chore/models"
-	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/models"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/sec"
 )

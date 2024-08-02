@@ -11,9 +11,9 @@ import (
 	"sync"
 
 	"github.com/rytsh/mugo/pkg/templatex"
-	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
+	"github.com/worldline-go/chore/pkg/models"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/request"
 	"github.com/worldline-go/chore/pkg/transfer"
@@ -91,6 +91,7 @@ type Request struct {
 	skipVerify         bool
 	retryDisabled      bool
 	oauth2Name         string
+	proxy              string
 	stuckContext       context.Context
 	log                *zerolog.Logger
 	client             *request.Client
@@ -326,7 +327,8 @@ func (n *Request) Fetch(ctx context.Context, db *gorm.DB) error {
 			EnabledStatusCodes:  retryCodes,
 			DisabledStatusCodes: retryDeCodes,
 		},
-		Auth: n.oauth2,
+		Auth:  n.oauth2,
+		Proxy: n.proxy,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
@@ -430,6 +432,7 @@ func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nod
 	retryDisabled := convert.GetBoolean(data.Data["retry_disabled"])
 
 	oauth2Name, _ := data.Data["oauth2"].(string)
+	proxy, _ := data.Data["proxy"].(string)
 
 	tags := convert.GetList(data.Data["tags"])
 
@@ -454,6 +457,7 @@ func NewRequest(ctx context.Context, reg *flow.NodesReg, data flow.NodeData, nod
 		nodeID:        nodeID,
 		tags:          tags,
 		oauth2Name:    oauth2Name,
+		proxy:         proxy,
 	}, nil
 }
 

@@ -3,7 +3,7 @@ package models
 import (
 	"gorm.io/datatypes"
 
-	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 )
 
 // ControlEndpoint is representation of Endpoints json object.

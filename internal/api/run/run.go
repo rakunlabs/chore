@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/worldline-go/chore/internal/server/middlewares"
-	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/script/js"
 )

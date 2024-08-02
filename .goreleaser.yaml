@@ -86,7 +86,7 @@ dockers:
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
 - image_templates:
-  - 'ghcr.io/worldline-go/chore:{{ .Tag }}-alpine3.19.1'
+  - 'ghcr.io/worldline-go/chore:{{ .Tag }}-alpine3.20.2'
   - 'ghcr.io/worldline-go/chore:latest'
   dockerfile: ci/alpine.Dockerfile
   build_flag_templates:
@@ -101,4 +101,4 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
-  - "--build-arg=ALPINE=alpine:3.19.1"
+  - "--build-arg=ALPINE=alpine:3.20.2"

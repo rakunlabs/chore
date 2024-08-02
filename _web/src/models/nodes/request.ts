@@ -6,6 +6,7 @@ export type requestData = {
   payload_nil: boolean,
   retry_disabled: boolean,
   oauth2: string,
+  proxy: string,
   url: string,
   method: string,
   auth: string,

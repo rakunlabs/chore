@@ -13,10 +13,10 @@ import (
 	"github.com/rytsh/mugo/pkg/templatex"
 	"gorm.io/gorm"
 
-	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/email"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
+	"github.com/worldline-go/chore/pkg/models"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/transfer"
 )
@@ -154,7 +154,7 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Regist
 		}
 	}
 
-	if err := n.client.Send(value.GetBinaryData(), headers); err != nil {
+	if err := n.client.Send(value.GetBinaryData(), headers, nil); err != nil {
 		return nil, fmt.Errorf("failed to send email: values %v, err %w", headers, err)
 	}
 

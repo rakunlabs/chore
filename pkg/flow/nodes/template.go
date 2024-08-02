@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/rytsh/mugo/pkg/templatex"
-	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
+	"github.com/worldline-go/chore/pkg/models"
 	"github.com/worldline-go/chore/pkg/registry"
 	"github.com/worldline-go/chore/pkg/transfer"
 

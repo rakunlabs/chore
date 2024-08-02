@@ -18,6 +18,6 @@ func main() {
 	)
 }
 
-func run(ctx context.Context, _ *sync.WaitGroup) error {
-	return args.Execute(ctx) //nolint:wrapcheck // no need
+func run(ctx context.Context, wg *sync.WaitGroup) error {
+	return args.Execute(ctx, wg) //nolint:wrapcheck // no need
 }

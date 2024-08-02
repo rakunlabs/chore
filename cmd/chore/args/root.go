@@ -41,7 +41,8 @@ var rootCmd = &cobra.Command{
 
 		return nil
 	},
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// load configuration
 		if err := loadConfig(cmd.Context(), cmd.Flags().Visit); err != nil {
@@ -56,7 +57,8 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func Execute(ctx context.Context) error {
+func Execute(ctx context.Context, wg *sync.WaitGroup) error {
+	ctx = context.WithValue(ctx, "wg", wg)
 	return rootCmd.ExecuteContext(ctx) //nolint:wrapcheck // no need
 }
 
@@ -122,6 +124,11 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 }
 
 func runRoot(ctx context.Context) error {
+	wg, _ := ctx.Value("wg").(*sync.WaitGroup)
+	if wg == nil {
+		return fmt.Errorf("wg not found in context")
+	}
+
 	// appname and version
 	// config.Banner("custom send request with templates"),
 	log.WithLevel(zerolog.NoLevel).Msgf(
@@ -136,9 +143,6 @@ func runRoot(ctx context.Context) error {
 		return fmt.Errorf("failed to init telemetry; %w", err)
 	}
 	defer collector.Shutdown() //nolint:errcheck // no need
-
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
 
 	defer func() {
 		log.Info().Msg("application shutdown")
@@ -189,7 +193,7 @@ func runRoot(ctx context.Context) error {
 	}
 
 	initializer.Shutdown.Add(func() error {
-		return server.Stop(e) //nolint:wrapcheck // no need
+		return server.Stop(e)
 	}, initializer.WithShutdownName("server"))
 
 	// start server

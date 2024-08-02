@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/worldline-go/chore/models"
-	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/models"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 )
 
 func FolderFile(fileName string) []models.Folder {

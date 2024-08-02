@@ -13,6 +13,10 @@ func DataToBytes(data interface{}) []byte {
 
 	// check type of data
 	switch dataTyped := data.(type) {
+	case []byte:
+		return dataTyped
+	case string:
+		return []byte(dataTyped)
 	case map[string]interface{}, []interface{}:
 		dataBytes, err := json.Marshal(dataTyped)
 		if err != nil {
@@ -20,10 +24,6 @@ func DataToBytes(data interface{}) []byte {
 		}
 
 		return dataBytes
-	case []byte:
-		return dataTyped
-	case string:
-		return []byte(dataTyped)
 	default:
 		return []byte(fmt.Sprint(dataTyped))
 	}

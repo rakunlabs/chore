@@ -1,6 +1,6 @@
 package store
 
-import "github.com/worldline-go/chore/models"
+import "github.com/worldline-go/chore/pkg/models"
 
 // Models using for migrate database tables.
 var Models = []interface{}{

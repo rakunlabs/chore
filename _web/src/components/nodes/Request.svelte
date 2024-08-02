@@ -42,24 +42,37 @@
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
   <p class="title-node">Request - {node.id}</p>
-  <p>Info for UI</p>
-  <input type="text" placeholder="info" name="info" bind:value={data.info} />
-  <p>Enter request url</p>
-  <input
-    type="url"
-    placeholder="https://createmyissue.com"
-    name="url"
-    bind:value={data.url}
-  />
-  <p>Enter method</p>
-  <input
-    type="text"
-    placeholder="POST"
-    name="method"
-    bind:value={data.method}
-  />
-  <p>Enter auth</p>
-  <input type="text" placeholder="myauth" name="auth" bind:value={data.auth} />
+  <label>
+    <span>Info for UI</span>
+    <input type="text" placeholder="info" name="info" bind:value={data.info} />
+  </label>
+  <label>
+    <span>Request URL</span>
+    <input
+      type="url"
+      placeholder="https://createmyissue.com"
+      name="url"
+      bind:value={data.url}
+    />
+  </label>
+  <label>
+    <span>Method</span>
+    <input
+      type="text"
+      placeholder="POST"
+      name="method"
+      bind:value={data.method}
+    />
+  </label>
+  <label>
+    <span>Auth</span>
+    <input
+      type="text"
+      placeholder="myauth"
+      name="auth"
+      bind:value={data.auth}
+    />
+  </label>
   <label>
     <span>Payload set to nil</span>
     <input
@@ -69,13 +82,24 @@
       bind:checked={data.payload_nil}
     />
   </label>
-  <p>Enter oauth2</p>
-  <input
-    type="text"
-    placeholder="oauth2"
-    name="oauth2"
-    bind:value={data.oauth2}
-  />
+  <label>
+    <span>Http(s) Proxy</span>
+    <input
+      type="text"
+      placeholder="proxy"
+      name="proxy"
+      bind:value={data.proxy}
+    />
+  </label>
+  <label>
+    <span>Oauth2</span>
+    <input
+      type="text"
+      placeholder="oauth2"
+      name="oauth2"
+      bind:value={data.oauth2}
+    />
+  </label>
   <label>
     <span>Skip verify certificate</span>
     <input

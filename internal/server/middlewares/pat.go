@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/worldline-go/chore/internal/server/claims"
-	"github.com/worldline-go/chore/models"
+	"github.com/worldline-go/chore/pkg/models"
 	"github.com/worldline-go/chore/pkg/registry"
 	"gorm.io/gorm"
 )

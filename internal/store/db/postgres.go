@@ -11,13 +11,13 @@ import (
 )
 
 func PostgresDB(cfg map[string]interface{}) (*gorm.DB, error) {
-	timeZone := cfg["timeZone"]
-	if timeZone == "" {
-		timeZone = "UTC"
-	}
-
 	dsn, _ := cfg["dsn"].(string)
 	if dsn == "" {
+		timeZone := cfg["timeZone"]
+		if timeZone == "" {
+			timeZone = "UTC"
+		}
+
 		dsn = fmt.Sprintf(
 			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s",
 			cfg["host"], cfg["user"], cfg["password"], cfg["dbName"], cfg["port"], timeZone)

@@ -9,9 +9,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/worldline-go/chore/models"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
+	"github.com/worldline-go/chore/pkg/models"
 	"github.com/worldline-go/chore/pkg/registry"
 
 	"gorm.io/gorm"

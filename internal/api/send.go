@@ -16,9 +16,9 @@ import (
 	"github.com/worldline-go/auth/pkg/authecho"
 	"github.com/worldline-go/chore/internal/server/middlewares"
 	"github.com/worldline-go/chore/internal/utils"
-	"github.com/worldline-go/chore/models"
-	"github.com/worldline-go/chore/models/apimodels"
 	"github.com/worldline-go/chore/pkg/flow"
+	"github.com/worldline-go/chore/pkg/models"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 	"github.com/worldline-go/chore/pkg/registry"
 )
 

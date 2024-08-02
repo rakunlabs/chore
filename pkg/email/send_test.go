@@ -32,7 +32,7 @@ func TestClient_Send(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// SKIP THIS TEST
 			t.SkipNow()
-			if err := tt.client.Send(tt.args.msg, tt.args.headers); (err != nil) != tt.wantErr {
+			if err := tt.client.Send(tt.args.msg, tt.args.headers, nil); (err != nil) != tt.wantErr {
 				t.Errorf("Client.Send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

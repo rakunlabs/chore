@@ -9,7 +9,7 @@ import (
 
 	"github.com/worldline-go/auth/pkg/authecho"
 	"github.com/worldline-go/chore/internal/server/claims"
-	"github.com/worldline-go/chore/models/apimodels"
+	"github.com/worldline-go/chore/pkg/models/apimodels"
 )
 
 var (

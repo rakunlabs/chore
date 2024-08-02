@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/rs/zerolog"
 	"github.com/worldline-go/klient"
@@ -30,6 +31,7 @@ type Client struct {
 
 type Config struct {
 	SkipVerify bool
+	Proxy      string
 	Log        *zerolog.Logger
 	Retry      Retry
 	Auth       AuthConfig
@@ -77,6 +79,10 @@ func NewClient(cfg Config) (*Client, error) {
 		}
 
 		options = append(options, klient.WithRoundTripper(roundTripper))
+	}
+
+	if cfg.Proxy != "" {
+		options = append(options, klient.WithProxy(cfg.Proxy))
 	}
 
 	client, err := klient.New(options...)
@@ -134,7 +140,7 @@ func (c *Client) newRequest(ctx context.Context, url, method string, headers map
 		req.Header.Add(k, fmt.Sprint(v))
 	}
 
-	req.Header.Add("Content-Length", fmt.Sprint(len(payload)))
+	req.Header.Add("Content-Length", strconv.Itoa(len(payload)))
 
 	return req, nil
 }
