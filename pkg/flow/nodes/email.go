@@ -154,7 +154,7 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Regist
 		}
 	}
 
-	if err := n.client.Send(value.GetBinaryData(), headers, nil); err != nil {
+	if err := n.client.Send(value.GetBinaryData(), headers); err != nil {
 		return nil, fmt.Errorf("failed to send email: values %v, err %w", headers, err)
 	}
 

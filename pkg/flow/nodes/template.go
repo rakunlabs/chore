@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"github.com/labstack/gommon/log"
+	"github.com/worldline-go/chore/pkg/email"
 	"sync"
 
 	"github.com/rytsh/mugo/pkg/templatex"
@@ -42,11 +45,35 @@ type Template struct {
 
 // Run get values from active input nodes and it will not run until last input comes.
 func (n *Template) Run(_ context.Context, _ *sync.WaitGroup, reg *registry.Registry, value flow.NodeRet, _ string) (flow.NodeRet, error) {
-	v := transfer.BytesToData(value.GetBinaryData())
+	var v interface{}
+	binData := value.GetBinaryData()
+	body := struct {
+		Attachments []email.Attach `json:"attachments"`
+		Body        []byte         `json:"body"`
+	}{}
+
+	err := json.Unmarshal(binData, &body)
+	if err != nil {
+		log.Debug("template run failed: %w", err)
+	}
+	if len(body.Attachments) > 0 {
+		v = transfer.BytesToData(body.Body)
+	} else {
+		v = transfer.BytesToData(binData)
+	}
 
 	buf := bytes.Buffer{}
 	if err := reg.Template.Execute(templatex.WithIO(&buf), templatex.WithData(v), templatex.WithContent(string(n.content))); err != nil {
 		return nil, fmt.Errorf("template cannot render: %w", err)
+	}
+
+	if len(body.Attachments) > 0 {
+		body.Body = buf.Bytes()
+		res, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("template cannot marshal: %w", err)
+		}
+		return &TemplateRet{res}, nil
 	}
 
 	return &TemplateRet{buf.Bytes()}, nil
