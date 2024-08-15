@@ -195,7 +195,6 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Regi
 	}
 
 	rendered.addHeadersRaw = buf.String()
-	// }
 
 	var addHeaders map[string]interface{}
 	if err := yaml.Unmarshal([]byte(rendered.addHeadersRaw), &addHeaders); err != nil {
@@ -323,7 +322,7 @@ func (n *Request) Fetch(ctx context.Context, db *gorm.DB) error {
 		SkipVerify: n.skipVerify,
 		Log:        n.log,
 		Retry: request.Retry{
-			Enabled:             true,
+			Enabled:             !n.retryDisabled,
 			EnabledStatusCodes:  retryCodes,
 			DisabledStatusCodes: retryDeCodes,
 		},
