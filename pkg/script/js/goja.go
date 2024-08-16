@@ -31,6 +31,10 @@ func (g *Goja) SetData(data interface{}) error {
 	return g.runtime.Set(g.DataName, data)
 }
 
+func (g *Goja) Set(name string, data interface{}) error {
+	return g.runtime.Set(name, data)
+}
+
 func (g *Goja) SetFunction(name string, fn interface{}) {
 	g.functions[name] = fn
 }

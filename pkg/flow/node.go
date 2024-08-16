@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/worldline-go/chore/pkg/email"
 	"github.com/worldline-go/chore/pkg/registry"
 
 	"gorm.io/gorm"
@@ -78,6 +79,10 @@ type NodeRetSelection interface {
 // NodeDirectGo for direct go.
 type NodeDirectGo interface {
 	IsDirectGo() NodeRet
+}
+
+type NodeAttachments interface {
+	GetAttachments() []email.Attach
 }
 
 // Noder for nodes like script, endpoint.

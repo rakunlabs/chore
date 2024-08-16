@@ -56,6 +56,10 @@ func (n *Log) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, 
 		logEvent = logEvent.Str("data", string(value.GetBinaryData()))
 	}
 
+	if v, _ := value.(flow.NodeRetRespondData); v != nil {
+		logEvent = logEvent.Int("status", v.GetRespondData().Status)
+	}
+
 	logEvent.Msg(n.message)
 
 	return &LogRet{NodeRet: value}, nil

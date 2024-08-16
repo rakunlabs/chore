@@ -75,16 +75,9 @@ lint: .golangci.yml bin/golangci-lint-$(GOLANGCI_LINT_VERSION) ## Lint Go files
 	@GOPATH="$(shell dirname $(PWD))" $(LOCAL_BIN_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION) run --new-from-rev remotes/origin/main ./...
 
 .PHONY: env
+env: export PROFILE ?= ""
 env: ## Create environment
-	docker compose --project-name=chore --file=env/docker-compose.yml up
-
-.PHONY: env-down
-env-down: ## Stop environment
-	docker compose --project-name=chore down --volumes
-
-.PHONY: env-extra
-env-extra: ## Create environment with extra services
-	docker compose --profile=extra --project-name=chore --file=env/docker-compose.yml up
+	docker compose --project-name=chore --profile=$(PROFILE) --file=env/docker-compose.yml up
 
 .PHONY: test
 test: ## Run unit tests

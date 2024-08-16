@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -246,12 +247,21 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Regi
 		header[k] = v[0]
 	}
 
+	fileName := ""
+	if v, _ := header["Content-Disposition"].(string); v != "" {
+		_, params, err := mime.ParseMediaType(v)
+		if err == nil {
+			fileName = params["filename"]
+		}
+	}
+
 	if response.StatusCode >= 100 && response.StatusCode < 400 {
 		return &RequestRet{
 			respond: flow.Respond{
-				Header: header,
-				Data:   response.Body,
-				Status: response.StatusCode,
+				Header:   header,
+				FileName: fileName,
+				Data:     response.Body,
+				Status:   response.StatusCode,
 			},
 			selection: []int{1, 2},
 		}, nil
@@ -259,9 +269,10 @@ func (n *Request) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Regi
 
 	return &RequestRet{
 		respond: flow.Respond{
-			Header: header,
-			Data:   response.Body,
-			Status: response.StatusCode,
+			Header:   header,
+			FileName: fileName,
+			Data:     response.Body,
+			Status:   response.StatusCode,
 		},
 		selection: []int{0, 2},
 	}, nil

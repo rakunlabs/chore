@@ -10,10 +10,11 @@ import (
 )
 
 type Respond struct {
-	Header  map[string]interface{} `json:"header"`
-	Data    []byte                 `json:"data"`
-	Status  int                    `json:"status"`
-	IsError bool                   `json:"-"`
+	Header   map[string]interface{} `json:"header"`
+	FileName string                 `json:"-"`
+	Data     []byte                 `json:"data"`
+	Status   int                    `json:"status"`
+	IsError  bool                   `json:"-"`
 }
 
 type CountStucker uint

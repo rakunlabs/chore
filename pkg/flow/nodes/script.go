@@ -1,10 +1,13 @@
 package nodes
 
 import (
+	"bytes"
 	"context"
 	"sort"
 	"sync"
 
+	"github.com/rs/zerolog/log"
+	"github.com/worldline-go/chore/pkg/email"
 	"github.com/worldline-go/chore/pkg/flow"
 	"github.com/worldline-go/chore/pkg/flow/convert"
 	"github.com/worldline-go/chore/pkg/registry"
@@ -25,6 +28,7 @@ type ScriptRet struct {
 	selection    []int
 	output       []byte
 	outputValues []byte
+	attachments  []email.Attach
 }
 
 func (r *ScriptRet) GetBinaryData() []byte {
@@ -39,9 +43,14 @@ func (r *ScriptRet) GetBinaryValues() []byte {
 	return r.outputValues
 }
 
+func (r *ScriptRet) GetAttachments() []email.Attach {
+	return r.attachments
+}
+
 var (
 	_ flow.NodeRetSelection = (*ScriptRet)(nil)
 	_ flow.NodeRetValues    = (*ScriptRet)(nil)
+	_ flow.NodeAttachments  = (*ScriptRet)(nil)
 )
 
 // Script node has many input and one output.
@@ -51,6 +60,7 @@ type Script struct {
 	inputsAll    []string
 	inputCounter map[string]struct{}
 	inputHolder  map[string]inputHolderS
+	inputRequest map[string]flow.Respond
 	outputs      [][]flow.Connection
 	lock         sync.Mutex
 	checked      bool
@@ -64,14 +74,19 @@ type Script struct {
 //nolint:lll // false positive
 func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registry, value flow.NodeRet, input string) (flow.NodeRet, error) {
 	var transferValue interface{}
-	if value.GetBinaryData() != nil {
-		transferValue = transfer.BytesToData(value.GetBinaryData())
+	if v := value.GetBinaryData(); v != nil {
+		transferValue = transfer.BytesToData(v)
 	}
 
 	var inputValues []inputHolderS
 
 	if len(n.inputCounter) > 1 {
 		n.lock.Lock()
+
+		// add request data to script
+		if v, _ := value.(flow.NodeRetRespondData); v != nil {
+			n.inputRequest[input] = v.GetRespondData()
+		}
 
 		// replace input value, multiple call on same input will replace value
 		n.inputHolder[input] = inputHolderS{value: transferValue, input: input}
@@ -89,6 +104,11 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registr
 
 		n.lock.Unlock()
 	} else {
+		// add request data to script
+		if v, _ := value.(flow.NodeRetRespondData); v != nil {
+			n.inputRequest[input] = v.GetRespondData()
+		}
+
 		n.inputHolder[input] = inputHolderS{value: transferValue, input: input}
 		inputValues = []inputHolderS{n.inputHolder[input]}
 	}
@@ -108,13 +128,28 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registr
 	// create script runner
 	runner := js.NewGoja()
 
+	// value for change template
 	var valueToPass interface{}
-	// value for some nodes
 	setValue := func(v interface{}) {
 		valueToPass = v
 	}
 
 	runner.SetFunction("setValue", setValue)
+
+	// value for email attachment
+	var valueAttachment []email.Attach
+	setAttachment := func(name string, v []byte) {
+		valueAttachment = append(valueAttachment, email.Attach{
+			FileName: name,
+			Content:  bytes.NewReader(v),
+		})
+	}
+
+	runner.SetFunction("setAttachment", setAttachment)
+
+	if err := runner.Set("request", n.inputRequest); err != nil {
+		log.Ctx(ctx).Warn().Msgf("cannot set data to script: %v", err)
+	}
 
 	inputValuesInterface := make([]interface{}, len(inputValues))
 	for i, v := range inputValues {
@@ -127,6 +162,7 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registr
 			selection:    []int{0, 2},
 			output:       result,
 			outputValues: transfer.DataToBytes(valueToPass),
+			attachments:  valueAttachment,
 		}, nil
 	}
 
@@ -134,6 +170,7 @@ func (n *Script) Run(ctx context.Context, _ *sync.WaitGroup, _ *registry.Registr
 		selection:    []int{1, 2},
 		output:       result,
 		outputValues: transfer.DataToBytes(valueToPass),
+		attachments:  valueAttachment,
 	}, nil
 }
 
@@ -220,6 +257,7 @@ func NewScript(_ context.Context, _ *flow.NodesReg, data flow.NodeData, nodeID s
 		nodeID:       nodeID,
 		inputCounter: make(map[string]struct{}),
 		inputHolder:  make(map[string]inputHolderS),
+		inputRequest: make(map[string]flow.Respond),
 		tags:         tags,
 	}, nil
 }

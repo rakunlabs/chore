@@ -154,7 +154,12 @@ func (n *Email) Run(ctx context.Context, _ *sync.WaitGroup, reg *registry.Regist
 		}
 	}
 
-	if err := n.client.Send(value.GetBinaryData(), headers, nil); err != nil {
+	var attachments []email.Attach
+	if v, ok := value.(flow.NodeAttachments); ok {
+		attachments = v.GetAttachments()
+	}
+
+	if err := n.client.Send(value.GetBinaryData(), headers, attachments); err != nil {
 		return nil, fmt.Errorf("failed to send email: values %v, err %w", headers, err)
 	}
 

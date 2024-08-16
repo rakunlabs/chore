@@ -12,6 +12,13 @@ services:
       # - ./data/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+  smtp:
+    image: haravich/fake-smtp-server
+    ports:
+      - "1025:1025"
+      - "1080:1080"
+    profiles:
+      - smtp
   keycloak:
     image: quay.io/keycloak/keycloak:20.0.2
     environment:
@@ -21,4 +28,4 @@ services:
       - "8082:8082"
     command: start-dev --http-port=8082
     profiles:
-      - extra
+      - keycloak
