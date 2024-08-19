@@ -5,8 +5,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/worldline-go/chore/docs"
-	"github.com/worldline-go/chore/internal/config"
+	"github.com/rakunlabs/chore/docs"
+	"github.com/rakunlabs/chore/internal/config"
 	echoSwagger "github.com/worldline-go/echo-swagger"
 )
 

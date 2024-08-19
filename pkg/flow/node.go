@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/worldline-go/chore/pkg/email"
-	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/rakunlabs/chore/pkg/email"
+	"github.com/rakunlabs/chore/pkg/registry"
 
 	"gorm.io/gorm"
 )

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/worldline-go/chore/internal/config"
+	"github.com/rakunlabs/chore/internal/config"
 )
 
 var shutdownTimeout = 5 * time.Second

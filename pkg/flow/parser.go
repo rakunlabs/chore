@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/worldline-go/chore/pkg/registry"
+	"github.com/rakunlabs/chore/pkg/registry"
 )
 
 func ParseData(content []byte) (NodesData, error) {
