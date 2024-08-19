@@ -15,7 +15,7 @@ type UserRequest struct {
 
 type UserData struct {
 	Name  string `json:"name" gorm:"unique;uniqueIndex;not null" example:"userX"`
-	Email string `json:"email" example:"userx@worldline.com"`
+	Email string `json:"email" example:"userx@example.com"`
 	apimodels.Groups
 }
 

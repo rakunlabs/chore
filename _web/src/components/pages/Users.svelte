@@ -259,7 +259,7 @@
           <input
             type="email"
             name="email"
-            placeholder="user@worldline.com"
+            placeholder="user@example.com"
             bind:value={edit.email}
             class="flex-grow px-2 border border-gray-300 focus:border-red-300 focus:outline-none focus:ring focus:ring-red-200 focus:ring-opacity-50 disabled:bg-gray-100"
           />

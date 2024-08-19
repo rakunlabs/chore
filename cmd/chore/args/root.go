@@ -29,12 +29,16 @@ type overrideHold struct {
 	Value  string
 }
 
+type ctxValue string
+
+const ctxKeyWg ctxValue = "wg"
+
 var rootCmd = &cobra.Command{
 	Use:     "chore",
 	Short:   "control flow runner",
 	Long:    config.Banner("request with templates"),
 	Version: config.AppVersion,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		if err := logz.SetLogLevel(config.Application.LogLevel); err != nil {
 			return err //nolint:wrapcheck // no need
 		}
@@ -43,7 +47,7 @@ var rootCmd = &cobra.Command{
 	},
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		// load configuration
 		if err := loadConfig(cmd.Context(), cmd.Flags().Visit); err != nil {
 			return err
@@ -58,11 +62,12 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute(ctx context.Context, wg *sync.WaitGroup) error {
-	ctx = context.WithValue(ctx, "wg", wg)
+	ctx = context.WithValue(ctx, ctxKeyWg, wg)
+
 	return rootCmd.ExecuteContext(ctx) //nolint:wrapcheck // no need
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // cobra init
 func init() {
 	rootCmd.Flags().StringVarP(&config.Application.Host, "host", "H", config.Application.Host, "Host to listen on")
 	rootCmd.Flags().StringVarP(&config.Application.Port, "port", "P", config.Application.Port, "Port to listen on")
@@ -124,7 +129,7 @@ func loadConfig(ctx context.Context, visit func(fn func(*pflag.Flag))) error {
 }
 
 func runRoot(ctx context.Context) error {
-	wg, _ := ctx.Value("wg").(*sync.WaitGroup)
+	wg, _ := ctx.Value(ctxKeyWg).(*sync.WaitGroup)
 	if wg == nil {
 		return fmt.Errorf("wg not found in context")
 	}
